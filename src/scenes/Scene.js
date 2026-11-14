@@ -61,6 +61,7 @@ export class Scene {
       // Ground layer(s) below entities (assume layer 0 is ground)
       this.tileMap.render(renderer, this.camera, [0]);
     }
+    this.renderGroundEffects(renderer, alpha);
 
     this.renderQueue.clear();
     let drawn = 0;
@@ -131,6 +132,13 @@ export class Scene {
     this.drawUI(renderer, alpha);
     renderer.end();
   }
+
+  /**
+   * World-space effects drawn on the ground (after background, before entities).
+   * @param {import('../graphics/Renderer.js').Renderer} renderer
+   * @param {number} alpha
+   */
+  renderGroundEffects(renderer, alpha) {}
 
   /** @param {import('../graphics/Renderer.js').Renderer} renderer @param {number} alpha */
   drawUI(renderer, alpha) {}
