@@ -1,5 +1,8 @@
 {
   "images": [
+    { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.jpg" },
+    { "key": "mapa_bg", "src": "./RecursosVisuales/Base%20exterior/fondoMapaExterior.jpg" },
+
     { "key": "astro_idle_0", "src": "./assets/Sprites/Astronauta/idle_0.png" },
     { "key": "astro_idle_1", "src": "./assets/Sprites/Astronauta/idle_1.png" },
     { "key": "astro_idle_2", "src": "./assets/Sprites/Astronauta/idle_2.png" },

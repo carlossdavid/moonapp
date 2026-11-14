@@ -19,6 +19,8 @@ export class Game {
     this.scene = null;
     this.player = null;
     this.debug = false;
+    /** @type {'loading'|'menu'|'playing'} */
+    this.state = 'loading';
 
     this.loop = new GameLoop({
       fixedDt: FIXED_DT,
@@ -27,11 +29,12 @@ export class Game {
     });
 
     window.addEventListener('resize', () => this.renderer.resize());
+    canvas.addEventListener('click', () => this._onStartAction());
+    canvas.addEventListener('touchstart', () => this._onStartAction(), { passive: true });
   }
 
   /** Initialize assets and scene hook. Override/extend as needed. */
   async init() {
-    // Default: try loading manifest if present
     try {
       await this.assets.loadManifest('./assets/manifest.json');
       const loadingEl = document.getElementById('loading');
@@ -51,10 +54,11 @@ export class Game {
     this.scene = scene;
   }
 
-  /** Start the game loop. */
+  /** Start the game loop (shows menu when ready). */
   start() {
     const loadingEl = document.getElementById('loading');
     if (loadingEl) loadingEl.classList.add('hidden');
+    this.state = 'menu';
     this.loop.start();
   }
 
@@ -63,8 +67,26 @@ export class Game {
     this.loop.stop();
   }
 
+  /** Begin gameplay from menu. */
+  beginPlay() {
+    if (this.state === 'playing') return;
+    this.state = 'playing';
+  }
+
+  _onStartAction() {
+    if (this.state === 'menu') this.beginPlay();
+  }
+
   /** @param {number} dt */
   update(dt) {
+    if (this.state === 'menu') {
+      if (this.input.isPressed('Enter') || this.input.isPressed('Space')) {
+        this.beginPlay();
+      }
+      this.input.update();
+      return;
+    }
+
     if (this.input.isPressed(DEBUG_TOGGLE_KEY)) {
       this.debug = !this.debug;
     }
@@ -79,6 +101,11 @@ export class Game {
 
   /** @param {number} alpha */
   render(alpha) {
+    if (this.state === 'menu') {
+      this._renderMenu();
+      return;
+    }
+
     this.renderer.clear('#1a1c2c');
     if (this.scene) {
       this.scene.render(this.renderer, alpha);
@@ -91,6 +118,27 @@ export class Game {
     } else {
       this._renderPhase1Placeholder();
     }
+    this.renderer.end();
+  }
+
+  _renderMenu() {
+    this.renderer.clear('#000000');
+    const bg = this.assets.get('menu_bg');
+    this.renderer.begin(null);
+    if (bg) {
+      this.renderer.drawImage(bg, 0, 0, bg.width, bg.height, 0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT, false);
+    }
+    // Dim overlay for readability
+    this.renderer.drawRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT, 'rgba(0,0,0,0.25)', true);
+
+    const btnW = 170;
+    const btnH = 26;
+    const btnX = Math.floor((LOGICAL_WIDTH - btnW) / 2);
+    const btnY = Math.floor(LOGICAL_HEIGHT * 0.68);
+    this.renderer.drawRect(btnX, btnY, btnW, btnH, 'rgba(20,24,36,0.75)', true);
+    this.renderer.drawRect(btnX, btnY, btnW, btnH, '#ffffff', false);
+    this.renderer.drawText('INICIAR JUEGO', btnX + 34, btnY + 9, '#ffffff');
+    this.renderer.drawText('Enter / Espacio / Click', btnX + 26, btnY + 34, '#e0e0e0');
     this.renderer.end();
   }
 

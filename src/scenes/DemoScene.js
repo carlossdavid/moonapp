@@ -231,6 +231,9 @@ export class DemoScene extends Scene {
       tileSize: TILE_SIZE, cols: MAP_COLS, rows: MAP_ROWS,
       layers: [ground], tilesetImage: assets.get('tileset'), tilesetCols: this._tilesetCols || 4,
     });
+    if (assets.has('mapa_bg')) {
+      this.backgroundImage = assets.get('mapa_bg');
+    }
 
     const worldW = this.tileMap.worldWidth;
     const worldH = this.tileMap.worldHeight;

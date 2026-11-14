@@ -12,6 +12,7 @@ export class Scene {
     this.tileMap = null;
     this.camera = null;
     this.physicsWorld = null;
+    this.backgroundImage = null;
     this.renderQueue = new RenderQueue();
   }
 
@@ -52,7 +53,11 @@ export class Scene {
    */
   render(renderer, alpha) {
     renderer.begin(this.camera);
-    if (this.tileMap && this.camera) {
+    if (this.backgroundImage) {
+      const w = this.tileMap ? this.tileMap.worldWidth : this.camera.worldWidth;
+      const h = this.tileMap ? this.tileMap.worldHeight : this.camera.worldHeight;
+      renderer.drawImage(this.backgroundImage, 0, 0, this.backgroundImage.width, this.backgroundImage.height, 0, 0, w, h, false);
+    } else if (this.tileMap && this.camera) {
       // Ground layer(s) below entities (assume layer 0 is ground)
       this.tileMap.render(renderer, this.camera, [0]);
     }
