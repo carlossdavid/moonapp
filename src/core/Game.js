@@ -3,7 +3,7 @@ import { Time } from './Time.js';
 import { GameLoop } from './GameLoop.js';
 import { Renderer } from '../graphics/Renderer.js';
 import { AssetLoader } from '../graphics/AssetLoader.js';
-import { FIXED_DT, LOGICAL_WIDTH, LOGICAL_HEIGHT, BASE_SCALE } from '../config.js';
+import { FIXED_DT, LOGICAL_WIDTH, LOGICAL_HEIGHT, BASE_SCALE, DEBUG_TOGGLE_KEY } from '../config.js';
 
 /** Main game orchestrator. */
 export class Game {
@@ -65,6 +65,9 @@ export class Game {
 
   /** @param {number} dt */
   update(dt) {
+    if (this.input.isPressed(DEBUG_TOGGLE_KEY)) {
+      this.debug = !this.debug;
+    }
     if (this.scene) {
       this.scene.update(dt);
     } else if (this.player) {

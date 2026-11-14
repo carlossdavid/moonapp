@@ -66,7 +66,7 @@ function createProp(kind) {
   return c;
 }
 
-function createPlayerSheet() {
+function createPlaceholderPlayerSheet() {
   const fw = 16, fh = 24, cols = 4, rows = 6;
   const c = document.createElement('canvas');
   c.width = fw * cols; c.height = fh * rows;
@@ -86,7 +86,7 @@ function createPlayerSheet() {
     ctx.fillRect(x + 4, by + 20 - step, 3, 3);
     ctx.fillRect(x + 9, by + 20 + step - 1, 3, 3);
   };
-  const dirByRow = ['down', 'down', 'up', 'up', 'side', 'side'];
+  const dirByRow = ['down', 'down', 'up', 'up', 'right', 'right'];
   for (let r = 0; r < rows; r++) {
     for (let col = 0; col < cols; col++) {
       const isWalk = r % 2 === 1;
@@ -97,7 +97,62 @@ function createPlayerSheet() {
   return c;
 }
 
+function createAstronautSheet(assets) {
+  const srcW = 44;
+  const srcH = 58;
+  const fw = 22; // scaled down (50%) for smaller in-game character
+  const fh = 29;
+  const cols = 4;
+  const rowsDef = [
+    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'], // idle-down
+    ['astro_walk_down_0', 'astro_walk_down_1', 'astro_walk_down_2', 'astro_walk_down_3'],
+    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'], // idle-up
+    ['astro_walk_up_0', 'astro_walk_up_1', 'astro_walk_up_2', 'astro_walk_up_3'],
+    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'], // idle-right
+    ['astro_walk_right_0', 'astro_walk_right_1', 'astro_walk_right_2', 'astro_walk_right_3'],
+    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'], // idle-left
+    ['astro_walk_left_0', 'astro_walk_left_1', 'astro_walk_left_2', 'astro_walk_left_3'],
+  ];
+  const c = document.createElement('canvas');
+  c.width = fw * cols;
+  c.height = fh * rowsDef.length;
+  const ctx = c.getContext('2d');
+  if (!ctx) return c;
+  ctx.imageSmoothingEnabled = false;
+  rowsDef.forEach((keys, r) => {
+    keys.forEach((key, col) => {
+      const img = assets.get(key);
+      if (img) ctx.drawImage(img, 0, 0, srcW, srcH, col * fw, r * fh, fw, fh);
+    });
+  });
+  return c;
+}
+
 function createPlayerSprite(sheetImage) {
+  const imgW = /** @type {any} */ (sheetImage).width || 64;
+  const isAstronaut = imgW >= 88; // astronaut composed sheet (scaled 88x232 or original 176x464)
+  if (isAstronaut) {
+    const imgH = /** @type {any} */ (sheetImage).height || 232;
+    const cols = 4;
+    const rows = 8;
+    const fw = Math.floor(imgW / cols);
+    const fh = Math.floor(imgH / rows);
+    const sheet = new SpriteSheet(sheetImage, fw, fh, { columns: cols });
+    const sprite = new Sprite(sheet);
+    sprite.originX = 0.5; sprite.originY = 1;
+    const def = (name, row, fps) => {
+      const base = row * cols;
+      sprite.addAnimation(name, new Animation({ name, frames: [base, base + 1, base + 2, base + 3], fps, loop: true }));
+    };
+    def('idle-down', 0, 4);  def('walk-down', 1, 8);
+    def('idle-up', 2, 4);    def('walk-up', 3, 8);
+    def('idle-right', 4, 4); def('walk-right', 5, 8);
+    def('idle-left', 6, 4);  def('walk-left', 7, 8);
+    sprite.play('idle-down', true);
+    return sprite;
+  }
+
+  // Fallback placeholder (16x24, 6 rows: down, up, right; left handled by flip/map)
   const sheet = new SpriteSheet(sheetImage, 16, 24, { columns: 4 });
   const sprite = new Sprite(sheet);
   sprite.originX = 0.5; sprite.originY = 1;
@@ -106,8 +161,9 @@ function createPlayerSprite(sheetImage) {
     sprite.addAnimation(name, new Animation({ name, frames: [base, base + 1, base + 2, base + 3], fps, loop: true }));
   };
   def('idle-down', 0, 4); def('walk-down', 1, 8);
-  def('idle-up', 2, 4); def('walk-up', 3, 8);
-  def('idle-side', 4, 4); def('walk-side', 5, 8);
+  def('idle-up', 2, 4);   def('walk-up', 3, 8);
+  def('idle-right', 4, 4); def('walk-right', 5, 8);
+  def('idle-left', 4, 4);  def('walk-left', 5, 8);
   sprite.play('idle-down', true);
   return sprite;
 }
@@ -161,7 +217,11 @@ export class DemoScene extends Scene {
     } else {
       this._tilesetCols = 4;
     }
-    if (!assets.has('player')) assets.set('player', createPlayerSheet());
+    if (assets.has('astro_idle_0')) {
+      assets.set('player', createAstronautSheet(assets));
+    } else if (!assets.has('player')) {
+      assets.set('player', createPlaceholderPlayerSheet());
+    }
     if (!assets.has('tree')) assets.set('tree', createProp('tree'));
     if (!assets.has('rock')) assets.set('rock', createProp('rock'));
     if (!assets.has('wall')) assets.set('wall', createProp('wall'));
@@ -275,10 +335,28 @@ export class DemoScene extends Scene {
   }
 
   drawUI(renderer) {
-    renderer.drawText('Fase 4: fisica y colisiones (WASD/flechas)', 8, 8, '#ffffff');
-    renderer.drawText('No atraviesa obstaculos, se desliza por paredes. F1 debug.', 8, 18, '#d0d0d0');
+    renderer.drawText('WASD/flechas: mover | F1: debug', 8, 8, '#ffffff');
+    renderer.drawText('Colisiones por huella, y-sort y zona trigger activas', 8, 18, '#d0d0d0');
     if (this.triggerMessage) {
       renderer.drawText(this.triggerMessage, 8, 32, '#ffe066');
+    }
+
+    if (this.game.debug) {
+      const fps = this.game.time.fps;
+      const px = this.player ? this.player.x.toFixed(1) : '-';
+      const py = this.player ? this.player.y.toFixed(1) : '-';
+      const drawn = this._lastDrawnCount ?? 0;
+      const lines = [
+        `FPS: ${fps}`,
+        `Player: (${px}, ${py})`,
+        `Dibujados: ${drawn}`,
+        `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
+      ];
+      let y = 46;
+      for (const line of lines) {
+        renderer.drawText(line, 8, y, '#00ff88');
+        y += 10;
+      }
     }
   }
 }

@@ -84,7 +84,37 @@ export class Scene {
    * World-space debug rendering (inside camera transform).
    * @param {import('../graphics/Renderer.js').Renderer} renderer
    */
-  renderDebug(renderer) {}
+  renderDebug(renderer) {
+    const world = this.physicsWorld;
+    if (!world) return;
+
+    // Spatial grid occupied cells (in/near view)
+    if (world.grid) {
+      const cs = world.grid.cellSize;
+      for (const [index] of world.grid.getDebugCells()) {
+        const cx = index % world.grid.cols;
+        const cy = Math.floor(index / world.grid.cols);
+        renderer.drawRect(cx * cs, cy * cs, cs, cs, 'rgba(80,160,255,0.18)', false);
+      }
+    }
+
+    // Colliders / footprints
+    for (const body of world.bodies) {
+      const c = body.collider;
+      if (!c) continue;
+      if (c.type === 'box') {
+        const r = c.getWorldAABB(body.position);
+        const color = c.isTrigger ? 'rgba(255,220,0,0.9)' : 'rgba(0,255,120,0.9)';
+        renderer.drawRect(r.x, r.y, r.w, r.h, color, false);
+        // footprint base marker line
+        renderer.drawRect(r.x, r.bottom - 1, r.w, 1, color, true);
+      } else if (c.type === 'circle') {
+        const cc = c.getWorldCircle(body.position);
+        const color = c.isTrigger ? 'rgba(255,220,0,0.9)' : 'rgba(0,255,120,0.9)';
+        renderer.drawCircle(cc.x, cc.y, cc.r, color, false);
+      }
+    }
+  }
 
   /**
    * Screen-space UI rendering.

@@ -14,8 +14,8 @@ export class Input {
         this._pressed.add(e.code);
       }
       this._down.add(e.code);
-      // Prevent page scroll on arrows/space during play
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+      // Prevent page scroll / browser actions during play
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'F1'].includes(e.code)) {
         e.preventDefault();
       }
     };

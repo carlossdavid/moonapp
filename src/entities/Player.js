@@ -71,9 +71,18 @@ export class Player extends Entity {
   /** @param {boolean} moving */
   _updateAnimation(moving) {
     if (!this.sprite) return;
-    const dir = this.facing === 'left' || this.facing === 'right' ? 'side' : this.facing;
+    const dir = this.facing; // 'down' | 'up' | 'left' | 'right'
     const anim = `${moving ? 'walk' : 'idle'}-${dir}`;
-    this.sprite.setFlipX(this.facing === 'left');
+
+    // If left/right share the same frames (placeholder fallback), flip left.
+    let flip = false;
+    if (this.facing === 'left') {
+      const leftAnim = this.sprite.animations.get('idle-left');
+      const rightAnim = this.sprite.animations.get('idle-right');
+      const hasSeparateLeft = !!(leftAnim && rightAnim && leftAnim.frames[0] !== rightAnim.frames[0]);
+      flip = !hasSeparateLeft;
+    }
+    this.sprite.setFlipX(flip);
     this.sprite.play(anim, false);
   }
 
