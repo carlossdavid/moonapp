@@ -5,11 +5,11 @@ export class Obstacle extends Entity {
   /**
    * @param {{
    *  x:number,y:number,image:CanvasImageSource,w:number,h:number,
-   *  sortOffset?:number
+   *  sortOffset?:number, body?: any
    * }} opts
    */
   constructor(opts) {
-    super({ x: opts.x, y: opts.y });
+    super({ x: opts.x, y: opts.y, body: opts.body });
     this.image = opts.image;
     this.w = opts.w;
     this.h = opts.h;
@@ -20,8 +20,7 @@ export class Obstacle extends Entity {
   }
 
   update(dt, game) {
-    this.syncPrev();
-    // static
+    // static visuals; sprite animation not used
   }
 
   render(renderer, alpha) {

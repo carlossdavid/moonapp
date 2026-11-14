@@ -1,3 +1,28 @@
 {
-  "images": []
+  "images": [
+    { "key": "astro_idle_0", "src": "./assets/Sprites/Astronauta/idle_0.png" },
+    { "key": "astro_idle_1", "src": "./assets/Sprites/Astronauta/idle_1.png" },
+    { "key": "astro_idle_2", "src": "./assets/Sprites/Astronauta/idle_2.png" },
+    { "key": "astro_idle_3", "src": "./assets/Sprites/Astronauta/idle_3.png" },
+
+    { "key": "astro_walk_down_0", "src": "./assets/Sprites/Astronauta/walk_down_0.png" },
+    { "key": "astro_walk_down_1", "src": "./assets/Sprites/Astronauta/walk_down_1.png" },
+    { "key": "astro_walk_down_2", "src": "./assets/Sprites/Astronauta/walk_down_2.png" },
+    { "key": "astro_walk_down_3", "src": "./assets/Sprites/Astronauta/walk_down_3.png" },
+
+    { "key": "astro_walk_up_0", "src": "./assets/Sprites/Astronauta/walk_up_0.png" },
+    { "key": "astro_walk_up_1", "src": "./assets/Sprites/Astronauta/walk_up_1.png" },
+    { "key": "astro_walk_up_2", "src": "./assets/Sprites/Astronauta/walk_up_2.png" },
+    { "key": "astro_walk_up_3", "src": "./assets/Sprites/Astronauta/walk_up_3.png" },
+
+    { "key": "astro_walk_left_0", "src": "./assets/Sprites/Astronauta/walk_left_0.png" },
+    { "key": "astro_walk_left_1", "src": "./assets/Sprites/Astronauta/walk_left_1.png" },
+    { "key": "astro_walk_left_2", "src": "./assets/Sprites/Astronauta/walk_left_2.png" },
+    { "key": "astro_walk_left_3", "src": "./assets/Sprites/Astronauta/walk_left_3.png" },
+
+    { "key": "astro_walk_right_0", "src": "./assets/Sprites/Astronauta/walk_right_0.png" },
+    { "key": "astro_walk_right_1", "src": "./assets/Sprites/Astronauta/walk_right_1.png" },
+    { "key": "astro_walk_right_2", "src": "./assets/Sprites/Astronauta/walk_right_2.png" },
+    { "key": "astro_walk_right_3", "src": "./assets/Sprites/Astronauta/walk_right_3.png" }
+  ]
 }
