@@ -305,16 +305,21 @@ export class DemoScene extends Scene {
 
     // Estación principal (Asset 1) - centro (más grande)
     const main = this._addSolidStructure(assets.get('struct_base_main'), cx, cy, C.struct_base_main);
-    // Panel solar (Asset 2) - izquierda
-    this._addSolidStructure(assets.get('struct_solar'), cx - 110, cy + 10, C.struct_solar);
+    // 4 paneles solares (campo solar cercano a la base)
+    const solarPositions = [
+      [cx - 150, cy - 10],
+      [cx - 70,  cy - 10],
+      [cx - 150, cy + 55],
+      [cx - 70,  cy + 55],
+    ];
+    for (let i = 0; i < solarPositions.length; i++) {
+      const [sx, sy] = solarPositions[i];
+      this._addSolidStructure(assets.get('struct_solar'), sx, sy, C.struct_solar);
+    }
     // Antena limpia (Asset 3) - arriba-derecha
     this._addSolidStructure(assets.get('struct_antenna'), cx + 120, cy - 70, C.struct_antenna);
-    // Tanques (Asset 4) - arriba-izquierda
-    this._addSolidStructure(assets.get('struct_tanks'), cx - 120, cy - 60, C.struct_tanks);
     // Antena dañada (Asset 6) - derecha/noreste
     this._addSolidStructure(assets.get('struct_antenna_damaged'), cx + 190, cy - 40, C.struct_antenna_damaged);
-    // Restos de nave (Asset 7) - abajo-derecha (obstáculo)
-    this._addSolidStructure(assets.get('struct_wreckage'), cx + 140, cy + 90, C.struct_wreckage);
 
     // Rocas decorativas con colisión para dar detalle al terreno
     const rocks = [
@@ -353,13 +358,20 @@ export class DemoScene extends Scene {
       const iz = C[key].interact;
       this._addInteractZone(x, y + (iz.offsetY ?? 8), iz.w, iz.h, { name, prompt, onConfirm });
     };
-    placeInspect('struct_solar', cx - 110, cy + 10, 'Panel solar', 'Presiona E para inspeccionar panel solar', () => {
-      this.interactionWindow = { title: 'Panel solar', body: 'tarea', button: 'Realizar' };
-    });
+    const solarPositions2 = [
+      [cx - 150, cy - 10],
+      [cx - 70,  cy - 10],
+      [cx - 150, cy + 55],
+      [cx - 70,  cy + 55],
+    ];
+    for (let i = 0; i < solarPositions2.length; i++) {
+      const [sx, sy] = solarPositions2[i];
+      placeInspect('struct_solar', sx, sy, `Panel solar ${i + 1}`, 'Presiona E para inspeccionar panel solar', () => {
+        this.interactionWindow = { title: `Panel solar ${i + 1}`, body: 'Sistema solar (pendiente)', button: 'Cerrar' };
+      });
+    }
     placeInspect('struct_antenna', cx + 120, cy - 70, 'Antena', 'Presiona E para inspeccionar antena');
-    placeInspect('struct_tanks', cx - 120, cy - 60, 'Tanques de soporte vital', 'Presiona E para inspeccionar tanques de soporte vital');
     placeInspect('struct_antenna_damaged', cx + 190, cy - 40, 'Antena dañada', 'Presiona E para inspeccionar antena dañada');
-    placeInspect('struct_wreckage', cx + 140, cy + 90, 'Restos de nave', 'Presiona E para inspeccionar restos de nave');
   }
 
   _spawnPlayer(assets, worldW, worldH) {

@@ -1,5 +1,6 @@
 import { Game } from './core/Game.js';
 import { DemoScene } from './scenes/DemoScene.js';
+import { InteriorBaseScene } from './scenes/InteriorBaseScene.js';
 
 async function bootstrap() {
   const canvas = document.getElementById('game');
@@ -10,7 +11,16 @@ async function bootstrap() {
   const game = new Game(canvas);
   const loadingEl = document.getElementById('loading');
   try {
-    const scene = new DemoScene(game);
+    // Nivel 0: iniciar dentro de la base
+    const scene = new InteriorBaseScene(game, {
+      spawnX: undefined,
+      spawnY: undefined,
+      onExit: async () => {
+        // Salir al exterior
+        const exterior = new DemoScene(game, { spawnX: 292, spawnY: 210 });
+        await game.changeScene(exterior);
+      },
+    });
     game.setScene(scene);
     await game.init();
     if (loadingEl) loadingEl.textContent = 'Listo';

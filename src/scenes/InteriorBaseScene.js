@@ -178,11 +178,14 @@ export class InteriorBaseScene extends Scene {
     this.backgroundFit = 'contain';
     this.compassImg = assets.has('compass_ui') ? assets.get('compass_ui') : null;
 
-    // Player spawn at entrance bottom (aligned with airlock)
-    this._spawnPlayer(assets, worldW / 2, worldH - 28);
+    // Spawn inicial dentro de la base (área central/control), no en la salida
+    const spawnX = this.opts.spawnX ?? (worldW / 2);
+    const spawnY = this.opts.spawnY ?? (worldH * 0.48);
+    this._spawnPlayer(assets, spawnX, spawnY);
     this._spawnExitZone(worldW, worldH);
     this.exitMarker = { x: worldW / 2, y: worldH - 10 };
     this._spawnInteriorCollisions(worldW, worldH);
+    this._spawnInteriorDecor(worldW, worldH);
 
     this.camera.setTarget(this.player);
     this.camera.follow(this.player, 1);
@@ -213,32 +216,25 @@ export class InteriorBaseScene extends Scene {
   _spawnInteriorCollisions(worldW, worldH) {
     const cx = worldW / 2;
 
-    // Layout (approx): bottom door -> short central hallway -> circular room
     const doorGap = 44;
     const bottomWallY = worldH - 12;
     const bottomWallH = 12;
 
-    // 1) Door threshold: block passing below/through door except the opening
     this._addSolidBox(0, bottomWallY, cx - doorGap / 2, bottomWallH);
     this._addSolidBox(cx + doorGap / 2, bottomWallY, worldW - (cx + doorGap / 2), bottomWallH);
 
-    // 2) Small central hallway walls (bottom corridor leading up to room)
     const hallTop = worldH * 0.56;
     const hallBottom = bottomWallY;
     const hallW = 54;
     const hallH = Math.max(0, hallBottom - hallTop);
     const hallLeftX = cx - hallW / 2;
     const hallRightX = cx + hallW / 2;
-    // Left side blocks flanking hallway from hallTop down to bottom
     this._addSolidBox(0, hallTop, hallLeftX, hallH);
-    // Right side blocks
     this._addSolidBox(hallRightX, hallTop, worldW - hallRightX, hallH);
 
-    // 3) Circular room boundary approximated with box segments
-    // Walkable circle interior: center above hallway, radius fits inside upper area
     const roomCx = cx;
     const roomCy = worldH * 0.34;
-    const roomR = Math.min(worldW, worldH) * 0.30; // walkable radius (interior)
+    const roomR = Math.min(worldW, worldH) * 0.30;
     const wallThickness = 14;
     const segments = 28;
     const hallHalf = hallW / 2;
@@ -247,7 +243,6 @@ export class InteriorBaseScene extends Scene {
       const a0 = (i / segments) * Math.PI * 2;
       const a1 = ((i + 1) / segments) * Math.PI * 2;
       const am = (a0 + a1) / 2;
-      // Place a wall box centered on the ring just outside the walkable radius
       const ringR = roomR + wallThickness / 2;
       const bx = roomCx + Math.cos(am) * ringR;
       const by = roomCy + Math.sin(am) * ringR;
@@ -256,34 +251,68 @@ export class InteriorBaseScene extends Scene {
       const bh = wallThickness;
       let rx = bx - bw / 2;
       let ry = by - bh / 2;
-
-      // Leave an opening at the bottom of the circle to connect with hallway
       const isBottomOpening = (by > roomCy + roomR * 0.55) && (Math.abs(bx - roomCx) < hallHalf + 10);
       if (isBottomOpening) continue;
-
-      // Skip segments that would intrude into the hallway corridor area
       if (by > hallTop - 4 && Math.abs(bx - roomCx) < hallHalf + wallThickness) continue;
-
-      // Clamp boxes inside world
-      if (rx < 0) { /* shrink */ }
-      const cw = Math.min(bw, worldW - Math.max(0, rx)) - Math.max(0, -rx);
-      const ch = Math.min(bh, worldH - Math.max(0, ry)) - Math.max(0, -ry);
       rx = Math.max(0, rx);
       ry = Math.max(0, ry);
+      const cw = Math.min(bw, worldW - rx);
+      const ch = Math.min(bh, worldH - ry);
       if (cw > 2 && ch > 2) this._addSolidBox(rx, ry, cw, ch);
     }
 
-    // 4) Upper/side outer blockers to keep player inside room+hally footprint (approx rectangular bounds outside circle sides)
-    // Block areas left/right of circular room above hallway (outside the circle)
     const outerTop = 0;
     const outerBottom = hallTop;
-    // left outer block: from x=0 to left of circle
     this._addSolidBox(0, outerTop, Math.max(0, roomCx - roomR - 2), outerBottom);
-    // right outer block
     const rightBlockX = roomCx + roomR + 2;
     this._addSolidBox(rightBlockX, outerTop, Math.max(0, worldW - rightBlockX), outerBottom);
-    // top block above circle
     this._addSolidBox(Math.max(0, roomCx - roomR - 2), outerTop, Math.min(worldW, (roomR + 2) * 2), Math.max(0, roomCy - roomR - 2));
+  }
+
+  _addInteractZone(x, y, w, h, cfg) {
+    const body = new PhysicsBody({
+      isStatic: true,
+      collider: new BoxCollider({
+        width: w, height: h,
+        offsetX: -w / 2, offsetY: -h,
+        isTrigger: true, layer: Layer.TRIGGER, mask: Layer.PLAYER,
+      }),
+    });
+    const zone = new InteractableZone({ x, y, body, ...cfg });
+    this.interactables.push(zone);
+    this.addEntity(zone);
+    return zone;
+  }
+
+  _spawnInteriorDecor(worldW, worldH) {
+    const cx = worldW / 2;
+    const roomCy = worldH * 0.34;
+    // Consola principal (zona central)
+    this._addInteractZone(cx, roomCy - 6, 34, 18, {
+      name: 'Consola principal',
+      prompt: 'Presiona E para inspeccionar la consola principal',
+      requiresConfirm: false,
+      onConfirm: () => { this.promptText = 'Consola principal: sistema de control (pendiente)'; },
+    });
+    // Estaciones de almacenamiento (varias)
+    this._addInteractZone(cx - 60, roomCy + 10, 28, 16, {
+      name: 'Estación de almacenamiento A',
+      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
+      requiresConfirm: false,
+      onConfirm: () => { this.promptText = 'Almacén A: suministros (pendiente)'; },
+    });
+    this._addInteractZone(cx + 60, roomCy + 10, 28, 16, {
+      name: 'Estación de almacenamiento B',
+      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
+      requiresConfirm: false,
+      onConfirm: () => { this.promptText = 'Almacén B: suministros (pendiente)'; },
+    });
+    this._addInteractZone(cx, roomCy + 40, 30, 16, {
+      name: 'Estación de almacenamiento C',
+      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
+      requiresConfirm: false,
+      onConfirm: () => { this.promptText = 'Almacén C: suministros (pendiente)'; },
+    });
   }
 
   _spawnPlayer(assets, x, y) {
