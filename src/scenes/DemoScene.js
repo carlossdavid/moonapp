@@ -6,8 +6,13 @@ import { Animation } from '../graphics/Animation.js';
 import { Sprite } from '../graphics/Sprite.js';
 import { Player } from '../entities/Player.js';
 import { Obstacle } from '../entities/Obstacle.js';
+import { Entity } from '../entities/Entity.js';
+import { PhysicsWorld } from '../physics/PhysicsWorld.js';
+import { PhysicsBody } from '../physics/PhysicsBody.js';
+import { BoxCollider } from '../physics/BoxCollider.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, TILE_SIZE, MAP_COLS, MAP_ROWS, CAMERA_LERP,
+  PLAYER_FOOT_WIDTH, PLAYER_FOOT_HEIGHT, SPATIAL_CELL_SIZE, Layer,
 } from '../config.js';
 
 function createTileset(tileSize) {
@@ -19,25 +24,17 @@ function createTileset(tileSize) {
   const ctx = c.getContext('2d');
   if (!ctx) return { image: c, cols };
   // 1: grass
-  ctx.fillStyle = '#3e8948';
-  ctx.fillRect(0, 0, tileSize, tileSize);
-  ctx.fillStyle = '#4aa356';
-  ctx.fillRect(2, 2, 3, 3); ctx.fillRect(9, 6, 2, 2); ctx.fillRect(5, 11, 3, 2);
+  ctx.fillStyle = '#3e8948'; ctx.fillRect(0, 0, tileSize, tileSize);
+  ctx.fillStyle = '#4aa356'; ctx.fillRect(2, 2, 3, 3); ctx.fillRect(9, 6, 2, 2); ctx.fillRect(5, 11, 3, 2);
   // 2: grass alt
-  ctx.fillStyle = '#3b8244';
-  ctx.fillRect(tileSize, 0, tileSize, tileSize);
-  ctx.fillStyle = '#52ad5f';
-  ctx.fillRect(tileSize + 4, 3, 2, 2); ctx.fillRect(tileSize + 10, 10, 3, 3);
+  ctx.fillStyle = '#3b8244'; ctx.fillRect(tileSize, 0, tileSize, tileSize);
+  ctx.fillStyle = '#52ad5f'; ctx.fillRect(tileSize + 4, 3, 2, 2); ctx.fillRect(tileSize + 10, 10, 3, 3);
   // 3: dirt/path
-  ctx.fillStyle = '#8a6a4a';
-  ctx.fillRect(tileSize * 2, 0, tileSize, tileSize);
-  ctx.fillStyle = '#9b7b58';
-  ctx.fillRect(tileSize * 2 + 3, 4, 4, 3); ctx.fillRect(tileSize * 2 + 9, 9, 3, 2);
-  // 4: wall/block tile (visual ground marker)
-  ctx.fillStyle = '#666a73';
-  ctx.fillRect(tileSize * 3, 0, tileSize, tileSize);
-  ctx.fillStyle = '#7b808a';
-  ctx.fillRect(tileSize * 3 + 1, 1, tileSize - 2, tileSize - 2);
+  ctx.fillStyle = '#8a6a4a'; ctx.fillRect(tileSize * 2, 0, tileSize, tileSize);
+  ctx.fillStyle = '#9b7b58'; ctx.fillRect(tileSize * 2 + 3, 4, 4, 3); ctx.fillRect(tileSize * 2 + 9, 9, 3, 2);
+  // 4: stone
+  ctx.fillStyle = '#666a73'; ctx.fillRect(tileSize * 3, 0, tileSize, tileSize);
+  ctx.fillStyle = '#7b808a'; ctx.fillRect(tileSize * 3 + 1, 1, tileSize - 2, tileSize - 2);
   return { image: c, cols };
 }
 
@@ -51,29 +48,17 @@ function createProp(kind) {
   const ctx = c.getContext('2d');
   if (!ctx) return c;
   if (kind === 'tree') {
-    // trunk
-    ctx.fillStyle = '#7a4a2b';
-    ctx.fillRect(9, 24, 6, 16);
-    // canopy layers
-    ctx.fillStyle = '#2f7d32';
-    ctx.fillRect(2, 8, 20, 18);
-    ctx.fillStyle = '#3f9b43';
-    ctx.fillRect(4, 2, 16, 12);
-    ctx.fillStyle = '#58b85b';
-    ctx.fillRect(7, 0, 10, 6);
-    // base shadow hint
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(7, 38, 10, 2);
+    ctx.fillStyle = '#7a4a2b'; ctx.fillRect(9, 24, 6, 16);
+    ctx.fillStyle = '#2f7d32'; ctx.fillRect(2, 8, 20, 18);
+    ctx.fillStyle = '#3f9b43'; ctx.fillRect(4, 2, 16, 12);
+    ctx.fillStyle = '#58b85b'; ctx.fillRect(7, 0, 10, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(7, 38, 10, 2);
   } else if (kind === 'rock') {
-    ctx.fillStyle = '#6b6f78';
-    ctx.fillRect(2, 4, 16, 10);
-    ctx.fillStyle = '#8a909b';
-    ctx.fillRect(4, 2, 10, 5);
-    ctx.fillStyle = '#555962';
-    ctx.fillRect(3, 10, 14, 3);
+    ctx.fillStyle = '#6b6f78'; ctx.fillRect(2, 4, 16, 10);
+    ctx.fillStyle = '#8a909b'; ctx.fillRect(4, 2, 10, 5);
+    ctx.fillStyle = '#555962'; ctx.fillRect(3, 10, 14, 3);
   } else if (kind === 'wall') {
-    ctx.fillStyle = '#777d88';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#777d88'; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#5c616b';
     for (let y = 0; y < h; y += 6) ctx.strokeRect(0.5, y + 0.5, w - 1, 6);
     ctx.strokeRect(8.5, 0.5, 0, h);
@@ -134,14 +119,39 @@ function buildGround(cols, rows) {
       const i = y * cols + x;
       const n = (x * 7 + y * 13) % 10;
       data[i] = n === 0 ? 2 : 1;
-      // a dirt path
       if (y === Math.floor(rows / 2) || x === Math.floor(cols / 2)) data[i] = 3;
     }
   }
   return data;
 }
 
+class TriggerZone extends Entity {
+  constructor(opts) {
+    super(opts);
+    this.message = opts.message || 'Trigger';
+    this.activeMsg = '';
+  }
+  update() { /* no-op */ }
+  render() { /* invisible */ }
+  onTriggerEnter(other, otherEntity) {
+    if (otherEntity && otherEntity instanceof Player) this.activeMsg = `${this.message} (enter)`;
+  }
+  onTriggerStay(other, otherEntity) {
+    if (otherEntity && otherEntity instanceof Player) this.activeMsg = `${this.message}`;
+  }
+  onTriggerExit(other, otherEntity) {
+    if (otherEntity && otherEntity instanceof Player) this.activeMsg = '';
+  }
+}
+
 export class DemoScene extends Scene {
+  constructor(game) {
+    super(game);
+    this.player = null;
+    this.triggerZone = null;
+    this.triggerMessage = '';
+  }
+
   async init() {
     const assets = this.game.assets;
     if (!assets.has('tileset')) {
@@ -158,69 +168,117 @@ export class DemoScene extends Scene {
 
     const ground = buildGround(MAP_COLS, MAP_ROWS);
     this.tileMap = new TileMap({
-      tileSize: TILE_SIZE,
-      cols: MAP_COLS,
-      rows: MAP_ROWS,
-      layers: [ground],
-      tilesetImage: assets.get('tileset'),
-      tilesetCols: this._tilesetCols || 4,
+      tileSize: TILE_SIZE, cols: MAP_COLS, rows: MAP_ROWS,
+      layers: [ground], tilesetImage: assets.get('tileset'), tilesetCols: this._tilesetCols || 4,
     });
 
     const worldW = this.tileMap.worldWidth;
     const worldH = this.tileMap.worldHeight;
     this.camera = new Camera(LOGICAL_WIDTH, LOGICAL_HEIGHT, worldW, worldH);
+    this.physicsWorld = new PhysicsWorld({ worldWidth: worldW, worldHeight: worldH, cellSize: SPATIAL_CELL_SIZE });
 
+    this._spawnPlayer(assets, worldW, worldH);
+    this._spawnProps(assets, worldW, worldH);
+    this._spawnTrigger(worldW, worldH);
+
+    this.camera.setTarget(this.player);
+    this.camera.follow(this.player, 1);
+  }
+
+  _spawnPlayer(assets, worldW, worldH) {
+    const body = new PhysicsBody({
+      collider: new BoxCollider({
+        width: PLAYER_FOOT_WIDTH,
+        height: PLAYER_FOOT_HEIGHT,
+        offsetX: -PLAYER_FOOT_WIDTH / 2,
+        offsetY: -PLAYER_FOOT_HEIGHT,
+        layer: Layer.PLAYER,
+        mask: Layer.SOLID | Layer.TRIGGER,
+      }),
+    });
     const player = new Player({
       x: worldW / 2,
       y: worldH / 2,
       sprite: createPlayerSprite(assets.get('player')),
+      body,
     });
     this.player = player;
     this.addEntity(player);
-    this.camera.setTarget(player);
-    this.camera.follow(player, 1); // snap initially
-
-    this._spawnProps(assets, worldW, worldH);
   }
 
-  _spawnProps(assets, worldW, worldH) {
+  _spawnProps(assets) {
     const treeImg = assets.get('tree');
     const rockImg = assets.get('rock');
     const wallImg = assets.get('wall');
-    const addTree = (x, y) => this.addEntity(new Obstacle({ x, y, image: treeImg, w: 24, h: 40, sortOffset: 0 }));
-    const addRock = (x, y) => this.addEntity(new Obstacle({ x, y, image: rockImg, w: 20, h: 14, sortOffset: 0 }));
-    const addWall = (x, y) => this.addEntity(new Obstacle({ x, y, image: wallImg, w: 16, h: 24, sortOffset: 0 }));
 
-    // A grove of trees (good for y-sort testing)
+    const addTree = (x, y) => {
+      const body = new PhysicsBody({
+        isStatic: true,
+        collider: new BoxCollider({ width: 10, height: 6, offsetX: -5, offsetY: -6, layer: Layer.SOLID, mask: Layer.PLAYER }),
+      });
+      this.addEntity(new Obstacle({ x, y, image: treeImg, w: 24, h: 40, sortOffset: 0, body }));
+    };
+    const addRock = (x, y) => {
+      const body = new PhysicsBody({
+        isStatic: true,
+        collider: new BoxCollider({ width: 14, height: 5, offsetX: -7, offsetY: -5, layer: Layer.SOLID, mask: Layer.PLAYER }),
+      });
+      this.addEntity(new Obstacle({ x, y, image: rockImg, w: 20, h: 14, sortOffset: 0, body }));
+    };
+    const addWall = (x, y) => {
+      const body = new PhysicsBody({
+        isStatic: true,
+        collider: new BoxCollider({ width: 16, height: 8, offsetX: -8, offsetY: -8, layer: Layer.SOLID, mask: Layer.PLAYER }),
+      });
+      this.addEntity(new Obstacle({ x, y, image: wallImg, w: 16, h: 24, sortOffset: 0, body }));
+    };
+
+    const worldW = this.tileMap.worldWidth;
+    const worldH = this.tileMap.worldHeight;
     const baseX = worldW * 0.5, baseY = worldH * 0.45;
-    [[0,0],[30,-10],[-28,12],[14,26],[-18,34],[40,18]].forEach(([dx,dy]) => addTree(baseX+dx, baseY+dy));
-    // Rocks
-    [[-60,-40],[80,50],[-120,80],[140,-30]].forEach(([dx,dy]) => addRock(baseX+dx, baseY+dy));
-    // Wall with an opening (horizontal line with a gap)
+    [[0,0],[30,-10],[-28,12],[14,26],[-18,34],[40,18],[60,-30],[-50,-20]].forEach(([dx,dy]) => addTree(baseX+dx, baseY+dy));
+    [[-60,-40],[80,50],[-120,80],[140,-30],[20,70]].forEach(([dx,dy]) => addRock(baseX+dx, baseY+dy));
+
     const wallY = Math.floor(worldH * 0.3);
-    for (let x = 160; x < 320; x += 16) {
-      if (x >= 224 && x <= 256) continue; // opening
+    for (let x = 160; x < 360; x += 16) {
+      if (x >= 232 && x <= 264) continue; // opening
       addWall(x + 8, wallY);
     }
+  }
+
+  _spawnTrigger(worldW, worldH) {
+    const tx = worldW * 0.5;
+    const ty = worldH * 0.62;
+    const body = new PhysicsBody({
+      isStatic: true,
+      collider: new BoxCollider({
+        width: 48, height: 32, offsetX: -24, offsetY: -32,
+        isTrigger: true, layer: Layer.TRIGGER, mask: Layer.PLAYER,
+      }),
+    });
+    const zone = new TriggerZone({ x: tx, y: ty, body, message: 'Zona de prueba: has entrado en el trigger' });
+    this.triggerZone = zone;
+    this.addEntity(zone);
   }
 
   update(dt) {
     super.update(dt);
     if (this.player && this.camera) {
-      // Smooth camera follow
-      const target = { x: this.player.x, y: this.player.y };
-      const desiredX = target.x - this.camera.viewWidth / 2;
-      const desiredY = target.y - this.camera.viewHeight / 2;
-      // exponential-ish smoothing stable across dt
+      const desiredX = this.player.x - this.camera.viewWidth / 2;
+      const desiredY = this.player.y - this.camera.viewHeight / 2;
       const t = 1 - Math.exp(-CAMERA_LERP * dt);
       this.camera.x += (desiredX - this.camera.x) * t;
       this.camera.y += (desiredY - this.camera.y) * t;
       this.camera._clamp();
     }
+    this.triggerMessage = this.triggerZone ? this.triggerZone.activeMsg : '';
   }
 
   drawUI(renderer) {
-    renderer.drawText('Fase 3: camara + tilemap + y-sort (WASD/flechas)', 8, 8, '#ffffff');
-    renderer.drawText('Pasa delante/detras de los arboles para probar el y-sort', 8, 18, '#d0d0d0');
+    renderer.drawText('Fase 4: fisica y colisiones (WASD/flechas)', 8, 8, '#ffffff');
+    renderer.drawText('No atraviesa obstaculos, se desliza por paredes. F1 debug.', 8, 18, '#d0d0d0');
+    if (this.triggerMessage) {
+      renderer.drawText(this.triggerMessage, 8, 32, '#ffe066');
+    }
   }
 }

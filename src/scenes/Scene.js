@@ -11,6 +11,7 @@ export class Scene {
     this.entities = [];
     this.tileMap = null;
     this.camera = null;
+    this.physicsWorld = null;
     this.renderQueue = new RenderQueue();
   }
 
@@ -23,6 +24,7 @@ export class Scene {
    */
   addEntity(entity) {
     this.entities.push(entity);
+    if (this.physicsWorld && entity.body) this.physicsWorld.addBody(entity.body);
     return entity;
   }
 
@@ -32,6 +34,7 @@ export class Scene {
   removeEntity(entity) {
     const i = this.entities.indexOf(entity);
     if (i >= 0) this.entities.splice(i, 1);
+    if (this.physicsWorld && entity.body) this.physicsWorld.removeBody(entity.body);
   }
 
   /** @param {number} dt */
@@ -39,6 +42,7 @@ export class Scene {
     for (const e of this.entities) {
       if (e.active) e.update(dt, this.game);
     }
+    if (this.physicsWorld) this.physicsWorld.step(dt);
     if (this.camera && this.camera.update) this.camera.update(dt);
   }
 
@@ -54,9 +58,9 @@ export class Scene {
     }
 
     this.renderQueue.clear();
+    let drawn = 0;
     for (const e of this.entities) {
       if (!e.active) continue;
-      // basic camera culling by position (approx)
       if (this.camera) {
         const vr = this.camera.viewRect;
         if (e.x < vr.x - 64 || e.x > vr.right + 64 || e.y < vr.y - 64 || e.y > vr.bottom + 64) {
@@ -64,14 +68,23 @@ export class Scene {
         }
       }
       this.renderQueue.add(e, alpha);
+      drawn++;
     }
+    this._lastDrawnCount = drawn;
     this.renderQueue.flush(renderer);
 
-    // Optional overlay tile layers above entities could go here later
+    if (this.game.debug) this.renderDebug(renderer);
+
     renderer.end();
 
     this.renderUI(renderer, alpha);
   }
+
+  /**
+   * World-space debug rendering (inside camera transform).
+   * @param {import('../graphics/Renderer.js').Renderer} renderer
+   */
+  renderDebug(renderer) {}
 
   /**
    * Screen-space UI rendering.

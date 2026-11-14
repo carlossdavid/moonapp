@@ -1,3 +1,5 @@
+import { Vector2 } from '../math/Vector2.js';
+
 let NEXT_ID = 1;
 
 /** Base entity. */
@@ -7,14 +9,25 @@ export class Entity {
    */
   constructor(opts = {}) {
     this.id = opts.id ?? NEXT_ID++;
-    this.x = opts.x ?? 0;
-    this.y = opts.y ?? 0;
-    this.prevX = this.x;
-    this.prevY = this.y;
-    this.sprite = opts.sprite ?? null;
     this.body = opts.body ?? null;
+    if (this.body) {
+      if (opts.x != null) this.body.position.x = opts.x;
+      if (opts.y != null) this.body.position.y = opts.y;
+      this.body.entity = this;
+    } else {
+      this._pos = new Vector2(opts.x ?? 0, opts.y ?? 0);
+      this._prevPos = this._pos.clone();
+    }
+    this.sprite = opts.sprite ?? null;
     this.active = true;
   }
+
+  get x() { return this.body ? this.body.position.x : this._pos.x; }
+  set x(v) { if (this.body) this.body.position.x = v; else this._pos.x = v; }
+  get y() { return this.body ? this.body.position.y : this._pos.y; }
+  set y(v) { if (this.body) this.body.position.y = v; else this._pos.y = v; }
+  get prevX() { return this.body ? this.body.prevPosition.x : this._prevPos.x; }
+  get prevY() { return this.body ? this.body.prevPosition.y : this._prevPos.y; }
 
   /** @param {number} dt @param {import('../core/Game.js').Game} game */
   update(dt, game) {
@@ -47,7 +60,7 @@ export class Entity {
   }
 
   syncPrev() {
-    this.prevX = this.x;
-    this.prevY = this.y;
+    if (this.body) this.body.syncPrev();
+    else this._prevPos.copy(this._pos);
   }
 }
