@@ -13,6 +13,8 @@ export class Scene {
     this.camera = null;
     this.physicsWorld = null;
     this.backgroundImage = null;
+    /** @type {'stretch'|'contain'|'cover'} */
+    this.backgroundFit = 'stretch';
     this.renderQueue = new RenderQueue();
   }
 
@@ -54,9 +56,25 @@ export class Scene {
   render(renderer, alpha) {
     renderer.begin(this.camera);
     if (this.backgroundImage) {
-      const w = this.tileMap ? this.tileMap.worldWidth : this.camera.worldWidth;
-      const h = this.tileMap ? this.tileMap.worldHeight : this.camera.worldHeight;
-      renderer.drawImage(this.backgroundImage, 0, 0, this.backgroundImage.width, this.backgroundImage.height, 0, 0, w, h, false);
+      const w = this.tileMap ? this.tileMap.worldWidth : (this.camera ? this.camera.worldWidth : 0);
+      const h = this.tileMap ? this.tileMap.worldHeight : (this.camera ? this.camera.worldHeight : 0);
+      const iw = this.backgroundImage.width || w;
+      const ih = this.backgroundImage.height || h;
+      let dx = 0, dy = 0, dw = w, dh = h;
+      if (this.backgroundFit === 'contain' && iw > 0 && ih > 0 && w > 0 && h > 0) {
+        const s = Math.min(w / iw, h / ih);
+        dw = iw * s;
+        dh = ih * s;
+        dx = (w - dw) / 2;
+        dy = (h - dh) / 2;
+      } else if (this.backgroundFit === 'cover' && iw > 0 && ih > 0 && w > 0 && h > 0) {
+        const s = Math.max(w / iw, h / ih);
+        dw = iw * s;
+        dh = ih * s;
+        dx = (w - dw) / 2;
+        dy = (h - dh) / 2;
+      }
+      renderer.drawImage(this.backgroundImage, 0, 0, iw, ih, dx, dy, dw, dh, false);
     } else if (this.tileMap && this.camera) {
       // Ground layer(s) below entities (assume layer 0 is ground)
       this.tileMap.render(renderer, this.camera, [0]);

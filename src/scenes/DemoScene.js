@@ -10,6 +10,7 @@ import { InteractableZone } from '../entities/InteractableZone.js';
 import { PhysicsWorld } from '../physics/PhysicsWorld.js';
 import { PhysicsBody } from '../physics/PhysicsBody.js';
 import { BoxCollider } from '../physics/BoxCollider.js';
+import { Minimap } from '../ui/Minimap.js';
 import { InteriorBaseScene } from './InteriorBaseScene.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, TILE_SIZE, MAP_COLS, MAP_ROWS, CAMERA_LERP,
@@ -49,6 +50,16 @@ const STRUCTURE_CONFIG = {
   struct_wreckage: {
     scale: 0.06, footW: 0.7, footH: 0.22,
     interact: { w: 18, h: 10, offsetY: 4 },
+  },
+  // Rocas decorativas con colisión (estructuras exteriores)
+  rock_big: {
+    scale: 0.22, footW: 0.8, footH: 0.35,
+  },
+  rock_med: {
+    scale: 0.22, footW: 0.8, footH: 0.35,
+  },
+  rock_small: {
+    scale: 0.22, footW: 0.8, footH: 0.35,
   },
 };
 
@@ -106,6 +117,16 @@ function createAstronautSheet(assets) {
 }
 
 function createPlayerSprite(sheetImage) {
+  if (!sheetImage) {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 144; // 16x24 frames, 4 cols x 6 rows fallback
+    const ctx = c.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#4aa3df';
+      for (let r = 0; r < 6; r++) for (let col = 0; col < 4; col++) ctx.fillRect(col * 16 + 4, r * 24 + 4, 8, 16);
+    }
+    sheetImage = c;
+  }
   const imgW = /** @type {any} */ (sheetImage).width || 64;
   const isAstronaut = imgW >= 88;
   if (isAstronaut) {
@@ -151,10 +172,38 @@ export class DemoScene extends Scene {
     this.inspectTimer = 0;
     /** Posición de retorno frente a la puerta exterior (se calcula al colocar la base). */
     this._exteriorDoorReturn = null;
-    /** Huellas del jugador en el suelo: {x,y,age,life,side} */
+    /** Huellas del jugador en el suelo: {x,y,age,life,w,h} */
     this.footprints = [];
-    this._footstepTimer = 0;
     this._footstepSide = 1;
+    this._lastFootprintX = null;
+    this._lastFootprintY = null;
+    /** Ventana de interacción (p.ej. panel solar). */
+    this.interactionWindow = null;
+    // Minimap exterior (esquina superior derecha, toggle con M)
+    this.minimap = new Minimap({
+      x: LOGICAL_WIDTH - 60 - 6,
+      y: 18,
+      width: 60,
+      height: 42,
+      padding: 3,
+      backgroundColor: 'rgba(12, 16, 22, 0.72)',
+      borderColor: 'rgba(220, 230, 240, 0.55)',
+      borderWidth: 1,
+      borderRadius: 5,
+      outlineColor: 'rgba(235, 242, 255, 0.85)',
+      outlineWidth: 1,
+      sectorColor: 'rgba(200, 215, 235, 0.20)',
+      terrainColor: 'rgba(180, 170, 150, 0.10)',
+      playerColor: '#ffd400',
+      playerRadius: 2,
+      showDirection: true,
+      directionLength: 3,
+      directionColor: '#ffd400',
+      exitColor: '#6fe3a1',
+      exitRadius: 1.5,
+      schematic: 'exterior',
+      visible: false,
+    });
   }
 
   async init() {
@@ -255,6 +304,23 @@ export class DemoScene extends Scene {
     // Restos de nave (Asset 7) - abajo-derecha (obstáculo)
     this._addSolidStructure(assets.get('struct_wreckage'), cx + 140, cy + 90, C.struct_wreckage);
 
+    // Rocas decorativas con colisión para dar detalle al terreno
+    const rocks = [
+      ['rock_big',   cx - 170, cy + 70],
+      ['rock_med',   cx - 60,  cy + 95],
+      ['rock_small', cx + 40,  cy + 110],
+      ['rock_med',   cx + 210, cy + 40],
+      ['rock_small', cx - 200, cy - 10],
+      ['rock_big',   cx - 40,  cy - 90],
+      ['rock_small', cx + 70,  cy - 100],
+      ['rock_med',   cx + 230, cy - 90],
+      ['rock_small', cx - 150, cy + 130],
+      ['rock_med',   cx + 90,  cy + 50],
+    ];
+    for (const [key, rx, ry] of rocks) {
+      this._addSolidStructure(assets.get(key), rx, ry, C[key]);
+    }
+
     // Puerta estación principal: trigger justo frente a la base
     if (main) {
       const door = C.struct_base_main.door || C.struct_base_main.interact;
@@ -271,11 +337,13 @@ export class DemoScene extends Scene {
     }
 
     // Interacciones de inspección (zonas escaladas según config)
-    const placeInspect = (key, x, y, name, prompt) => {
+    const placeInspect = (key, x, y, name, prompt, onConfirm = null) => {
       const iz = C[key].interact;
-      this._addInteractZone(x, y + (iz.offsetY ?? 8), iz.w, iz.h, { name, prompt });
+      this._addInteractZone(x, y + (iz.offsetY ?? 8), iz.w, iz.h, { name, prompt, onConfirm });
     };
-    placeInspect('struct_solar', cx - 110, cy + 10, 'Panel solar', 'Presiona E para inspeccionar panel solar');
+    placeInspect('struct_solar', cx - 110, cy + 10, 'Panel solar', 'Presiona E para inspeccionar panel solar', () => {
+      this.interactionWindow = { title: 'Panel solar', body: 'tarea', button: 'Realizar' };
+    });
     placeInspect('struct_antenna', cx + 120, cy - 70, 'Antena', 'Presiona E para inspeccionar antena');
     placeInspect('struct_tanks', cx - 120, cy - 60, 'Tanques de soporte vital', 'Presiona E para inspeccionar tanques de soporte vital');
     placeInspect('struct_antenna_damaged', cx + 190, cy - 40, 'Antena dañada', 'Presiona E para inspeccionar antena dañada');
@@ -316,6 +384,23 @@ export class DemoScene extends Scene {
   }
 
   update(dt) {
+    // Toggle minimapa con M (permitido aunque haya ventana)
+    if (this.game.input.isPressed('KeyM') && this.minimap) {
+      this.minimap.setConfig({ visible: !this.minimap.config.visible });
+    }
+
+    // Ventana de interacción abierta: congelar juego y manejar solo la ventana
+    if (this.interactionWindow) {
+      if (this.game.input.isPressed('Escape')) {
+        this.interactionWindow = null;
+      } else if (this.game.input.isPressed('KeyE') || this.game.input.isPressed('Enter') || this.game.input.isPressed('Space')) {
+        // Botón "Realizar" (de momento sin acción adicional)
+        this.interactionWindow = null;
+      }
+      this.activePrompt = '';
+      return; // no avanza simulación/jugador mientras la ventana está abierta
+    }
+
     super.update(dt);
     if (this.inspectTimer > 0) this.inspectTimer -= dt;
 
@@ -328,28 +413,46 @@ export class DemoScene extends Scene {
       for (const fp of this.footprints) fp.age += dt;
       this.footprints = this.footprints.filter((fp) => fp.age < fp.life);
 
-      if (speed > 5) {
-        this._footstepTimer -= dt;
-        if (this._footstepTimer <= 0) {
-          const side = this._footstepSide;
-          this._footstepSide *= -1;
-          // pequeño desplazamiento lateral según dirección de movimiento
-          const nx = speed ? -vy / speed : 0;
-          const ny = speed ? vx / speed : 0;
-          const off = 2.2 * side;
-          this.footprints.push({
-            x: this.player.x + nx * off,
-            y: this.player.y - 0.5 + ny * off,
-            age: 0,
-            life: 2.8,
-            w: 3,
-            h: 2,
-          });
-          this._footstepTimer = 0.18;
-          if (this.footprints.length > 120) this.footprints.shift();
+      const px = this.player.x;
+      const py = this.player.y;
+      if (speed > 4) {
+        if (this._lastFootprintX == null) {
+          this._lastFootprintX = px;
+          this._lastFootprintY = py;
+        }
+        const dx = px - this._lastFootprintX;
+        const dy = py - this._lastFootprintY;
+        const dist = Math.hypot(dx, dy);
+        const step = 5; // distancia entre huellas (más fluido que por tiempo)
+        if (dist >= step) {
+          const steps = Math.min(4, Math.floor(dist / step));
+          const inv = 1 / (dist || 1);
+          const nx = -dy * inv; // perpendicular a la dirección recorrida
+          const ny = dx * inv;
+          for (let i = 1; i <= steps; i++) {
+            const t = (i * step) / dist;
+            const bx = this._lastFootprintX + dx * t;
+            const by = this._lastFootprintY + dy * t;
+            const side = this._footstepSide;
+            this._footstepSide *= -1;
+            const off = 1.8 * side;
+            this.footprints.push({
+              x: bx + nx * off,
+              y: by - 0.5 + ny * off,
+              age: 0,
+              life: 3.2,
+              w: 2,
+              h: 2,
+            });
+          }
+          this._lastFootprintX += dx * ((steps * step) / dist);
+          this._lastFootprintY += dy * ((steps * step) / dist);
+          if (this.footprints.length > 180) this.footprints.splice(0, this.footprints.length - 180);
         }
       } else {
-        this._footstepTimer = 0;
+        // al detenerse, reiniciar referencia para que el próximo paso salga suave
+        this._lastFootprintX = null;
+        this._lastFootprintY = null;
       }
     }
 
@@ -367,8 +470,12 @@ export class DemoScene extends Scene {
         }
       } else {
         if (this.game.input.isPressed('KeyE')) {
-          this.inspectMsg = `${active.name}: inspeccionado`;
-          this.inspectTimer = 2.0;
+          if (active.onConfirm) {
+            active.onConfirm(active, this.player);
+          } else {
+            this.inspectMsg = `${active.name}: inspeccionado`;
+            this.inspectTimer = 2.0;
+          }
         }
       }
     }
@@ -385,31 +492,78 @@ export class DemoScene extends Scene {
 
   renderGroundEffects(renderer, alpha) {
     for (const fp of this.footprints) {
-      const t = 1 - fp.age / fp.life;
+      const t = Math.max(0, 1 - fp.age / fp.life);
       if (t <= 0) continue;
-      const a = (t * 0.28).toFixed(3);
+      // desvanecido suave (menos "corte")
+      const a = (Math.pow(t, 1.4) * 0.22).toFixed(3);
       renderer.drawRect(fp.x - fp.w / 2, fp.y - fp.h / 2, fp.w, fp.h, `rgba(40, 34, 28, ${a})`, true);
     }
   }
 
   drawUI(renderer) {
-    // HUD superior izquierdo: controles
-    renderer.drawText('WASD/flechas: mover | E: interactuar', 8, 8, '#ffffff');
     if (this.inspectTimer > 0 && this.inspectMsg) {
-      renderer.drawText(this.inspectMsg, 8, 20, '#b6fcb6');
+      renderer.drawText(this.inspectMsg, 8, 8, '#b6fcb6');
     }
 
-    // HUD superior derecho
-    const hudW = 118, hudH = 30;
-    const hudX = LOGICAL_WIDTH - hudW - 6;
-    const hudY = 6;
-    renderer.drawRect(hudX, hudY, hudW, hudH, 'rgba(10,16,28,0.65)', true);
-    renderer.drawRect(hudX, hudY, hudW, hudH, '#8fd3ff', false);
-    renderer.drawText('HUD - MISION LUNAR', hudX + 6, hudY + 6, '#eaf6ff');
-    renderer.drawText('Exterior: explorar base', hudX + 6, hudY + 16, '#cfe8ff');
+    // Estado superior derecho
+    renderer.drawText('Misión: Explorar la base', LOGICAL_WIDTH - 118, 8, '#d8ecff');
+    if (this.minimap && !this.minimap.config.visible) {
+      renderer.drawText('M: mapa', LOGICAL_WIDTH - 34, 18, '#b8c7d8');
+    }
 
-    if (this.activePrompt) {
+    // Minimap exterior (esquina superior derecha, toggle con M)
+    if (this.minimap && this.player && this.camera) {
+      this.minimap.render(renderer, {
+        playerX: this.player.x,
+        playerY: this.player.y,
+        worldW: this.camera.worldWidth,
+        worldH: this.camera.worldHeight,
+        facing: this.player.facing,
+        exit: this._exteriorDoorReturn, // marca de entrada a la base
+      });
+    }
+
+    if (this.activePrompt && !this.interactionWindow) {
       renderer.drawText(this.activePrompt, 8, LOGICAL_HEIGHT - 18, '#ffe066');
+    }
+
+    // Ventana de interacción (p.ej. panel solar)
+    if (this.interactionWindow) {
+      const w = 180, h = 72;
+      const x = Math.floor((LOGICAL_WIDTH - w) / 2);
+      const y = Math.floor((LOGICAL_HEIGHT - h) / 2);
+      renderer.drawRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT, 'rgba(0,0,0,0.35)', true);
+      renderer.drawRect(x, y, w, h, 'rgba(16,22,34,0.96)', true);
+      renderer.drawRect(x, y, w, h, '#8fd3ff', false);
+      renderer.drawText(this.interactionWindow.title || 'Interacción', x + 10, y + 8, '#eaf6ff');
+      renderer.drawText(this.interactionWindow.body || '', x + 10, y + 24, '#ffffff');
+      const bw = 70, bh = 16;
+      const bx = x + Math.floor((w - bw) / 2);
+      const by = y + h - 24;
+      renderer.drawRect(bx, by, bw, bh, 'rgba(60, 120, 170, 0.95)', true);
+      renderer.drawRect(bx, by, bw, bh, '#ffffff', false);
+      renderer.drawText(this.interactionWindow.button || 'Realizar', bx + 12, by + 4, '#ffffff');
+      renderer.drawText('E/Enter: realizar  Esc: cerrar', x + 18, y + h - 8, '#cfe8ff');
+    }
+
+    if (this.game.debug) {
+      const fps = this.game.time.fps;
+      const px = this.player ? this.player.x.toFixed(1) : '-';
+      const py = this.player ? this.player.y.toFixed(1) : '-';
+      const drawn = this._lastDrawnCount ?? 0;
+      const lines = [
+        'WASD/flechas: mover | E: interactuar | M: mapa',
+        `FPS: ${fps}`,
+        `Player: (${px}, ${py})`,
+        `Dibujados: ${drawn}`,
+        `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
+      ];
+      let ly = 8;
+      if (this.inspectTimer > 0 && this.inspectMsg) ly = 18;
+      for (const line of lines) {
+        renderer.drawText(line, 8, ly, '#00ff88');
+        ly += 10;
+      }
     }
   }
 }

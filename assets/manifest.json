@@ -1,7 +1,7 @@
 {
   "images": [
     { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.jpg" },
-    { "key": "mapa_bg", "src": "./RecursosVisuales/Base%20exterior/fondoMapaExterior.jpg" },
+    { "key": "mapa_bg", "src": "./RecursosVisuales/Base%20exterior/FondoMapaExterior.png" },
 
     { "key": "struct_base_main", "src": "./assets/Sprites/Estructuras%20exteriores/01_base_nueva.png" },
     { "key": "struct_solar", "src": "./assets/Sprites/Estructuras%20exteriores/02_panel_solar.png" },
@@ -11,6 +11,10 @@
     { "key": "struct_antenna_damaged", "src": "./assets/Sprites/Estructuras%20exteriores/06_antena_danada.png" },
     { "key": "struct_wreckage", "src": "./assets/Sprites/Estructuras%20exteriores/07_restos_de_naves.png" },
     { "key": "compass_ui", "src": "./assets/Sprites/Estructuras%20exteriores/08_panel_control_tablet.png" },
+    { "key": "base_interior", "src": "./assets/Sprites/Nave/estructura_interna.png" },
+    { "key": "rock_big", "src": "./assets/Sprites/Estructuras%20exteriores/roca_1_grande_dia.png" },
+    { "key": "rock_med", "src": "./assets/Sprites/Estructuras%20exteriores/roca_2_mediana_dia.png" },
+    { "key": "rock_small", "src": "./assets/Sprites/Estructuras%20exteriores/roca_3_pequena_dia.png" },
 
     { "key": "astro_idle_0", "src": "./assets/Sprites/Astronauta/idle_0.png" },
     { "key": "astro_idle_1", "src": "./assets/Sprites/Astronauta/idle_1.png" },

@@ -16,6 +16,7 @@ export class Renderer {
     this.baseScale = baseScale;
     this.displayScale = baseScale;
     this._camera = null;
+    this.ctx.imageSmoothingEnabled = false;
     this.resize();
   }
 
@@ -49,6 +50,8 @@ export class Renderer {
   begin(camera = null) {
     this._camera = camera;
     this.ctx.save();
+    // Asegurar pixel art nítido en cada frame (algunos navegadores lo resetean)
+    this.ctx.imageSmoothingEnabled = false;
     if (camera) {
       const sx = Math.round(-camera.x);
       const sy = Math.round(-camera.y);

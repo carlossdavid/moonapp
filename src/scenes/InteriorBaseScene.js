@@ -8,6 +8,7 @@ import { InteractableZone } from '../entities/InteractableZone.js';
 import { PhysicsWorld } from '../physics/PhysicsWorld.js';
 import { PhysicsBody } from '../physics/PhysicsBody.js';
 import { BoxCollider } from '../physics/BoxCollider.js';
+import { Minimap } from '../ui/Minimap.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, CAMERA_LERP,
   PLAYER_FOOT_WIDTH, PLAYER_FOOT_HEIGHT, SPATIAL_CELL_SIZE, Layer,
@@ -68,6 +69,16 @@ function createAstronautSheet(assets) {
 }
 
 function createPlayerSprite(sheetImage) {
+  if (!sheetImage) {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 144; // 16x24 frames, 4 cols x 6 rows fallback
+    const ctx = c.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#4aa3df';
+      for (let r = 0; r < 6; r++) for (let col = 0; col < 4; col++) ctx.fillRect(col * 16 + 4, r * 24 + 4, 8, 16);
+    }
+    sheetImage = c;
+  }
   const imgW = /** @type {any} */ (sheetImage).width || 64;
   const isAstronaut = imgW >= 88;
   if (isAstronaut) {
@@ -108,22 +119,57 @@ export class InteriorBaseScene extends Scene {
     this.player = null;
     this.interactables = [];
     this.promptText = '';
+    /** Posición de la salida/airlock en el mundo (para marcador del minimapa). */
+    this.exitMarker = null;
+    // Minimap (HUD reutilizable, esquina superior derecha, toggle con M)
+    this.minimap = new Minimap({
+      x: LOGICAL_WIDTH - 56 - 6,
+      y: 18,
+      width: 56,
+      height: 42,
+      padding: 4,
+      backgroundColor: 'rgba(12, 16, 22, 0.72)',
+      borderColor: 'rgba(220, 230, 240, 0.55)',
+      borderWidth: 1,
+      borderRadius: 5,
+      outlineColor: 'rgba(235, 242, 255, 0.85)',
+      outlineWidth: 1,
+      sectorColor: 'rgba(200, 215, 235, 0.18)',
+      playerColor: '#ffd400',
+      playerRadius: 2,
+      showDirection: true,
+      directionLength: 3,
+      directionColor: '#ffd400',
+      exitColor: '#6fe3a1',
+      exitRadius: 1.5,
+      schematic: 'interior',
+      visible: false,
+    });
   }
 
   async init() {
     const assets = this.game.assets;
-    const worldW = 420;
-    const worldH = 300;
+    const bg = assets.has('base_interior') ? assets.get('base_interior') : null;
+    // Ajustar mundo a la proporción de la imagen interior para no deformarla
+    let worldW = 420;
+    let worldH = 300;
+    if (bg && bg.width && bg.height) {
+      const aspect = bg.width / bg.height;
+      worldH = 360;
+      worldW = Math.round(worldH * aspect);
+    }
     this.camera = new Camera(LOGICAL_WIDTH, LOGICAL_HEIGHT, worldW, worldH);
     this.physicsWorld = new PhysicsWorld({ worldWidth: worldW, worldHeight: worldH, cellSize: SPATIAL_CELL_SIZE });
 
     // Prefer provided interior asset (Asset 9) if loaded, else procedural fallback
-    this.backgroundImage = assets.has('base_interior') ? assets.get('base_interior') : createInteriorBackground(worldW, worldH);
+    this.backgroundImage = bg || createInteriorBackground(worldW, worldH);
+    this.backgroundFit = 'contain';
     this.compassImg = assets.has('compass_ui') ? assets.get('compass_ui') : null;
 
     // Player spawn at entrance bottom (aligned with airlock)
     this._spawnPlayer(assets, worldW / 2, worldH - 28);
     this._spawnExitZone(worldW, worldH);
+    this.exitMarker = { x: worldW / 2, y: worldH - 10 };
 
     this.camera.setTarget(this.player);
     this.camera.follow(this.player, 1);
@@ -171,6 +217,10 @@ export class InteriorBaseScene extends Scene {
 
   update(dt) {
     super.update(dt);
+    // Toggle minimapa con M
+    if (this.game.input.isPressed('KeyM') && this.minimap) {
+      this.minimap.setConfig({ visible: !this.minimap.config.visible });
+    }
     for (const z of this.interactables) if (z.tick) z.tick(dt);
 
     // Interaction handling (E to exit when inside zone)
@@ -195,28 +245,56 @@ export class InteriorBaseScene extends Scene {
   }
 
   drawUI(renderer) {
-    renderer.drawText('Interior de la base | WASD: mover', 8, 8, '#ffffff');
-    if (this.promptText) renderer.drawText(this.promptText, 8, 20, '#ffe066');
+    if (this.promptText) renderer.drawText(this.promptText, 8, 8, '#ffe066');
 
-    // HUD superior derecho
-    const hudW = 118, hudH = 30;
-    const hudX = LOGICAL_WIDTH - hudW - 6;
-    const hudY = 6;
-    renderer.drawRect(hudX, hudY, hudW, hudH, 'rgba(10,16,28,0.65)', true);
-    renderer.drawRect(hudX, hudY, hudW, hudH, '#8fd3ff', false);
-    renderer.drawText('HUD - MISION LUNAR', hudX + 6, hudY + 6, '#eaf6ff');
-    renderer.drawText('Interior: base operativa', hudX + 6, hudY + 16, '#cfe8ff');
+    // Estado superior derecho
+    renderer.drawText('Interior: Base operativa', LOGICAL_WIDTH - 108, 8, '#d8ecff');
+    if (this.minimap && !this.minimap.config.visible) {
+      renderer.drawText('M: mapa', LOGICAL_WIDTH - 34, 18, '#b8c7d8');
+    }
 
-    // Asset 8: brújula/panel UI SOLO en interior, esquina inferior izquierda
+    // Minimap (esquina superior derecha, solo en interior, toggle con M)
+    if (this.minimap && this.player && this.camera) {
+      const worldW = this.camera.worldWidth;
+      const worldH = this.camera.worldHeight;
+      this.minimap.render(renderer, {
+        playerX: this.player.x,
+        playerY: this.player.y,
+        worldW,
+        worldH,
+        facing: this.player.facing,
+        exit: this.exitMarker,
+      });
+    }
+
+    // Asset 8: brújula/panel UI SOLO en interior (esquina inferior izquierda)
     if (this.compassImg) {
-      const pad = 4;
-      const w = 56;
-      const h = 56;
-      const x = pad;
-      const y = LOGICAL_HEIGHT - h - pad;
+      const w = 40;
+      const h = 40;
+      const x = 6;
+      const y = LOGICAL_HEIGHT - h - 6;
       renderer.drawImage(this.compassImg, 0, 0, this.compassImg.width, this.compassImg.height, x, y, w, h, false);
     } else {
       renderer.drawText('Panel/Brújula', 6, LOGICAL_HEIGHT - 14, '#cfe8ff');
+    }
+
+    if (this.game.debug) {
+      const fps = this.game.time.fps;
+      const px = this.player ? this.player.x.toFixed(1) : '-';
+      const py = this.player ? this.player.y.toFixed(1) : '-';
+      const drawn = this._lastDrawnCount ?? 0;
+      const lines = [
+        'Interior de la base | WASD: mover | E: salir | M: mapa',
+        `FPS: ${fps}`,
+        `Player: (${px}, ${py})`,
+        `Dibujados: ${drawn}`,
+        `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
+      ];
+      let ly = this.promptText ? 18 : 8;
+      for (const line of lines) {
+        renderer.drawText(line, 8, ly, '#00ff88');
+        ly += 10;
+      }
     }
   }
 }
