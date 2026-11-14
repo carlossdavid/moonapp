@@ -59,6 +59,16 @@ function readResource(obj, names) {
  * @returns {{ oxygen: {ratio:number, percent:number}|null, battery: {ratio:number, percent:number}|null, sourceFound: boolean }}
  */
 export function readSuitResources(game, scene) {
+  // Prioridad: JSON/demo cargado en game.suitStatus
+  if (game?.suitStatus && (typeof game.suitStatus.oxygen === 'number' || typeof game.suitStatus.battery === 'number')) {
+    const o = typeof game.suitStatus.oxygen === 'number' ? clamp01(game.suitStatus.oxygen > 1 ? game.suitStatus.oxygen / 100 : game.suitStatus.oxygen) : null;
+    const b = typeof game.suitStatus.battery === 'number' ? clamp01(game.suitStatus.battery > 1 ? game.suitStatus.battery / 100 : game.suitStatus.battery) : null;
+    return {
+      oxygen: o != null ? { ratio: o, percent: Math.round(o * 100) } : null,
+      battery: b != null ? { ratio: b, percent: Math.round(b * 100) } : null,
+      sourceFound: o != null || b != null,
+    };
+  }
   const candidates = [
     game?.suit,
     game?.suitSystems,
@@ -80,7 +90,6 @@ export function readSuitResources(game, scene) {
     if (!battery) battery = readResource(c, ['battery', 'bateria', 'batería', 'power', 'energy', 'suitBattery']);
     if (oxygen && battery) break;
   }
-  // direct fallbacks
   if (!oxygen) oxygen = readResource(game?.player, ['oxygen', 'o2']) || readResource(scene?.player, ['oxygen', 'o2']);
   if (!battery) battery = readResource(game?.player, ['battery', 'bateria', 'power']) || readResource(scene?.player, ['battery', 'bateria', 'power']);
 
@@ -130,10 +139,11 @@ function drawPixelIcon(ctx, type, x, y, size, color) {
  * Renderiza el HUD de recursos (pantalla/UI).
  * @param {import('../graphics/Renderer.js').Renderer} renderer
  * @param {{ oxygen: {ratio:number,percent:number}|null, battery: {ratio:number,percent:number}|null }} data
+ * @param {any} [assets]
  * @param {Partial<typeof RESOURCE_HUD_CONFIG>} [cfgOverride]
  * @returns {{ height:number }} altura ocupada
  */
-export function renderResourceHUD(renderer, data, cfgOverride = {}) {
+export function renderResourceHUD(renderer, data, assets = null, cfgOverride = {}) {
   const c = { ...RESOURCE_HUD_CONFIG, ...cfgOverride };
   const rows = [
     { key: 'oxygen', label: 'OXIGENO', color: c.oxygenColor, value: data.oxygen },
@@ -147,7 +157,6 @@ export function renderResourceHUD(renderer, data, cfgOverride = {}) {
   const x = c.x;
   const y = c.y;
 
-  // Panel background
   ctx.save();
   ctx.fillStyle = c.bg;
   ctx.fillRect(x, y, boxW, boxH);
@@ -162,36 +171,48 @@ export function renderResourceHUD(renderer, data, cfgOverride = {}) {
     const warn = ratio < c.warnThreshold;
     const fillColor = warn ? c.warnColor : row.color;
 
-    // Icon
-    drawPixelIcon(ctx, row.key, x + c.padding, ry + 1, c.iconSize, fillColor);
+    // Try sprite level images: oxigeno_nivel_XX_t / bateria_nivel_XX_t
+    const level = Math.max(0, Math.min(10, Math.round(ratio * 10)));
+    const spriteKey = row.key === 'oxygen' ? `oxigeno_nivel_${String(level).padStart(2, '0')}_t` : `bateria_nivel_${String(level).padStart(2, '0')}_t`;
+    const sprite = assets && typeof assets.get === 'function' ? assets.get(spriteKey) : null;
 
-    // Label and percent
-    ctx.textBaseline = 'top';
-    ctx.textAlign = 'left';
-    ctx.font = c.fontLabel;
-    ctx.fillStyle = warn ? c.warnColor : c.text;
-    ctx.fillText(row.label, x + c.padding + c.iconSize + 4, ry);
-    ctx.textAlign = 'right';
-    ctx.font = c.fontPct;
-    ctx.fillText(`${pct}%`, x + boxW - c.padding, ry);
-
-    // Bar background
-    const barX = x + c.padding;
-    const barY = ry + 12;
-    const barW = boxW - c.padding * 2;
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(barX, barY, barW, c.barHeight);
-    // Bar fill (pixel-stepped feel)
-    ctx.fillStyle = fillColor;
-    const fillW = Math.max(0, Math.round(barW * ratio));
-    ctx.fillRect(barX, barY, fillW, c.barHeight);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, c.barHeight - 1);
-
+    if (sprite) {
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.font = c.fontLabel;
+      ctx.fillStyle = warn ? c.warnColor : c.text;
+      ctx.fillText(row.label, x + c.padding, ry);
+      ctx.textAlign = 'right';
+      ctx.font = c.fontPct;
+      ctx.fillText(`${pct}%`, x + boxW - c.padding, ry);
+      const imgY = ry + 10;
+      const imgH = Math.min(18, c.rowHeight - 10);
+      const imgW = boxW - c.padding * 2;
+      try { ctx.drawImage(sprite, x + c.padding, imgY, imgW, imgH); } catch (_) {}
+    } else {
+      drawPixelIcon(ctx, row.key, x + c.padding, ry + 1, c.iconSize, fillColor);
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.font = c.fontLabel;
+      ctx.fillStyle = warn ? c.warnColor : c.text;
+      ctx.fillText(row.label, x + c.padding + c.iconSize + 4, ry);
+      ctx.textAlign = 'right';
+      ctx.font = c.fontPct;
+      ctx.fillText(`${pct}%`, x + boxW - c.padding, ry);
+      const barX = x + c.padding;
+      const barY = ry + 12;
+      const barW = boxW - c.padding * 2;
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(barX, barY, barW, c.barHeight);
+      ctx.fillStyle = fillColor;
+      const fillW = Math.max(0, Math.round(barW * ratio));
+      ctx.fillRect(barX, barY, fillW, c.barHeight);
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, c.barHeight - 1);
+    }
     ry += c.rowHeight + c.gap;
   }
 
-  // Reset alignment
   ctx.textAlign = 'left';
   ctx.restore();
   return { height: boxH };

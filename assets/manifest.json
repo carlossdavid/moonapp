@@ -1,35 +1,208 @@
 {
   "images": [
-    { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.png" },
-    { "key": "mapa_bg", "src": "./assets/Sprites/fondos/fondoSuperficieLunar.png" },
-    { "key": "btn_normal", "src": "./assets/Sprites/interfaz/btn_fondo_normal.png" },
-    { "key": "btn_hover", "src": "./assets/Sprites/interfaz/btn_fondo_hover.png" },
-    { "key": "btn_pressed", "src": "./assets/Sprites/interfaz/btn_fondo_pressed.png" },
-
-    { "key": "struct_base_main", "src": "./assets/Sprites/Estructuras%20exteriores/01_base_nueva.png" },
-    { "key": "struct_solar", "src": "./assets/Sprites/Estructuras%20exteriores/02_panel_solar.png" },
-    { "key": "struct_antenna", "src": "./assets/Sprites/Estructuras%20exteriores/03_antenas.png" },
-    { "key": "struct_tanks", "src": "./assets/Sprites/Estructuras%20exteriores/04_tanques.png" },
-    { "key": "struct_base_damaged", "src": "./assets/Sprites/Estructuras%20exteriores/05_base_danada.png" },
-    { "key": "struct_antenna_damaged", "src": "./assets/Sprites/Estructuras%20exteriores/06_antena_danada.png" },
-    { "key": "struct_wreckage", "src": "./assets/Sprites/Estructuras%20exteriores/07_restos_de_naves.png" },
-    { "key": "compass_ui", "src": "./assets/Sprites/Estructuras%20exteriores/08_panel_control_tablet.png" },
-    { "key": "base_interior", "src": "./assets/Sprites/Nave/estructura_interna.png" },
-    { "key": "rock_big", "src": "./assets/Sprites/Estructuras%20exteriores/roca_1_grande_dia.png" },
-    { "key": "rock_med", "src": "./assets/Sprites/Estructuras%20exteriores/roca_2_mediana_dia.png" },
-    { "key": "rock_small", "src": "./assets/Sprites/Estructuras%20exteriores/roca_3_pequena_dia.png" },
-
-    { "key": "astro_stay_down_1", "src": "./assets/Sprites/Astronauta/stay_down_1.png" },
-    { "key": "astro_stay_up_1", "src": "./assets/Sprites/Astronauta/stay_up_1.png" },
-    { "key": "astro_down_2", "src": "./assets/Sprites/Astronauta/down_2.png" },
-    { "key": "astro_down_3", "src": "./assets/Sprites/Astronauta/down_3.png" },
-    { "key": "astro_up_2", "src": "./assets/Sprites/Astronauta/up_2.png" },
-    { "key": "astro_up_3", "src": "./assets/Sprites/Astronauta/up_3.png" },
-    { "key": "astro_left_1", "src": "./assets/Sprites/Astronauta/left_1.png" },
-    { "key": "astro_left_2", "src": "./assets/Sprites/Astronauta/left_2.png" },
-    { "key": "astro_left_3", "src": "./assets/Sprites/Astronauta/left_3.png" },
-    { "key": "astro_right_1", "src": "./assets/Sprites/Astronauta/right_1.png" },
-    { "key": "astro_right_2", "src": "./assets/Sprites/Astronauta/right_2.png" },
-    { "key": "astro_right_3", "src": "./assets/Sprites/Astronauta/right_3.png" }
+    {
+      "key": "menu_bg",
+      "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.png"
+    },
+    {
+      "key": "mapa_bg",
+      "src": "./assets/Sprites/fondos/fondoSuperficieLunar.png"
+    },
+    {
+      "key": "btn_normal",
+      "src": "./assets/Sprites/interfaz/btn_fondo_normal.png"
+    },
+    {
+      "key": "btn_hover",
+      "src": "./assets/Sprites/interfaz/btn_fondo_hover.png"
+    },
+    {
+      "key": "btn_pressed",
+      "src": "./assets/Sprites/interfaz/btn_fondo_pressed.png"
+    },
+    {
+      "key": "struct_base_main",
+      "src": "./assets/Sprites/Estructuras%20exteriores/01_base_nueva.png"
+    },
+    {
+      "key": "struct_solar",
+      "src": "./assets/Sprites/Estructuras%20exteriores/02_panel_solar.png"
+    },
+    {
+      "key": "struct_antenna",
+      "src": "./assets/Sprites/Estructuras%20exteriores/03_antenas.png"
+    },
+    {
+      "key": "struct_tanks",
+      "src": "./assets/Sprites/Estructuras%20exteriores/04_tanques.png"
+    },
+    {
+      "key": "struct_base_damaged",
+      "src": "./assets/Sprites/Estructuras%20exteriores/05_base_danada.png"
+    },
+    {
+      "key": "struct_antenna_damaged",
+      "src": "./assets/Sprites/Estructuras%20exteriores/06_antena_danada.png"
+    },
+    {
+      "key": "struct_wreckage",
+      "src": "./assets/Sprites/Estructuras%20exteriores/07_restos_de_naves.png"
+    },
+    {
+      "key": "compass_ui",
+      "src": "./assets/Sprites/Estructuras%20exteriores/08_panel_control_tablet.png"
+    },
+    {
+      "key": "base_interior",
+      "src": "./assets/Sprites/Nave/estructura_interna.png"
+    },
+    {
+      "key": "rock_big",
+      "src": "./assets/Sprites/Estructuras%20exteriores/roca_1_grande_dia.png"
+    },
+    {
+      "key": "rock_med",
+      "src": "./assets/Sprites/Estructuras%20exteriores/roca_2_mediana_dia.png"
+    },
+    {
+      "key": "rock_small",
+      "src": "./assets/Sprites/Estructuras%20exteriores/roca_3_pequena_dia.png"
+    },
+    {
+      "key": "astro_stay_down_1",
+      "src": "./assets/Sprites/Astronauta/stay_down_1.png"
+    },
+    {
+      "key": "astro_stay_up_1",
+      "src": "./assets/Sprites/Astronauta/stay_up_1.png"
+    },
+    {
+      "key": "astro_down_2",
+      "src": "./assets/Sprites/Astronauta/down_2.png"
+    },
+    {
+      "key": "astro_down_3",
+      "src": "./assets/Sprites/Astronauta/down_3.png"
+    },
+    {
+      "key": "astro_up_2",
+      "src": "./assets/Sprites/Astronauta/up_2.png"
+    },
+    {
+      "key": "astro_up_3",
+      "src": "./assets/Sprites/Astronauta/up_3.png"
+    },
+    {
+      "key": "astro_left_1",
+      "src": "./assets/Sprites/Astronauta/left_1.png"
+    },
+    {
+      "key": "astro_left_2",
+      "src": "./assets/Sprites/Astronauta/left_2.png"
+    },
+    {
+      "key": "astro_left_3",
+      "src": "./assets/Sprites/Astronauta/left_3.png"
+    },
+    {
+      "key": "astro_right_1",
+      "src": "./assets/Sprites/Astronauta/right_1.png"
+    },
+    {
+      "key": "astro_right_2",
+      "src": "./assets/Sprites/Astronauta/right_2.png"
+    },
+    {
+      "key": "astro_right_3",
+      "src": "./assets/Sprites/Astronauta/right_3.png"
+    },
+    {
+      "key": "oxigeno_nivel_00_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_00_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_01_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_01_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_02_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_02_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_03_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_03_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_04_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_04_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_05_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_05_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_06_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_06_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_07_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_07_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_08_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_08_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_09_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_09_t.png"
+    },
+    {
+      "key": "oxigeno_nivel_10_t",
+      "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_10_t.png"
+    },
+    {
+      "key": "bateria_nivel_00_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_00_t.png"
+    },
+    {
+      "key": "bateria_nivel_01_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_01_t.png"
+    },
+    {
+      "key": "bateria_nivel_02_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_02_t.png"
+    },
+    {
+      "key": "bateria_nivel_03_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_03_t.png"
+    },
+    {
+      "key": "bateria_nivel_04_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_04_t.png"
+    },
+    {
+      "key": "bateria_nivel_05_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_05_t.png"
+    },
+    {
+      "key": "bateria_nivel_06_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_06_t.png"
+    },
+    {
+      "key": "bateria_nivel_07_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_07_t.png"
+    },
+    {
+      "key": "bateria_nivel_08_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_08_t.png"
+    },
+    {
+      "key": "bateria_nivel_09_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_09_t.png"
+    },
+    {
+      "key": "bateria_nivel_10_t",
+      "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_10_t.png"
+    }
   ]
 }

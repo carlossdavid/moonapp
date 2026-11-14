@@ -513,12 +513,15 @@ export class DemoScene extends Scene {
   }
 
   drawUI(renderer) {
-    // HUD de recursos (solo lectura de sistemas existentes)
+    // HUD de recursos (toggle con T)
     let hudBottom = 0;
-    if (shouldShowResourceHUD(this)) {
+    if (this.game.suitHudOpen) {
       const res = readSuitResources(this.game, this);
       if (res.sourceFound) {
-        hudBottom = renderResourceHUD(renderer, res).height + 2;
+        hudBottom = renderResourceHUD(renderer, res, this.game.assets).height + 2;
+      } else {
+        // mostrar aunque no haya datos, con valores del demo
+        hudBottom = renderResourceHUD(renderer, { oxygen: { ratio: 0, percent: 0 }, battery: { ratio: 0, percent: 0 } }, this.game.assets).height + 2;
       }
     }
 
@@ -574,7 +577,7 @@ export class DemoScene extends Scene {
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
       const lines = [
-        'WASD/flechas: mover | E: interactuar | M: mapa | I: inventario',
+        'WASD/flechas: mover | E: interactuar | M: mapa | T: traje (ox/bat) | R: recargar',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,

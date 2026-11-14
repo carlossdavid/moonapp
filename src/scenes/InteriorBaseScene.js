@@ -360,17 +360,17 @@ export class InteriorBaseScene extends Scene {
   }
 
   drawUI(renderer) {
-    // HUD de recursos (solo lectura de sistemas existentes)
+    // HUD de recursos (toggle con T)
     let hudBottom = 0;
-    if (shouldShowResourceHUD(this)) {
+    if (this.game.suitHudOpen) {
       const res = readSuitResources(this.game, this);
       if (res.sourceFound) {
-        hudBottom = renderResourceHUD(renderer, res).height + 2;
+        hudBottom = renderResourceHUD(renderer, res, this.game.assets).height + 2;
       }
     }
     const topOffset = hudBottom ? (6 + hudBottom) : 0;
 
-    if (this.promptText && !this.game.inventoryOpen) {
+    if (this.promptText && !this.game.suitHudOpen) {
       renderer.drawText(this.promptText, 8, 8 + topOffset, '#ffe066');
     }
 
@@ -411,7 +411,7 @@ export class InteriorBaseScene extends Scene {
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
       const lines = [
-        'Interior de la base | WASD: mover | E: salir | M: mapa | I: inventario',
+        'Interior de la base | WASD: mover | E: salir | M: mapa | T: traje (ox/bat) | R: recargar',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,
@@ -424,9 +424,6 @@ export class InteriorBaseScene extends Scene {
       }
     }
 
-    // Inventario (overlay)
-    if (this.game.inventoryOpen) {
-      renderInventoryPanel(renderer, this.game, this);
-    }
+// (Inventario desactivado; HUD traje con T)
   }
 }

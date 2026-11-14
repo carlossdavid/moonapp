@@ -23,7 +23,9 @@ export class Game {
     this.state = 'loading';
     this.mouse = { x: 0, y: 0, over: false };
     this.menuWindow = null; // e.g. { title, body }
-    this.inventoryOpen = false;
+    this.suitHudOpen = false;
+    this.suitStatus = { oxygen: 80, battery: 60 }; // fallback/demo
+    this._suitDrainTimer = 0;
 
     this.loop = new GameLoop({
       fixedDt: FIXED_DT,
@@ -83,6 +85,13 @@ export class Game {
       await this.assets.loadAll((loaded, total) => {
         if (loadingEl) loadingEl.textContent = total ? `Cargando ${loaded}/${total}` : 'Cargando...';
       });
+      // Cargar JSON de estado del traje (demo/inventado)
+      try {
+        const res = await fetch('./assets/hud/suit_status.json', { cache: 'no-store' });
+        if (res.ok) this.suitStatus = await res.json();
+      } catch (e) {
+        console.warn('suit_status.json no cargado, usando valores demo:', e?.message || e);
+      }
     } catch (e) {
       console.warn('Manifest load skipped:', e.message);
     }
@@ -101,7 +110,7 @@ export class Game {
    * @param {import('../scenes/Scene.js').Scene} scene
    */
   async changeScene(scene) {
-    this.inventoryOpen = false;
+    this.suitHudOpen = false;
     this.setScene(scene);
     if (scene && typeof scene.init === 'function') {
       await scene.init();
@@ -125,7 +134,7 @@ export class Game {
   beginPlay() {
     if (this.state === 'playing') return;
     this.menuWindow = null;
-    this.inventoryOpen = false;
+    this.suitHudOpen = false;
     this.state = 'playing';
   }
 
@@ -205,8 +214,21 @@ export class Game {
     if (this.input.isPressed(DEBUG_TOGGLE_KEY)) {
       this.debug = !this.debug;
     }
-    if (this.input.isPressed('KeyI')) {
-      this.inventoryOpen = !this.inventoryOpen;
+    if (this.input.isPressed('KeyT')) {
+      this.suitHudOpen = !this.suitHudOpen;
+    }
+    // Demo: simular agotado/carga cuando el HUD está abierto
+    if (this.suitHudOpen && this.suitStatus) {
+      this._suitDrainTimer = (this._suitDrainTimer || 0) + dt;
+      if (this._suitDrainTimer >= 1.0) {
+        this._suitDrainTimer = 0;
+        if (typeof this.suitStatus.oxygen === 'number') this.suitStatus.oxygen = Math.max(0, this.suitStatus.oxygen - 2);
+        if (typeof this.suitStatus.battery === 'number') this.suitStatus.battery = Math.max(0, this.suitStatus.battery - 1);
+      }
+      if (this.input.isPressed('KeyR')) {
+        this.suitStatus.oxygen = 100;
+        this.suitStatus.battery = 100;
+      }
     }
     if (this.scene) {
       this.scene.update(dt);
