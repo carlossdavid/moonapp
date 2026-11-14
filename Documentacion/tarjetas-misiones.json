@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "idioma": "es",
+  "estado": "contenido para integrar; no conectado al motor",
+  "aviso": "Los turnos, recursos, costes, umbral de exposicion y base lunar son simulaciones educativas. Ningun valor de juego es una dosis de radiacion o un pronostico operativo de NASA.",
+  "unidadTiempo": "turno operativo de entrenamiento; NO dia lunar ni hora UTC",
+  "parametrosPropuestos": {
+    "turnosTotales": 6,
+    "turnosPorMision": 2,
+    "estadoInicial": {
+      "energia": 8,
+      "aire": 8,
+      "alimentos": 7,
+      "exposicion": 0,
+      "ciencia": 0,
+      "refugioPreparado": false
+    },
+    "mantenimientoAlFinalDeCadaTurno": {
+      "aire": -1,
+      "alimentos": -1
+    },
+    "limites": {
+      "minimoEnergiaParaAplicarUnaAccion": 0,
+      "aireYAlimentosDebenSerMayoresQue": 0,
+      "maximaExposicion": 2
+    },
+    "final": "Tras la accion y el mantenimiento, si aire o alimentos son <= 0 o exposicion > 2, terminar el ejercicio con evacuacion segura y explicacion. Si termina el turno 6 con la tripulacion segura, completar el entrenamiento. La ciencia suma al informe, no justifica exponer a la tripulacion. Ir al refugio NUNCA se bloquea por energia insuficiente.",
+    "validacionPendiente": "P3 debe probar y ajustar todos los valores de juego; no proceden de NASA."
+  },
+  "misiones": [
+    {
+      "id": "m1",
+      "titulo": "La luz no alcanza para todo",
+      "turnos": [1, 2],
+      "objetivo": "Aprender que el tiempo y la energia dedicados a paneles compiten con aire y exploracion."
+    },
+    {
+      "id": "m2",
+      "titulo": "Preparar a quienes vienen despues",
+      "turnos": [3, 4],
+      "objetivo": "Sostener aire y alimentos mientras se reserva capacidad para el siguiente problema."
+    },
+    {
+      "id": "m3",
+      "titulo": "Una alerta no es una certeza",
+      "turnos": [5, 6],
+      "objetivo": "Leer una cadena historica real y elegir entre exploracion y resguardo en una base simulada."
+    }
+  ],
+  "registrosNASA": [
+    {
+      "id": "donki-2016-flr",
+      "tipo": "FLR",
+      "activityId": "2016-01-01T23:10:00-FLR-001",
+      "fechaEventoUTC": "2016-01-01T23:10:00Z",
+      "dato": "Fulguracion de clase M2.3 enlazada por DONKI con la CME y dos registros SEP posteriores.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/CME/9968/-1",
+      "notaFuente": "El enlace abre la CME que enumera explicitamente este FLR como evento enlazado. No afirmar que la intensidad M2.3 permite predecir una dosis lunar."
+    },
+    {
+      "id": "donki-2016-cme",
+      "tipo": "CME",
+      "activityId": "2016-01-01T23:12:00-CME-001",
+      "fechaEventoUTC": "2016-01-01T23:12:00Z",
+      "dato": "CME observada y enlazada con FLR y SEP. Su analisis de velocidad mas precisa indica 1588 km/s, pero fue presentado despues de las primeras detecciones SEP.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/CME/9968/-1",
+      "notaFuente": "No mostrar la velocidad ni el modelo posterior como si fueran informacion disponible en el turno anterior a la deteccion SEP. El modelo enlazado menciona Marte, no impacto lunar observado."
+    },
+    {
+      "id": "donki-2016-sep-soho",
+      "tipo": "SEP",
+      "activityId": "2016-01-02T02:48:00-SEP-001",
+      "fechaEventoUTC": "2016-01-02T02:48:00Z",
+      "dato": "Evento de particulas energéticas solares detectado por SOHO COSTEP; relacionado con FLR y CME anteriores.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/9966/-1",
+      "notaFuente": "La hora de deteccion no es una hora de aviso disponible para la tripulacion ficticia."
+    },
+    {
+      "id": "donki-2016-sep-goes",
+      "tipo": "SEP",
+      "activityId": "2016-01-02T04:30:00-SEP-001",
+      "fechaEventoUTC": "2016-01-02T04:30:00Z",
+      "dato": "Evento SEP detectado por GOES13 SEM/EPS en el canal >10 MeV; la notificacion reporta que se superaron 10 pfu desde las 04:30 UTC.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/9964/-1",
+      "notaFuente": "Los 10 pfu son flujo de protones medido en el contexto del aviso, NO dosis de un astronauta en la Luna."
+    },
+    {
+      "id": "donki-2016-alerta",
+      "tipo": "NOTIFICATION",
+      "messageId": "20160102-AL-001",
+      "fechaEmisionUTC": "2016-01-02T04:41:00Z",
+      "dato": "Notificacion NASA sobre el evento SEP detectado por GOES.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/9965/1",
+      "notaFuente": "El mensaje habla de posibles efectos en ciertas orbitas terrestres; el riesgo para la base lunar es el escenario hipotetico del juego."
+    },
+    {
+      "id": "donki-2026-informe",
+      "tipo": "REPORT",
+      "messageId": "20261111-7D-001",
+      "fechaEmisionUTC": "2026-11-11T21:02:00Z",
+      "periodoUTC": ["2026-11-04T00:00:00Z", "2026-11-10T23:59:00Z"],
+      "estadisticas": {
+        "fulguracionesClaseM": 7,
+        "cmeTipoC": 7,
+        "cmeDirigidasHaciaLaTierra": 0,
+        "flujoProtonesSEP": "a nivel de fondo durante TODO este periodo, segun informe"
+      },
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/49503/1",
+      "notaFuente": "Son totales del periodo 4-10 nov 2026, NO tasas diarias, probabilidades ni datos del dia actual."
+    },
+    {
+      "id": "donki-2026-cme-marte",
+      "tipo": "CME",
+      "activityId": "2026-11-09T18:15:00-CME-001",
+      "fechaEventoUTC": "2026-11-09T18:15:00Z",
+      "fechaNotificacionUTC": "2026-11-10T13:06:00Z",
+      "velocidadEstimadaKmS": 726,
+      "prediccion": "Posible roce en Marte el 13 nov 2026 a las 12:00 UTC +/- 7 h; tambien se mencionan STEREO A y Psyche.",
+      "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/CME/49468/-1",
+      "urlNotificacion": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/49474/1",
+      "notaFuente": "No hay impacto lunar afirmado por ese aviso. Ejemplo opcional para explicar que importa la trayectoria, no para activar dano a la base."
+    }
+  ],
+  "tarjetas": [
+    {
+      "id": "m1-paneles",
+      "mision": "m1",
+      "turno": 1,
+      "estacion": "paneles",
+      "titulo": "La energia tiene un precio",
+      "vega": "Si atendemos los paneles, la base tendra mas margen. Pero hoy no llegaremos al crater.",
+      "hecho": "En la region polar lunar, la iluminacion y las sombras varian segun el lugar.",
+      "estadoHecho": "CONTEXTO_NASA; coste y mapa SIMULADOS",
+      "opciones": [
+        {"id": "mejorar-paneles", "texto": "Revisar paneles", "cambios": {"energia": 3}, "resumen": "Mas energia; no obtienes muestra."},
+        {"id": "ir-crater", "texto": "Ir al crater", "cambios": {"energia": -1, "ciencia": 1}, "resumen": "Una muestra; menos margen energetico."}
+      ],
+      "fuentes": ["https://science.nasa.gov/solar-system/moon/phenomena-nasa-astronauts-will-encounter-at-moons-south-pole"]
+    },
+    {
+      "id": "m1-aire",
+      "mision": "m1",
+      "turno": 2,
+      "estacion": "aire",
+      "titulo": "Primero respirar",
+      "vega": "Mantener el aire requiere energia. Explorar mas no sirve si descuidamos la base.",
+      "estadoHecho": "SOLO_SIMULACION",
+      "opciones": [
+        {"id": "mantener-aire", "texto": "Operar soporte de aire", "cambios": {"energia": -2, "aire": 3}, "resumen": "Mas aire; menos energia."},
+        {"id": "seguir-explorando", "texto": "Tomar otra muestra", "cambios": {"energia": -1, "ciencia": 1}, "resumen": "Mas ciencia; el aire sigue consumiendose."}
+      ],
+      "fuentes": []
+    },
+    {
+      "id": "m2-cultivo",
+      "mision": "m2",
+      "turno": 3,
+      "estacion": "aire-huerto",
+      "titulo": "La siguiente tripulacion",
+      "vega": "El cultivo usa energia que tambien necesita el aire. ¿Que reserva reforzamos primero?",
+      "estadoHecho": "SOLO_SIMULACION",
+      "opciones": [
+        {"id": "cultivar", "texto": "Atender el huerto", "cambios": {"energia": -2, "alimentos": 3}, "resumen": "Mas alimentos; gastas energia."},
+        {"id": "revisar-aire", "texto": "Reforzar el aire", "cambios": {"energia": -2, "aire": 3}, "resumen": "Mas aire; los alimentos no aumentan."}
+      ],
+      "fuentes": []
+    },
+    {
+      "id": "m2-preparacion",
+      "mision": "m2",
+      "turno": 4,
+      "estacion": "refugio",
+      "titulo": "Preparar antes de necesitar",
+      "vega": "Podemos dejar listo el refugio, pero entonces no atenderemos otra reserva en este turno.",
+      "estadoHecho": "SOLO_SIMULACION; la preparacion y el resguardo son mitigaciones plausibles",
+      "opciones": [
+        {"id": "preparar-refugio", "texto": "Preparar refugio", "cambios": {"energia": -2, "refugioPreparado": true}, "resumen": "La entrada al refugio costara menos energia despues; hoy renuncias a cultivar."},
+        {"id": "cultivar-ahora", "texto": "Atender el huerto", "cambios": {"energia": -2, "alimentos": 2}, "resumen": "Mas alimentos ahora; refugio sin preparar."}
+      ],
+      "fuentes": ["https://science.nasa.gov/science-research/heliophysics/how-nasa-will-protect-astronauts-from-space-radiation-at-the-moon/"]
+    },
+    {
+      "id": "m3-primera-senal",
+      "mision": "m3",
+      "turno": 5,
+      "estacion": "comunicaciones",
+      "titulo": "Una senal no es una certeza",
+      "vega": "Se observo una fulguracion. Aun no sabemos si aparecera un evento de particulas. Revisemos antes de salir.",
+      "hecho": "Caso historico: FLR M2.3 observada a partir de 2016-01-01T23:10Z. La CME relacionada se documenta en el informe final, no como conocimiento previo disponible aqui.",
+      "estadoHecho": "EVENTOS_HISTORICOS_REALES; calendario de juego SIMULADO",
+      "opciones": [
+        {"id": "revisar-y-esperar", "texto": "Revisar los datos y esperar", "cambios": {"energia": -1}, "resumen": "Pierdes una oportunidad de muestra; esperas mas informacion."},
+        {"id": "salida-corta", "texto": "Tomar una muestra ahora", "cambios": {"energia": -1, "ciencia": 1}, "resumen": "Ganas ciencia; todavia no se ha confirmado una dosis ni impacto lunar."}
+      ],
+      "fuentes": ["donki-2016-flr"]
+    },
+    {
+      "id": "m3-alerta-sep",
+      "mision": "m3",
+      "turno": 6,
+      "estacion": "refugio-crater",
+      "titulo": "Refugio o muestra",
+      "vega": "En el caso real ya se detectaron particulas solares. En nuestro entrenamiento imaginamos una alerta para la base. Podemos resguardarnos o terminar el crater; ninguna opcion es gratis.",
+      "hecho": "SOHO detecto SEP a las 02:48Z, GOES a las 04:30Z y la notificacion GOES se emitio a las 04:41Z del 2016-01-02.",
+      "estadoHecho": "DETECCIONES_REALES; llegada a esta base, exposicion y consecuencias SIMULADAS",
+      "opciones": [
+        {"id": "ir-refugio", "texto": "Regresar al refugio", "cambiosSiPreparado": {"energia": 0}, "costoEnergiaMaximoSiNoPreparado": 2, "noBloqueable": true, "resumen": "Evitas exposicion adicional; no consigues la muestra. Si no preparaste el refugio, gastas hasta 2 de la energia restante, sin bajar de cero."},
+        {"id": "terminar-crater", "texto": "Terminar la muestra exterior", "cambios": {"energia": -1, "ciencia": 2, "exposicion": 3}, "resumen": "Consigues ciencia, pero superas el limite de seguridad de este ejercicio y se ordena evacuacion."}
+      ],
+      "fuentes": ["donki-2016-sep-soho", "donki-2016-sep-goes", "donki-2016-alerta"]
+    }
+  ],
+  "tarjetasOpcionalesNoCausales": [
+    {
+      "id": "archivo-2026-cme-marte",
+      "uso": "Glosario o pantalla de datos, nunca parte causal de la cadena SEP de 2016",
+      "pregunta": "Si se detecta una CME, ¿afecta por igual a todos los lugares?",
+      "respuesta": "No. El aviso del 10 nov 2026 modelo posibles efectos en Marte, Psyche y STEREO A; no reporto impacto en la base lunar ficticia.",
+      "fuentes": ["donki-2026-cme-marte"]
+    },
+    {
+      "id": "archivo-2026-semana",
+      "uso": "Panel estadistico informativo; no es probabilidad de evento",
+      "pregunta": "¿Cuanta actividad se registro en una semana real?",
+      "respuesta": "Entre el 4 y el 10 nov 2026: 7 fulguraciones clase M, 7 CME tipo C y protones energéticos a nivel de fondo segun el informe semanal.",
+      "fuentes": ["donki-2026-informe"]
+    }
+  ]
+}

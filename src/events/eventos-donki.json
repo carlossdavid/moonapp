@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "titulo": "Alertas externas DONKI para Entrenador Lunar",
+  "uso": "Las cuatro tarjetas muestran registros enlazados del episodio 18-20 enero 2026. La aparicion en la partida se decide con un generador probabilistico educativo, no por un turno fijo ni como pronostico NASA.",
+  "turnos": "Un turno representa una oportunidad de muestreo equivalente a un dia terrestre de la muestra historica; NO es un dia lunar ni una fecha real. Una cadena enlazada puede ocupar turnos consecutivos sin representar su intervalo historico de horas.",
+  "unidades": "Todos los costes y puntos de exposicion son unidades de juego, NO dosis, kWh ni probabilidades calculadas por NASA.",
+  "modeloProbabilistico": {
+    "metodo": "Frecuencias empiricas de candidatos por 92 dias terrestres; enlaces explicitos de DONKI para encadenamientos. Muestreo simplificado y limitado a una tarjeta por turno. NO pronostico para Luna.",
+    "periodoUTC": ["2026-08-01", "2026-10-31"],
+    "diasMuestreados": 92,
+    "filtro": "FLR clase M o X; CME con analisis principal LE y velocidad >=500 km/s; SEP: agrupar filas relacionadas por ID de CME enlazada; GST: registros de Kp terrestres.",
+    "conteos": {
+      "flrMX": {"registros": 24, "diasConEvento": 16, "vinculadasACME": 12},
+      "cmeRapida": {"registros": 108, "diasConEvento": 55, "vinculadasASEP": 3},
+      "sep": {"filasDeInstrumentosYModelos": 11, "diasConRegistro": 4, "cadenasDistintasPorCME": 3},
+      "gst": {"registros": 5, "diasConEvento": 5}
+    },
+    "tasasCandidatas": {
+      "FLR": {"numerador": 16, "denominador": 92, "explicacion": "Dias con una o mas FLR M/X en la muestra; no probabilidad de una llamarada X1.9."},
+      "CME": {"numerador": 55, "denominador": 92, "explicacion": "Dias con una o mas CME de velocidad LE principal >=500 km/s; no probabilidad de impacto lunar."},
+      "SEP": {"numerador": 0, "denominador": 92, "explicacion": "No se sortea de forma independiente: las tres cadenas SEP de la muestra estaban enlazadas a una CME. Se prueban solo tras una CME candidata para no contar dos veces el mismo episodio."},
+      "GST": {"numerador": 5, "denominador": 92, "explicacion": "Dias con GST terrestre; no riesgo magnetico lunar."}
+    },
+    "tasasEncadenadas": {
+      "FLR_CME": {"numerador": 12, "denominador": 24, "explicacion": "FLR M/X del periodo que DONKI enlazo posteriormente con alguna CME; no causalidad cierta ni pronostico operativo."},
+      "CME_SEP": {"numerador": 3, "denominador": 108, "explicacion": "CME rapidas del periodo que DONKI enlazo posteriormente con SEP; diversas mediciones SEP de la misma CME se cuentan una sola vez."}
+    },
+    "consultasNASA": [
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/FLR?startDate=2026-08-01&endDate=2026-08-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/CME?startDate=2026-08-01&endDate=2026-08-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/SEP?startDate=2026-08-01&endDate=2026-08-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/GST?startDate=2026-08-01&endDate=2026-08-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/FLR?startDate=2026-09-01&endDate=2026-09-30",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/CME?startDate=2026-09-01&endDate=2026-09-30",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/SEP?startDate=2026-09-01&endDate=2026-09-30",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/GST?startDate=2026-09-01&endDate=2026-09-30",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/FLR?startDate=2026-10-01&endDate=2026-10-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/CME?startDate=2026-10-01&endDate=2026-10-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/SEP?startDate=2026-10-01&endDate=2026-10-31",
+      "https://ccmc.gsfc.nasa.gov/DONKI-API/get/GST?startDate=2026-10-01&endDate=2026-10-31"
+    ],
+    "advertencia": "Muestra corta y dependiente del ciclo solar. Los porcentajes son parametros de simulacion educativa, no probabilidades NASA de eventos futuros ni de impacto lunar."
+  },
+  "eventos": [
+    {
+      "id": "alerta-flr-2026",
+      "tipo": "FLR",
+      "titulo": "Una llamarada X1.9: observar antes de concluir",
+      "mision": "energia",
+      "estado": "fulguracion X1.9 observada; enlazada en DONKI a CME y SEP del mismo episodio",
+      "observadoUTC": "2026-01-18T17:27:00Z",
+      "picoUTC": "2026-01-18T18:09:00Z",
+      "identificadorNASA": "2026-01-18T17:27:00-FLR-001",
+      "estadisticaNASA": "Clase X1.9. Inicio 17:27, pico 18:09 y fin 18:51 UTC del 18 ene 2026.",
+      "urlNASA": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/44029/-1",
+      "enlacesVerificados": ["2026-01-18T18:09:00-CME-001", "2026-01-18T22:33:00-SEP-001", "2026-01-18T22:55:00-SEP-001"],
+      "detectadoPor": "GOES-P: EXIS 1.0-8.0",
+      "impactoReal": "La fulguracion se observo realmente. La relacion posterior con una CME y SEP se documenta en DONKI, pero no puede darse por confirmada antes de que esos registros existan. No indica dosis para nuestra base lunar.",
+      "actividadAfectada": "Salida al crater programada: se decide si revisar datos antes de salir. Los paneles no se apagan automaticamente.",
+      "vega": "Se observo una gran llamarada. Todavia no sabemos que sucedera en nuestra base: revisemos antes de concluir.",
+      "opciones": [
+        {
+          "id": "revisar",
+          "texto": "Revisar el clima espacial antes de salir",
+          "efectosDeJuego": {"tiempo": -1},
+          "resultado": "Gastaste tiempo en comprobar la situacion. No afirmaste un impacto sin pruebas."
+        },
+        {
+          "id": "seguir-plan",
+          "texto": "Continuar tareas interiores mientras se monitorea",
+          "efectosDeJuego": {},
+          "resultado": "Conservas tiempo y mantienes la vigilancia. Una llamarada por si sola no demuestra exposicion lunar."
+        }
+      ]
+    },
+    {
+      "id": "alerta-gst-2026",
+      "tipo": "GST",
+      "titulo": "Tormenta geomagnetica: ¿donde ocurre?",
+      "mision": "recursos",
+      "estado": "tormenta geomagnetica terrestre enlazada por DONKI a la CME de este episodio",
+      "observadoUTC": "2026-01-19T18:00:00Z",
+      "finIntervaloUTC": "2026-01-21T12:00:00Z",
+      "identificadorNASA": "2026-01-19T18:00:00-GST-001",
+      "estadisticaNASA": "Kp llego a 8.67 el 20 ene 2026 a las 00:00 UTC segun los indices registrados. Kp mide actividad geomagnetica TERRESTRE.",
+      "urlNASA": "https://ccmc.gsfc.nasa.gov/DONKI/view/GST/44061/-1",
+      "enlacesVerificados": ["2026-01-18T18:09:00-CME-001"],
+      "detectadoPor": "Indices Kp de NOAA registrados en DONKI",
+      "impactoReal": "El informe describe una perturbacion del entorno magnetico de la TIERRA; no una medicion de dosis lunar.",
+      "actividadAfectada": "No interrumpe automaticamente huerto, aire o actividad lunar. Sirve para decidir si la alerta aplica a la base.",
+      "vega": "La CME de este episodio se relaciona con una tormenta magnetica terrestre. Pero Kp mide la Tierra: ¿debemos detener la base lunar por ese numero?",
+      "opciones": [
+        {
+          "id": "continuar-y-verificar",
+          "texto": "Continuar tareas lunares y consultar alertas pertinentes",
+          "efectosDeJuego": {},
+          "resultado": "Correcto: distinguiste un fenomeno medido en la Tierra de un riesgo lunar."
+        },
+        {
+          "id": "suspender-por-precaucion",
+          "texto": "Suspender el huerto solo por el indice Kp",
+          "efectosDeJuego": {"tiempo": -1},
+          "resultado": "Perdiste tiempo. Kp terrestre no basta para afirmar que el huerto lunar corre peligro."
+        }
+      ]
+    },
+    {
+      "id": "alerta-cme-2026",
+      "tipo": "CME",
+      "titulo": "Una nube solar y sus destinos",
+      "mision": "recursos",
+      "estado": "CME observada y enlazada por DONKI a FLR, SEP y GST de enero de 2026",
+      "observadoUTC": "2026-01-18T18:09:00Z",
+      "notificacionUTC": "2026-01-18T21:39:00Z",
+      "identificadorNASA": "2026-01-18T18:09:00-CME-001",
+      "estadisticaNASA": "Velocidad estimada de la parte principal (LE): 1473 km/s en el analisis principal. Valor de investigacion, NO dosis lunar ni probabilidad de SEP.",
+      "urlNASA": "https://ccmc.gsfc.nasa.gov/DONKI/view/CME/44032/-1",
+      "urlNotificacion": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/44037/1",
+      "enlacesVerificados": ["2026-01-18T17:27:00-FLR-001", "2026-01-18T22:33:00-SEP-001", "2026-01-19T18:00:00-GST-001"],
+      "detectadoPor": "CME registrada en DONKI; analisis CCMC",
+      "impactoReal": "La CME y sus enlaces son reales. Su velocidad y el Kp terrestre no miden una dosis en la base lunar ficticia. El analisis y notificaciones tienen tiempos de publicacion distintos de la hora de observacion.",
+      "actividadAfectada": "Elegir si se verifica la trayectoria antes de cancelar trabajo en paneles o huerto.",
+      "vega": "Se observo una nube de material solar. Podemos preparar un plan, pero todavia no conocemos la exposicion de nuestra base.",
+      "opciones": [
+        {
+          "id": "verificar-trayectoria",
+          "texto": "Preparar un plan y seguir tareas interiores",
+          "efectosDeJuego": {},
+          "resultado": "Vigilas la situacion sin fingir que la velocidad de la CME revela una dosis lunar."
+        },
+        {
+          "id": "cancelar-sin-comprobar",
+          "texto": "Cancelar todo suponiendo una dosis lunar conocida",
+          "efectosDeJuego": {"tiempo": -1},
+          "resultado": "Perdiste tiempo al atribuir a la Luna una dosis que el registro no ofrece."
+        }
+      ]
+    },
+    {
+      "id": "alerta-sep-2016",
+      "tipo": "SEP",
+      "titulo": "Particulas solares: refugio o crater",
+      "mision": "tormenta-solar",
+      "estado": "SEP historico observado; impacto en la base es un ejercicio hipotetico",
+      "observadoUTC": "2026-01-18T22:55:00Z",
+      "notificacionUTC": "2026-01-18T23:11:00Z",
+      "identificadorNASA": "2026-01-18T22:55:00-SEP-001",
+      "idNotificacion": "20260118-AL-007",
+      "estadisticaNASA": "DONKI registra detecciones relacionadas desde las 22:33 UTC por SOHO y desde las 22:55 UTC por GOES-P; la notificacion GOES se emitio a las 23:11 UTC.",
+      "urlNASA": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/44041/-1",
+      "urlNotificacion": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/44042/1",
+      "enlacesVerificados": ["2026-01-18T17:27:00-FLR-001", "2026-01-18T18:09:00-CME-001"],
+      "detectadoPor": "GOES-P: SEISS >10 MeV; SOHO COSTEP en otro registro enlazado",
+      "impactoReal": "Se detectaron particulas desde diferentes instrumentos; son observaciones enlazadas del mismo episodio, NO nueve tormentas independientes. No son mediciones de dosis en la base lunar ficticia.",
+      "actividadAfectada": "En el escenario lunar SIMULADO, cancelar la salida al crater y usar refugio mas protegido; no desactivar aire o alimentos.",
+      "vega": "Ahora si hay una deteccion de particulas. En este entrenamiento imaginamos que llega una alerta para nuestra base: ¿protegemos la tripulacion o terminamos la muestra?",
+      "opciones": [
+        {
+          "id": "refugio",
+          "texto": "Suspender salida y regresar al refugio",
+          "efectosDeJuego": {"ciencia": 0, "exposicion": 0},
+          "resultado": "Conservas la seguridad; renuncias a la muestra del crater."
+        },
+        {
+          "id": "continuar-eva",
+          "texto": "Terminar la muestra exterior",
+          "efectosDeJuego": {"ciencia": 2, "exposicion": 3},
+          "resultado": "Ganas ciencia, pero superas el umbral ficticio del entrenamiento. Se ordena evacuacion segura."
+        }
+      ]
+    }
+  ]
+}

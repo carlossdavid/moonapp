@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Motor gráfico y de física 2D (top-down 3/4) — Vanilla JS + Canvas 2D
 
 Prototipo jugable construido desde cero con **JavaScript moderno (ES2022, ES modules)** y **Canvas 2D**, sin librerías/frameworks de juego. Incluye loop con timestep fijo, render con interpolación, cámara, tilemap, y-sort por profundidad, animaciones por spritesheet y física AABB con resolución por ejes.
@@ -90,3 +91,33 @@ La lógica de física no depende del renderer (opera sobre `PhysicsBody`/collide
 ## Notas
 - La escena de demostración (`DemoScene`) genera un mapa ~40×30 con suelo, árboles/rocas, una pared con abertura y una zona trigger que muestra un mensaje al entrar.
 - El tamaño visual del astronauta se compone escalado en runtime; la colisión del jugador sigue siendo su huella de pies (`PLAYER_FOOT_*` en `config.js`).
+=======
+# moonapp
+2D interactive videogame to Nasa App Space Challenge 2026
+
+## Probar alertas DONKI localmente
+
+Desde esta carpeta inicia `python -m http.server 8765` y abre
+http://localhost:8765/. No abras `index.html` mediante `file://`: los módulos
+JavaScript y los JSON necesitan un servidor HTTP. Abre **Clima espacial · NASA
+DONKI** y pulsa **Probar alerta archivada** para ver el aviso de prueba.
+
+`src/events/donkiLive.js` consulta la API pública de CCMC para FLR, CME, SEP y
+GST sin clave. `src/events/liveEventPanel.js` actualiza el panel cada cinco
+minutos cuando la pestaña está visible; la primera consulta establece una
+referencia y **no** anuncia eventos antiguos como nuevos. Un ID que aparezca
+en consultas posteriores emite `lunar:donki-alert` en `document` con
+`event.detail = { event, archived }`. La prueba archivada emite el mismo evento
+con `archived: true` y no corresponde a un fenómeno actual.
+
+Si DONKI no responde, el panel muestra datos **ARCHIVADOS** de
+`src/events/eventos-donki.json` y `assets/donki/{SEP,GST}.json`. Si la API
+responde 429, las consultas se suspenden temporalmente. Los avisos son sobre
+publicaciones de DONKI, **no** mediciones de dosis ni pronósticos en la Luna;
+GST describe el campo magnético terrestre.
+
+El prototipo `DemoScene.js` todavía no incluye turnos ni recursos: ninguna
+alerta cambia automáticamente la misión. Cuando se integre ese estado,
+escuchar `lunar:donki-alert` permitirá mostrar la información en la escena
+sin confundirla con el generador probabilístico archivado de entrenamiento.
+>>>>>>> Stashed changes
