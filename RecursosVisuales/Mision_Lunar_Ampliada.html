@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Lunar - Días Iniciales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #06070c;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #141829 0%, #05060a 100%);
+        }
+
+        #game-container {
+            position: relative;
+            width: min(96vw, 1500px);
+            height: min(94vh, 844px);
+            aspect-ratio: 16 / 9;
+            box-shadow: 0 0 40px rgba(0, 195, 255, 0.25), inset 0 0 2px #00c3ff;
+            border: 2px solid #1e3a5f;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #c8ccd4;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .sci-fi-panel {
+            background: rgba(10, 16, 30, 0.88);
+            border: 2px solid #00b4d8;
+            box-shadow: 0 4px 15px rgba(0, 180, 216, 0.25), inset 0 0 12px rgba(0, 180, 216, 0.15);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            color: #e0f2fe;
+        }
+
+        .bar-track {
+            background: #111927;
+            border: 1px solid #2b4263;
+            height: 12px;
+            border-radius: 4px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        /* D-Pad táctil para móviles */
+        .touch-btn {
+            background: rgba(15, 23, 42, 0.75);
+            border: 2px solid #00b4d8;
+            color: #38bdf8;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 180, 216, 0.3);
+            active: scale(0.95);
+        }
+        .touch-btn:active {
+            background: rgba(0, 180, 216, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <div id="game-container">
+        <!-- Lienzo Principal del Juego (Resolución nativa Pixel Art 480x270 escalada x2 por CSS) -->
+        <canvas id="gameCanvas" width="480" height="270"></canvas>
+
+        <!-- HUD SUPERIOR IZQUIERDO: Retrato y Barras de Estado -->
+        <div class="sci-fi-panel absolute top-3 left-3 p-2.5 flex items-center gap-3 w-64 pointer-events-none">
+            <div class="relative w-14 h-14 bg-[#0d111d] border-2 border-[#38bdf8] rounded-md flex items-center justify-center overflow-hidden shrink-0">
+                <canvas id="portraitCanvas" width="40" height="44" class="w-12 h-13"></canvas>
+                <span class="absolute bottom-0 right-0 text-[9px] bg-amber-400 text-black font-bold px-1 rounded-tl">EC</span>
+            </div>
+            <div class="flex flex-col gap-1.5 w-full text-xs font-bold">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 text-red-400">❤️</span>
+                    <div class="bar-track"><div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-rose-400" style="width: 92%;"></div></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 text-sky-400">O₂</span>
+                    <div class="bar-track"><div id="o2-bar" class="h-full bg-gradient-to-r from-sky-600 to-cyan-300" style="width: 86%;"></div></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 text-amber-400">⚡</span>
+                    <div class="bar-track"><div id="en-bar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300" style="width: 100%;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HUD SUPERIOR CENTRAL: Objetivo y Controles -->
+        <div class="sci-fi-panel absolute top-3 left-1/2 -translate-x-1/2 px-4 py-2 text-center pointer-events-none min-w-[310px]">
+            <div id="hud-day-title" class="text-[11px] uppercase tracking-wider text-sky-300 font-bold">Objetivo actual: Días Iniciales (Base Nueva)</div>
+            <div id="objective-text" class="text-sm text-amber-300 font-bold flex items-center justify-center gap-1.5 mt-0.5">
+                <span>◆</span> <span>Camina con WASD e inspecciona los módulos con [E]</span>
+            </div>
+        </div>
+
+        <!-- HUD SUPERIOR DERECHO: Radar / Minimapa -->
+        <div class="sci-fi-panel absolute top-3 right-3 p-1.5 rounded-full w-24 h-24 flex items-center justify-center pointer-events-none">
+            <canvas id="radarCanvas" width="84" height="84" class="rounded-full"></canvas>
+            <span class="absolute top-1 text-[9px] text-sky-300 font-bold">N</span>
+            <span class="absolute bottom-1 text-[9px] text-sky-300 font-bold">S</span>
+            <span class="absolute left-1.5 text-[9px] text-sky-300 font-bold">O</span>
+            <span class="absolute right-1.5 text-[9px] text-sky-300 font-bold">E</span>
+        </div>
+
+        <!-- BOTÓN BARRA INFERIOR: Controles Rápidos y Carga Opcional de tus Imágenes -->
+        <div class="absolute bottom-3 left-3 flex flex-wrap items-center gap-2 z-20">
+            <button id="btn-toggle-upload" class="sci-fi-panel px-3 py-1.5 text-xs font-bold hover:bg-sky-900/60 transition flex items-center gap-1.5 cursor-pointer pointer-events-auto">
+                <span>📂</span> <span>Cargar tus PNGs originales</span>
+            </button>
+            <button id="btn-toggle-night" class="sci-fi-panel px-3 py-1.5 text-xs font-bold hover:bg-sky-900/60 transition flex items-center gap-1.5 cursor-pointer pointer-events-auto">
+                <span>🔦</span> <span id="night-label">Iluminación: Día Lunar (L)</span>
+            </button>
+            <button id="btn-toggle-state" class="sci-fi-panel px-3 py-1.5 text-xs font-bold hover:bg-sky-900/60 transition flex items-center gap-1.5 cursor-pointer pointer-events-auto">
+                <span>🛠️</span> <span id="state-label">Estado: Días Iniciales (K)</span>
+            </button>
+        </div>
+
+        <!-- VENTANA EMERGENTE DE INSPECCIÓN -->
+        <div id="inspect-modal" class="hidden sci-fi-panel absolute bottom-14 left-1/2 -translate-x-1/2 px-5 py-3 max-w-md w-full text-center z-20">
+            <h3 id="inspect-title" class="text-amber-300 font-bold text-base uppercase tracking-wide">Módulo</h3>
+            <p id="inspect-desc" class="text-xs text-slate-200 mt-1 leading-relaxed">Descripción del módulo.</p>
+        </div>
+
+        <!-- PANEL DE CARGA DE RECURSOS: los archivos se seleccionan desde tu PC -->
+        <div id="upload-modal" class="hidden sci-fi-panel absolute inset-4 md:inset-8 p-4 z-30 overflow-y-auto" style="max-height:calc(100% - 32px)">
+            <div class="flex justify-between items-center border-b border-sky-800 pb-2 mb-3">
+                <div><h3 class="font-bold text-sky-300 text-sm">Biblioteca de imágenes del juego</h3><p class="text-[11px] text-slate-300">Carga PNG con transparencia. Si falta un archivo, se conserva el sprite original.</p></div>
+                <button id="btn-close-upload" class="text-slate-400 hover:text-white font-bold text-sm px-2">✕</button>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 text-xs">
+                <section class="border border-sky-900 rounded p-3">
+                    <h4 class="text-amber-300 font-bold mb-2">Astronauta · 4 frames por dirección</h4>
+                    <p class="text-slate-300 mb-2">Selecciona cuatro imágenes por cada dirección. Ordénalas 1, 2, 3 y 4.</p>
+                    <label class="block mb-2">Arriba <input id="frames-up" type="file" accept="image/*" multiple class="block w-full mt-1"></label>
+                    <label class="block mb-2">Abajo <input id="frames-down" type="file" accept="image/*" multiple class="block w-full mt-1"></label>
+                    <label class="block mb-2">Izquierda <input id="frames-left" type="file" accept="image/*" multiple class="block w-full mt-1"></label>
+                    <label class="block mb-2">Derecha <input id="frames-right" type="file" accept="image/*" multiple class="block w-full mt-1"></label>
+                    <p id="astro-upload-status" class="text-cyan-300 mt-2">Sprites originales activos.</p>
+                </section>
+                <section class="border border-sky-900 rounded p-3">
+                    <h4 class="text-amber-300 font-bold mb-2">Instalaciones y objetos</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label>Fondo lunar<input id="asset-background" type="file" accept="image/*" class="block w-full mt-1"></label>
+                        <label>Base / domo<input id="asset-base" type="file" accept="image/*" class="block w-full mt-1"></label>
+                        <label>Tanques<input id="asset-tanks" type="file" accept="image/*" class="block w-full mt-1"></label>
+                        <label>Panel solar<input id="asset-solar" type="file" accept="image/*" class="block w-full mt-1"></label>
+                        <label>Antena<input id="asset-antenna" type="file" accept="image/*" class="block w-full mt-1"></label>
+                        <label>Restos de nave<input id="asset-debris" type="file" accept="image/*" class="block w-full mt-1"></label>
+                    </div>
+                    <p class="text-slate-400 mt-3">Las imágenes de instalaciones pueden tener cualquier tamaño; se ajustan automáticamente al módulo.</p>
+                    <button id="btn-reset-sprites" class="mt-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded border border-slate-600">Restaurar sprites originales</button>
+                </section>
+            </div>
+            <div class="flex justify-end mt-3"><button id="btn-done-upload" class="bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold px-5 py-2 rounded">Cerrar</button></div>
+        </div>
+
+        <!-- CONTROLES TÁCTILES PARA MÓVILES -->
+        <div class="md:hidden absolute bottom-12 right-4 grid grid-cols-3 gap-1.5 w-32 h-32 z-20">
+            <div></div>
+            <button class="touch-btn" data-key="w">▲</button>
+            <div></div>
+            <button class="touch-btn" data-key="a">◀</button>
+            <button class="touch-btn" data-key="e">E</button>
+            <button class="touch-btn" data-key="d">▶</button>
+            <div></div>
+            <button class="touch-btn" data-key="s">▼</button>
+            <div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Resolución nativa de Pixel Art 16-bits (480x270) escalada con nitidez total
+    const W = 480;
+    const H = 270;
+    // El canvas sigue siendo la ventana visible; el mundo explorable es mucho mayor.
+    const WORLD_W = 1440;
+    const WORLD_H = 810;
+    const WORLD_SCALE = WORLD_W / W;
+    const camera = { x: 0, y: 0 };
+    function updateCamera() {
+        camera.x = Math.max(0, Math.min(WORLD_W - W, player.x - W / 2));
+        camera.y = Math.max(0, Math.min(WORLD_H - H, player.y - H / 2));
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const radarCanvas = document.getElementById('radarCanvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    const portraitCanvas = document.getElementById('portraitCanvas');
+    const portraitCtx = portraitCanvas.getContext('2d');
+    portraitCtx.imageSmoothingEnabled = false;
+
+    const lightCanvas = document.createElement('canvas');
+    lightCanvas.width = W;
+    lightCanvas.height = H;
+    const lightCtx = lightCanvas.getContext('2d');
+    lightCtx.imageSmoothingEnabled = false;
+
+    let nightMode = false;
+    let damagedState = false;
+    let customBgImage = null;
+    let customAstroCanvas = null;
+    const uploadedSprites = { up: [], down: [], left: [], right: [], base: null, tanks: null, solar: null, antenna: null, debris: null };
+    let tick = 0;
+
+    // Estado del Astronauta en coordenadas 480x270
+    const player = {
+        x: 310 * WORLD_SCALE,
+        y: 195 * WORLD_SCALE,
+        speed: 1.55,
+        w: 40,
+        h: 44,
+        direction: 'down',
+        moving: false,
+        animationFrame: 0,
+        animationClock: 0,
+        walkCycle: 0,
+        flashlightAngle: 0,
+        footprints: [],
+        dustParticles: []
+    };
+
+    const keys = { w: false, a: false, s: false, d: false };
+
+    // Módulos de la base en coordenadas 480x270 (fieles a watermarked_img_11410544367013586782.jpg)
+    const structures = [
+        {
+            id: 'antena',
+            name: 'Antenas de Comunicación',
+            x: 230, y: 74, sortY: 84, rx: 28, ry: 16,
+            descNew: 'Plato parabólico de alta ganancia y torre de telemetría con baliza verde activa.',
+            descDamaged: 'Plato oxidado y torre retorcida con baliza roja de emergencia. Señal perdida.'
+        },
+        {
+            id: 'panel',
+            name: 'Panel Solar Fotovoltaico',
+            x: 284, y: 98, sortY: 112, rx: 30, ry: 18,
+            descNew: 'Matriz de 8 celdas cristalinas con reflejos especulares. Generación al 100%.',
+            descDamaged: 'Cristales fotovoltaicos perforados y corroídos. Cortocircuito en la base.'
+        },
+        {
+            id: 'base',
+            name: 'Domo Principal de la Base',
+            x: 162, y: 128, sortY: 146, rx: 52, ry: 30,
+            descNew: 'Domo segmentado presurizado con esclusa frontal, indicadores LED verdes y escotilla superior.',
+            descDamaged: 'Casco agrietado por impacto, manchas de óxido profundo y luces de alarma rojas.'
+        },
+        {
+            id: 'tanques',
+            name: 'Tanques de Almacenamiento',
+            x: 266, y: 176, sortY: 192, rx: 46, ry: 24,
+            descNew: 'Tres reactores verticales con medidor LED verde conectados a la base y tanque auxiliar.',
+            descDamaged: 'Tuberías fracturadas con derrame radiactivo verde y corrosión severa en los cilindros.'
+        },
+        {
+            id: 'restos',
+            name: 'Restos de Nave Estrellada',
+            x: 392, y: 156, sortY: 168, rx: 38, ry: 20,
+            onlyDamaged: true,
+            descNew: 'Chatarra espacial recolectable.',
+            descDamaged: 'Turbina quemada, fuselaje partido y cables de alta tensión soltando chispas.'
+        },
+        {
+            id: 'crater',
+            name: 'Cráter Lunar Sur-Oeste',
+            x: 62, y: 215, sortY: 999, rx: 48, ry: 28,
+            descNew: 'Cráter profundo esculpido en el regolito lunar con crestas iluminadas.',
+            descDamaged: 'Cráter sumido en penumbra densa. Se registran ecos magnéticos en su interior.'
+        }
+    ];
+
+    // Convertir las posiciones originales al sistema de coordenadas del mundo grande.
+    structures.forEach(o => { o.x *= WORLD_SCALE; o.y *= WORLD_SCALE; o.sortY *= WORLD_SCALE; });
+
+    // ============================================================================
+    // UTILIDADES DE PIXEL ART DE ALTA DEFINICIÓN (DITHERING, LÍNEAS Y SOMBRAS)
+    // ============================================================================
+    function hexToRgb(hex) {
+        const v = parseInt(hex.slice(1), 16);
+        return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    }
+
+    // Dibuja una línea pixelada exacta (algoritmo Bresenham sin antialiasing)
+    function drawPixelLine(c, x0, y0, x1, y1, color, thickness = 1) {
+        x0 = Math.round(x0); y0 = Math.round(y0);
+        x1 = Math.round(x1); y1 = Math.round(y1);
+        c.fillStyle = color;
+        const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy;
+        while (true) {
+            c.fillRect(x0, y0, thickness, thickness);
+            if (x0 === x1 && y0 === y1) break;
+            const e2 = 2 * err;
+            if (e2 >= dy) { err += dy; x0 += sx; }
+            if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+    }
+
+    // Dibuja una elipse rellena en Pixel Art puro con opción de tramado Bayer (Dithering)
+    function drawPixelEllipse(c, cx, cy, rx, ry, color, ditherMode = 0) {
+        cx = Math.round(cx); cy = Math.round(cy);
+        rx = Math.round(rx); ry = Math.round(ry);
+        c.fillStyle = color;
+        for (let y = -ry; y <= ry; y++) {
+            for (let x = -rx; x <= rx; x++) {
+                if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1.0) {
+                    const px = cx + x, py = cy + y;
+                    if (ditherMode === 1 && ((px + py) & 1) !== 0) continue;
+                    if (ditherMode === 2 && ((px & 1) !== 0 || (py & 1) !== 0)) continue;
+                    c.fillRect(px, py, 1, 1);
+                }
+            }
+        }
+    }
+
+    // ============================================================================
+    // 1. SPRITE PIXEL-PERFECT DEL ASTRONAUTA CON PONCHO ECUATORIANO (40x44 px)
+    // ============================================================================
+    const astroFrames = [
+        document.createElement('canvas'), // Frame 0: Idle
+        document.createElement('canvas'), // Frame 1: Paso Izquierdo
+        document.createElement('canvas')  // Frame 2: Paso Derecho
+    ];
+    astroFrames.forEach(f => { f.width = 40; f.height = 44; });
+
+    function buildAstronautSprites() {
+        const PAL = {
+            '.': null,
+            'K': '#0b0d17', // Contorno negro profundo
+            'N': '#182038', // Sombra azul noche del traje/casco
+            'S': '#73829e', // Gris azulado medio (sombra casco)
+            'M': '#a9b6cc', // Gris claro metálico
+            'W': '#eef4fc', // Blanco brillante del casco
+            'V': '#11162b', // Visor índigo muy oscuro
+            'B': '#1e294a', // Visor azul oscuro
+            'G': '#56698f', // Reflejo gris-azulado suave del visor
+            'C': '#94b0d9', // Reflejo celeste del visor
+            'H': '#ffffff', // Brillo especular blanco puro en el visor
+            'Y': '#ffcc00', // Amarillo bandera del Ecuador
+            'y': '#d99b00', // Sombra oro del poncho
+            'U': '#003893', // Azul bandera del Ecuador
+            'u': '#002266', // Sombra azul del poncho
+            'R': '#d91424', // Rojo bandera del Ecuador
+            'r': '#990b17', // Sombra roja del poncho
+            'E': '#c87d28', // Dorado/bronce del Escudo del Ecuador
+            'A': '#38bdf8', // Centro celeste del Escudo
+            'T': '#5c3818'  // Cóndor del Escudo
+        };
+
+        // Matriz de 36x42 que replica exactamente tu imagen de WhatsApp
+        const baseRows = [
+            "............KKKKKKKKKKKK............",
+            ".........KKKWWWWWWWWWWWWKKK.........",
+            ".......KKWWWWWWWWWWWWWWWWWWKK.......",
+            "......KWWWWWWWWWWWWWWWWWWWWWWK......",
+            ".....KWWWWWWMMMMMMMMMMMMWWWWWWK.....",
+            "....KWWWWWMMKKKKKKKKKKKKMMWWWWW.....",
+            "....KWWWWMMKVVVVGGGGVVVVKKMWWWWK....",
+            "...KWWWWMMKVVVGGGGGGGGGVVVKMWWWK....",
+            "...KWWWWMKVVGGGGGGGGGHHGGVVKMWWWK...",
+            "..KWWWWWKVGGGGGGGGHHHHHHHGGVKWWWK...",
+            "..KKSWWWKVVGGGGGGHHHHHHHHHGVKWWSKK..",
+            ".KMWKSWWKVVVBBBBVVVHHHHHHCCVKWSKWMK.",
+            ".KMWKSWWKVVBBBBVVVVVHHHHCCCVKWSKWMK.",
+            ".KMSKSWWKVVBBBBVVVVVVVCCCCVVKWSKSMK.",
+            ".KMSKSWWKVVVBBBBVVVVVVVVHHVVKWSKSMK.",
+            ".KMSKSWWKKVVVBBBBBBBBVVVVVVKKWSKSMK.",
+            "..KKSWWWWKKVVVVBBBBBBBBVVVKKWWWWSKK.",
+            "..KWWSSWWWKKKVVVVVVVVVVVKKKWWWSSWWK.",
+            "...KWWSSWWWWKKKKKKKKKKKKWWWWSSWWK...",
+            "....KKWSSSSWWWWWWWWWWWWWWSSSSWKK....",
+            ".....KKKSSSSSSMMMMMMMMSSSSSSKKK.....",
+            "......KWWKKKKSSSSSSSSSSKKKKWWK......",
+            ".....KMMMKYYYYKKKKKKKKYYYYKMMMK.....",
+            "....KKKKYYYYYYYYYYYYYYYYYYYYKKKK....",
+            "...KYYYYYYYYYYYYETTYYYYYYYYYYYYYK...",
+            "..KYYYYYYYYYYYYYEEEEYYYYYYYYYYYYYK..",
+            "..KyyyyYYYYYYYYEAWAEYYYYYYYYyyyyyK..",
+            ".KUUUUyyyyYYYYYEAWAEYYYYYyyyyUUUUUK.",
+            ".KUUUUUUUUyyyyYYEEEEYYyyyyUUUUUUUUK.",
+            "KUUUUUUUUUUUUUyyYYYYyyUUUUUUUUUUUUUK",
+            "KRrRyyUUUUUUUUUUUUUUUUUUUUUUUUyyRrRK",
+            "KRRRRryUUUUUUUUUUUUUUUUUUUUUUyrRRRRK",
+            "KyRyRRrRRRRUUUUUUUUUUUUUURRRRrrRRyRK",
+            ".KKKKRRRRRRRRUUUUUUUUUURRRRRRRRKKKK.",
+            "..KWWKKyRRRRRRRRRRRRRRRRRRRRyKKWWK..",
+            "..KWWWK.KyyRRRRRRRRRRRRRRyyK.KWWWK..",
+            "..KWSWK..KKyyRRRRRRRRRRyyKK..KWSWK..",
+            "...KKK....KWMKyyRRRRyyKMWK....KKK...",
+            "..........KrrK..KyyK..KrrK..........",
+            "..........KWWK..KKKK..KWWK..........",
+            ".........KSSSK.......KSSSK..........",
+            "........KWWSSK.......KSSWWK.........",
+            "........KKKKKK.......KKKKKK........."
+        ];
+
+        astroFrames.forEach((canvasFrame, idx) => {
+            const c = canvasFrame.getContext('2d');
+            c.clearRect(0, 0, 40, 44);
+
+            for (let y = 0; y < baseRows.length; y++) {
+                const row = baseRows[y];
+                for (let x = 0; x < row.length; x++) {
+                    const ch = row[x];
+                    const color = PAL[ch];
+                    if (!color) continue;
+
+                    let drawX = x + 2;
+                    let drawY = y + 1;
+
+                    // Animación de caminata en las piernas y leve balanceo del poncho
+                    if (idx === 1) {
+                        if (y >= 37 && x < 18) drawY -= 2; // Levanta pie izquierdo
+                        if (y >= 37 && x >= 18) drawY += 1;
+                        if (y >= 24 && y < 37) drawX -= (y % 2 === 0 ? 1 : 0);
+                    } else if (idx === 2) {
+                        if (y >= 37 && x >= 18) drawY -= 2; // Levanta pie derecho
+                        if (y >= 37 && x < 18) drawY += 1;
+                        if (y >= 24 && y < 37) drawX += (y % 2 === 0 ? 1 : 0);
+                    }
+
+                    c.fillStyle = color;
+                    c.fillRect(drawX, drawY, 1, 1);
+                }
+            }
+        });
+
+        // Actualizar el retrato en el HUD
+        portraitCtx.clearRect(0, 0, 40, 44);
+        portraitCtx.drawImage(astroFrames[0], 0, 0);
+    }
+
+    // ============================================================================
+    // 2. TERRENO LUNAR PIXEL-ART DE 16-BITS CON CRÁTERES, ROCAS Y HUELLAS
+    // ============================================================================
+    const terrainCanvas = document.createElement('canvas');
+    terrainCanvas.width = WORLD_W;
+    terrainCanvas.height = WORLD_H;
+
+    function buildLunarTerrain() {
+        const c = terrainCanvas.getContext('2d');
+        c.imageSmoothingEnabled = false;
+        // Paleta del regolito lunar (Día Inicial vs Estado Tenebroso)
+        const colBase   = damagedState ? '#828794' : '#c6cbd4';
+        const colLight  = damagedState ? '#9ea4b2' : '#dfe3ec';
+        const colBright = damagedState ? '#bac0ce' : '#f4f6fa';
+        const colMid    = damagedState ? '#686e7c' : '#9aa1b0';
+        const colDark   = damagedState ? '#454a57' : '#6e7585';
+        const colShadow = '#1a1e29';
+
+        c.fillStyle = colBase;
+        c.fillRect(0, 0, WORLD_W, WORLD_H);
+        c.save();
+
+        // Generador pseudoaleatorio determinista para texturas y rocas idénticas a la referencia
+        let seed = 1337;
+        const rand = () => {
+            seed = (seed * 1664525 + 1013904223) % 4294967296;
+            return seed / 4294967296;
+        };
+
+        // 1. Vetas diagonales del terreno lunar con tramado Bayer (Dithering de 16-bits)
+        const ridges = [
+            { x: 10,  y: 78,  len: 210, w: 14 },
+            { x: 165, y: 45,  len: 150, w: 12 },
+            { x: 245, y: 58,  len: 220, w: 15 },
+            { x: 15,  y: 138, len: 160, w: 12 },
+            { x: 310, y: 120, len: 165, w: 13 },
+            { x: 260, y: 235, len: 220, w: 18 },
+            { x: 350, y: 248, len: 140, w: 14 }
+        ];
+
+        ridges.forEach(r => {
+            for (let i = 0; i < r.len; i++) {
+                const wave = Math.round(Math.sin(i * 0.08) * 3 - i * 0.24);
+                const rx = r.x + i;
+                const ry = r.y + wave;
+                // Sombra de la cresta
+                c.fillStyle = colMid;
+                c.fillRect(rx, ry, 2, r.w);
+                // Tramado (dithering) en los bordes de la veta
+                for (let dy = -4; dy < r.w + 4; dy++) {
+                    if (((rx + ry + dy) & 1) === 0 && (dy < 0 || dy >= r.w)) {
+                        c.fillRect(rx, ry + dy, 1, 1);
+                    }
+                }
+                // Filo blanco iluminado de la cresta
+                c.fillStyle = colBright;
+                c.fillRect(rx, ry - 2, 2, 2);
+                c.fillStyle = colLight;
+                c.fillRect(rx, ry - 4, 1, 2);
+            }
+        });
+
+        // Parches de dither (patrón de ajedrez retro) en la esquina superior izquierda
+        c.fillStyle = colMid;
+        for (let y = 0; y < 110; y++) {
+            for (let x = 0; x < 190 - y * 1.3; x++) {
+                if (((x + y) & 1) === 0) c.fillRect(x, y, 1, 1);
+            }
+        }
+
+        // 2. Cráter pequeño en la parte superior izquierda (x: 156, y: 9)
+        drawCraterPixelArt(c, 156, 9, 24, 12, colMid, colDark, colBright, colLight);
+
+        // 3. Gran Cráter Sur-Oeste en la esquina inferior izquierda (x: 62, y: 215)
+        drawCraterPixelArt(c, 62, 215, 54, 34, colMid, colDark, colBright, colLight);
+
+        // 4. Rocas lunares facetadas con sombra proyectada dura (#1a1e29)
+        const rocks = [
+            { x: 78,  y: 34, r: 8 },
+            { x: 100, y: 27, r: 4 },
+            { x: 240, y: 16, r: 6 },
+            { x: 328, y: 9,  r: 6 },
+            { x: 350, y: 58, r: 12 },
+            { x: 148, y: 96, r: 7 },
+            { x: 48,  y: 125, r: 6 },
+            { x: 368, y: 148, r: 5 },
+            { x: 192, y: 244, r: 9 },
+            { x: 342, y: 256, r: 9 },
+            { x: 396, y: 122, r: 4 },
+            { x: 390, y: 192, r: 4 }
+        ];
+        rocks.forEach(rk => drawPixelRock(c, rk.x, rk.y, rk.r, colBright, colMid, colDark, colShadow));
+
+        // Piedrecillas pequeñas de 2x2 píxeles dispersas
+        for (let i = 0; i < 45; i++) {
+            const px = Math.floor(rand() * (W - 20)) + 10;
+            const py = Math.floor(rand() * (H - 20)) + 10;
+            c.fillStyle = colShadow;
+            c.fillRect(px + 1, py + 1, 2, 1);
+            c.fillStyle = colDark;
+            c.fillRect(px, py, 2, 2);
+            c.fillStyle = colBright;
+            c.fillRect(px, py, 1, 1);
+        }
+
+        // 5. Huellas de botas de astronauta grabadas en el regolito (como en la imagen de referencia)
+        const bootprints = [
+            { x: 82, y: 132, a: 0.4 }, { x: 96, y: 142, a: 0.4 },
+            { x: 215, y: 256, a: -0.5 }, { x: 232, y: 242, a: -0.5 },
+            { x: 242, y: 226, a: -0.5 }, { x: 258, y: 230, a: -0.2 },
+            { x: 262, y: 214, a: -0.1 }, { x: 260, y: 198, a: -0.1 }
+        ];
+        bootprints.forEach(bp => drawBootprintPixelArt(c, bp.x, bp.y, colDark, colBright));
+        c.restore();
+        // Replicar la textura generada en una cuadrícula 3x3 para cubrir el mapa completo.
+        const tile = document.createElement('canvas'); tile.width = W; tile.height = H;
+        tile.getContext('2d').drawImage(c.canvas, 0, 0, W, H);
+        for (let ty = 0; ty < 3; ty++) for (let tx = 0; tx < 3; tx++) {
+            if (tx === 0 && ty === 0) continue;
+            c.drawImage(tile, tx * W, ty * H);
+        }
+    }
+
+    function drawCraterPixelArt(c, cx, cy, rx, ry, colMid, colDark, colBright, colLight) {
+        // Rayos de eyección blancos alrededor del cráter
+        c.fillStyle = colBright;
+        for (let a = 0; a < Math.PI * 2; a += 0.18) {
+            const len = 1.18 + Math.sin(a * 7) * 0.14;
+            const x1 = cx + Math.cos(a) * rx * 0.9;
+            const y1 = cy + Math.sin(a) * ry * 0.9;
+            const x2 = cx + Math.cos(a) * rx * len;
+            const y2 = cy + Math.sin(a) * ry * len;
+            drawPixelLine(c, x1, y1, x2, y2, a > 0.2 && a < 2.8 ? colMid : colBright, 2);
+        }
+
+        // Anillo exterior elevado
+        drawPixelEllipse(c, cx, cy, rx, ry, colBright, 0);
+        // Sombra exterior inferior derecha
+        drawPixelEllipse(c, cx + 4, cy + 3, rx, ry, colMid, 1);
+        // Cavidad interna del cráter
+        drawPixelEllipse(c, cx, cy, rx * 0.82, ry * 0.8, colMid, 0);
+        // Pared interna en sombra profunda (izquierda/arriba)
+        drawPixelEllipse(c, cx - rx * 0.12, cy - ry * 0.1, rx * 0.68, ry * 0.66, colDark, 0);
+        // Pared interna iluminada (derecha/abajo)
+        drawPixelEllipse(c, cx + rx * 0.12, cy + ry * 0.1, rx * 0.62, ry * 0.58, colBright, 0);
+        // Fondo plano del cráter
+        drawPixelEllipse(c, cx + 2, cy + 2, rx * 0.48, ry * 0.45, colMid, 0);
+    }
+
+    function drawPixelRock(c, x, y, r, colBright, colMid, colDark, colShadow) {
+        // Sombra proyectada dura hacia la derecha
+        drawPixelEllipse(c, x + r * 0.85, y + r * 0.25, r * 0.95, r * 0.45, colShadow, 0);
+        // Cuerpo base de la roca
+        drawPixelEllipse(c, x, y, r, r * 0.75, colDark, 0);
+        // Faceta media
+        drawPixelEllipse(c, x - r * 0.15, y - r * 0.1, r * 0.78, r * 0.58, colMid, 0);
+        // Faceta superior iluminada con borde pixelado
+        drawPixelEllipse(c, x - r * 0.28, y - r * 0.22, r * 0.48, r * 0.35, colBright, 0);
+        // Grietas oscuras internas
+        c.fillStyle = colShadow;
+        c.fillRect(x - 1, y, 2, 1);
+        c.fillRect(x + 1, y - 2, 1, 2);
+    }
+
+    function drawBootprintPixelArt(c, x, y, colDark, colBright) {
+        // Reborde iluminado
+        c.fillStyle = colBright;
+        c.fillRect(x - 1, y - 1, 10, 6);
+        // Huella hundida con estrías de suela
+        c.fillStyle = colDark;
+        c.fillRect(x, y, 8, 4);
+        c.fillStyle = colBright;
+        c.fillRect(x + 2, y, 1, 4);
+        c.fillRect(x + 5, y, 1, 4);
+    }
+
+    // ============================================================================
+    // 3. GENERADORES DE SPRITES PIXEL-ART 16-BITS DE LOS MÓDULOS DE LA BASE
+    // ============================================================================
+    const moduleSprites = {
+        baseNew: document.createElement('canvas'),
+        baseDamaged: document.createElement('canvas'),
+        tanksNew: document.createElement('canvas'),
+        tanksDamaged: document.createElement('canvas'),
+        solarNew: document.createElement('canvas'),
+        solarDamaged: document.createElement('canvas'),
+        antennaNew: document.createElement('canvas'),
+        antennaDamaged: document.createElement('canvas'),
+        debrisDamaged: document.createElement('canvas')
+    };
+
+    function buildAllModuleSprites() {
+        buildDomeSprite(moduleSprites.baseNew, false);
+        buildDomeSprite(moduleSprites.baseDamaged, true);
+        buildTanksSprite(moduleSprites.tanksNew, false);
+        buildTanksSprite(moduleSprites.tanksDamaged, true);
+        buildSolarSprite(moduleSprites.solarNew, false);
+        buildSolarSprite(moduleSprites.solarDamaged, true);
+        buildAntennaSprite(moduleSprites.antennaNew, false);
+        buildAntennaSprite(moduleSprites.antennaDamaged, true);
+        buildDebrisSprite(moduleSprites.debrisDamaged);
+    }
+
+    // --- DOMO PRINCIPAL (NUEVO Y DAÑADO) ---
+    function buildDomeSprite(canv, dmg) {
+        canv.width = 140;
+        canv.height = 110;
+        const c = canv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+
+        const out = '#121622';
+        const shadow = '#181c28';
+        const domeLight = dmg ? '#6e6259' : '#eef3fa';
+        const domeMid   = dmg ? '#544942' : '#c5d0e0';
+        const domeDark  = dmg ? '#3a322d' : '#8594ab';
+        const wallMid   = dmg ? '#493f3a' : '#96a5bd';
+        const wallDark  = dmg ? '#2e2724' : '#5e6d85';
+        const rust      = '#7a3b1e';
+
+        // 1. Sombra elíptica proyectada a la derecha en el suelo lunar
+        drawPixelEllipse(c, 82, 76, 52, 24, shadow, 0);
+
+        // 2. Base cilíndrica inferior con nervaduras verticales y contorno oscuro
+        drawPixelEllipse(c, 58, 74, 46, 20, out, 0);
+        drawPixelEllipse(c, 58, 73, 44, 18, wallDark, 0);
+        c.fillStyle = out;
+        c.fillRect(13, 46, 90, 28);
+        c.fillStyle = wallMid;
+        c.fillRect(15, 46, 52, 27);
+        c.fillStyle = wallDark;
+        c.fillRect(67, 46, 34, 27);
+
+        // Sombreado dither entre el lado iluminado y el lado oscuro del cilindro
+        c.fillStyle = wallDark;
+        for (let y = 46; y < 73; y++) {
+            for (let x = 58; x < 68; x++) {
+                if (((x + y) & 1) === 0) c.fillRect(x, y, 1, 1);
+            }
+        }
+
+        // 3. Cúpula semiesférica con líneas de paneles meridianos y paralelos
+        for (let y = 12; y <= 48; y++) {
+            const t = (48 - y) / 36;
+            const halfW = Math.round(Math.sqrt(Math.max(0, 1 - t * t)) * 42);
+            c.fillStyle = out;
+            c.fillRect(58 - halfW - 2, y, (halfW + 2) * 2, 1);
+            for (let x = -halfW; x <= halfW; x++) {
+                const px = 58 + x;
+                let col = domeMid;
+                if (x < -halfW * 0.25) col = domeLight;
+                else if (x > halfW * 0.35) col = domeDark;
+                else if (x > halfW * 0.15 && ((px + y) & 1) === 0) col = domeDark;
+                else if (x < 0 && ((px + y) & 1) === 0) col = domeLight;
+                c.fillStyle = col;
+                c.fillRect(px, y, 1, 1);
+            }
+        }
+
+        // Líneas negras de los segmentos de la cúpula
+        drawPixelEllipse(c, 58, 47, 43, 11, out, 1);
+        drawPixelLine(c, 16, 47, 100, 47, out, 1);
+        drawPixelLine(c, 24, 33, 92, 33, out, 1);
+        drawPixelLine(c, 34, 22, 82, 22, out, 1);
+        // Meridianos curvos
+        drawPixelLine(c, 45, 15, 34, 47, out, 1);
+        drawPixelLine(c, 58, 15, 58, 47, out, 1);
+        drawPixelLine(c, 71, 15, 82, 47, out, 1);
+
+        // Tapón circular superior de la cúpula
+        drawPixelEllipse(c, 58, 13, 12, 5, out, 0);
+        drawPixelEllipse(c, 58, 13, 10, 4, domeLight, 0);
+
+        // Ventana azul lateral derecha en la cúpula
+        c.fillStyle = out;
+        c.fillRect(82, 36, 9, 7);
+        c.fillStyle = dmg ? '#334155' : '#0ea5e9';
+        c.fillRect(83, 37, 7, 5);
+        if (!dmg) {
+            c.fillStyle = '#bae6fd';
+            c.fillRect(84, 38, 3, 2);
+        }
+
+        // 4. Panel frontal técnico, cartel amarillo de precaución y luces LED
+        c.fillStyle = out;
+        c.fillRect(52, 55, 28, 18);
+        c.fillStyle = domeMid;
+        c.fillRect(53, 56, 26, 16);
+        // Símbolo amarillo de peligro
+        c.fillStyle = '#facc15';
+        c.fillRect(55, 58, 5, 5);
+        c.fillStyle = out;
+        c.fillRect(57, 60, 1, 2);
+
+        // Tira de luces de estado (Verdes en Día Inicial, Rojas en Dañado)
+        const ledColor = dmg ? '#ef4444' : '#22c55e';
+        c.fillStyle = out;
+        c.fillRect(52, 49, 28, 4);
+        c.fillStyle = ledColor;
+        c.fillRect(54, 50, 5, 2);
+        c.fillRect(62, 50, 5, 2);
+        c.fillRect(72, 50, 5, 2);
+
+        // 5. Esclusa de entrada frontal izquierda (Airlock)
+        c.fillStyle = out;
+        c.fillRect(14, 52, 26, 36);
+        c.fillStyle = domeLight;
+        c.fillRect(15, 53, 16, 34);
+        c.fillStyle = wallMid;
+        c.fillRect(31, 53, 8, 34);
+        // Puerta hermética con hendidura en zigzag
+        c.fillStyle = out;
+        c.fillRect(17, 58, 12, 28);
+        c.fillStyle = wallMid;
+        c.fillRect(18, 59, 10, 26);
+        drawPixelLine(c, 23, 59, 21, 70, out, 1);
+        drawPixelLine(c, 21, 70, 24, 76, out, 1);
+        drawPixelLine(c, 24, 76, 22, 85, out, 1);
+
+        // Sirena luminosa sobre la esclusa (Verde o Roja)
+        c.fillStyle = out;
+        c.fillRect(22, 48, 6, 5);
+        c.fillStyle = ledColor;
+        c.fillRect(23, 49, 4, 3);
+
+        // Conector de tubería hacia los tanques (abajo a la derecha del domo)
+        c.fillStyle = out;
+        c.fillRect(74, 72, 10, 12);
+        c.fillStyle = wallDark;
+        c.fillRect(75, 73, 8, 10);
+
+        // Si está en estado dañado: manchas de óxido, grietas negras y cables sueltos
+        if (dmg) {
+            c.fillStyle = rust;
+            c.fillRect(35, 25, 8, 4);
+            c.fillRect(62, 35, 10, 5);
+            c.fillRect(20, 54, 6, 4);
+            c.fillRect(54, 68, 14, 4);
+            // Grieta oscura en el domo
+            c.fillStyle = out;
+            c.fillRect(64, 28, 7, 4);
+            c.fillRect(66, 26, 5, 7);
+        }
+    }
+
+    // --- TANQUES DE ALMACENAMIENTO + TUBERÍAS (NUEVOS Y DAÑADOS) ---
+    function buildTanksSprite(canv, dmg) {
+        canv.width = 135;
+        canv.height = 105;
+        const c = canv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+
+        const out = '#121622';
+        const shadow = '#181c28';
+        const bodyLight = dmg ? '#786b63' : '#eef3fa';
+        const bodyMid   = dmg ? '#5c5049' : '#b8c4d6';
+        const bodyDark  = dmg ? '#3d342f' : '#738299';
+        const rust      = '#7c3aed'; // Óxido marrón rojizo
+        const rustColor = '#7c3a1d';
+
+        // Sombra proyectada de los tanques
+        drawPixelEllipse(c, 74, 68, 48, 22, shadow, 0);
+
+        // Tubería en el suelo que viene desde la Base (esquina superior izquierda)
+        drawPixelLine(c, 4, 32, 42, 54, out, 6);
+        drawPixelLine(c, 4, 32, 42, 54, bodyMid, 4);
+        drawPixelLine(c, 4, 31, 42, 53, bodyLight, 1);
+
+        // 3 Cilindros verticales en perspectiva isométrica (de atrás hacia adelante)
+        const cylinders = [
+            { x: 68, y: 14 },
+            { x: 52, y: 24 },
+            { x: 36, y: 34 }
+        ];
+
+        cylinders.forEach((cyl, idx) => {
+            const cx = cyl.x, cy = cyl.y;
+            // Contorno del cilindro
+            c.fillStyle = out;
+            c.fillRect(cx - 1, cy + 5, 24, 42);
+            drawPixelEllipse(c, cx + 11, cy + 5, 12, 5, out, 0);
+            drawPixelEllipse(c, cx + 11, cy + 46, 12, 5, out, 0);
+
+            // Relleno sombreado cilíndrico
+            c.fillStyle = bodyLight;
+            c.fillRect(cx, cy + 5, 8, 41);
+            c.fillStyle = bodyMid;
+            c.fillRect(cx + 8, cy + 5, 8, 41);
+            c.fillStyle = bodyDark;
+            c.fillRect(cx + 16, cy + 5, 6, 41);
+
+            // Tapa superior elíptica
+            drawPixelEllipse(c, cx + 11, cy + 5, 11, 4, bodyLight, 0);
+
+            // Medidor vertical luminoso (Verde en nuevo, Rojo/Apagado en dañado)
+            c.fillStyle = out;
+            c.fillRect(cx + 12, cy + 16, 5, 22);
+            for (let ly = 0; ly < 18; ly += 2) {
+                c.fillStyle = dmg ? (ly > 12 ? '#ef4444' : '#334155') : '#4ade80';
+                c.fillRect(cx + 13, cy + 18 + ly, 3, 1);
+            }
+
+            // Símbolo radiactivo en el primer tanque delantero
+            if (idx === 2) {
+                c.fillStyle = out;
+                c.fillRect(cx + 3, cy + 23, 5, 5);
+                c.fillStyle = bodyLight;
+                c.fillRect(cx + 5, cy + 25, 1, 1);
+            }
+
+            if (dmg) {
+                c.fillStyle = rustColor;
+                c.fillRect(cx + 2, cy + 12, 6, 5);
+                c.fillRect(cx + 9, cy + 38, 7, 5);
+            }
+        });
+
+        // Colector de tubería superior que une los 3 tanques
+        drawPixelLine(c, 46, 36, 78, 16, out, 5);
+        drawPixelLine(c, 46, 36, 78, 16, bodyLight, 3);
+
+        // Tanque horizontal auxiliar delantero derecho
+        const hx = 88, hy = 52;
+        c.fillStyle = out;
+        c.fillRect(hx, hy, 30, 18);
+        drawPixelEllipse(c, hx + 30, hy + 9, 5, 9, out, 0);
+        drawPixelEllipse(c, hx, hy + 9, 5, 9, out, 0);
+
+        c.fillStyle = bodyLight;
+        c.fillRect(hx, hy + 1, 30, 5);
+        c.fillStyle = bodyMid;
+        c.fillRect(hx, hy + 6, 30, 6);
+        c.fillStyle = bodyDark;
+        c.fillRect(hx, hy + 12, 30, 5);
+        drawPixelEllipse(c, hx + 30, hy + 9, 4, 8, bodyDark, 0);
+
+        // Tuberías que conectan el tanque frontal con el horizontal
+        drawPixelLine(c, 48, 78, 72, 86, out, 5);
+        drawPixelLine(c, 72, 86, 92, 68, out, 5);
+        drawPixelLine(c, 48, 78, 72, 86, bodyMid, 3);
+        drawPixelLine(c, 72, 86, 92, 68, bodyMid, 3);
+
+        // Fugas verdes radiactivas si está dañado
+        if (dmg) {
+            c.fillStyle = rustColor;
+            c.fillRect(hx + 6, hy + 3, 12, 6);
+            c.fillStyle = '#84cc16';
+            c.fillRect(62, 82, 4, 5);
+            c.fillRect(60, 87, 7, 3);
+        }
+    }
+
+    // --- PANEL SOLAR FOTOVOLTAICO (NUEVO Y DAÑADO) ---
+    function buildSolarSprite(canv, dmg) {
+        canv.width = 90;
+        canv.height = 80;
+        const c = canv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+
+        const out = '#121622';
+        const shadow = '#181c28';
+
+        // Sombra proyectada en ángulo
+        c.fillStyle = shadow;
+        c.beginPath();
+        c.moveTo(32, 62);
+        c.lineTo(78, 48);
+        c.lineTo(86, 62);
+        c.lineTo(44, 75);
+        c.closePath();
+        c.fill();
+
+        // Pedestal y base cuadrada isométrica
+        c.fillStyle = out;
+        c.fillRect(28, 54, 26, 14);
+        c.fillStyle = dmg ? '#6b4c3b' : '#cbd5e1';
+        c.fillRect(29, 55, 14, 12);
+        c.fillStyle = dmg ? '#473328' : '#64748b';
+        c.fillRect(43, 55, 10, 12);
+        // Poste central
+        c.fillStyle = out;
+        c.fillRect(38, 42, 6, 15);
+        c.fillStyle = '#94a3b8';
+        c.fillRect(39, 42, 4, 14);
+
+        // Marco inclinado del panel solar (romboide isométrico pixelado)
+        // Esquinas del panel: Top(34, 8), Right(74, 24), Bottom(52, 54), Left(12, 38)
+        c.fillStyle = out;
+        for (let u = -2; u <= 42; u++) {
+            for (let v = -2; v <= 32; v++) {
+                const px = Math.round(34 + u * 0.95 - v * 0.68);
+                const py = Math.round(10 + u * 0.38 + v * 0.88);
+                c.fillRect(px, py, 2, 2);
+            }
+        }
+
+        for (let u = 0; u <= 40; u++) {
+            for (let v = 0; v <= 30; v++) {
+                const px = Math.round(34 + u * 0.95 - v * 0.68);
+                const py = Math.round(10 + u * 0.38 + v * 0.88);
+
+                // Borde blanco/gris del marco y divisiones de las 8 celdas (4x2)
+                const isBorder = (u <= 1 || u >= 39 || v <= 1 || v >= 29);
+                const isGrid = (u === 10 || u === 20 || u === 30 || v === 15);
+
+                if (isBorder) {
+                    c.fillStyle = dmg ? '#64748b' : '#f1f5f9';
+                } else if (isGrid) {
+                    c.fillStyle = dmg ? '#475569' : '#cbd5e1';
+                } else {
+                    // Celdas azules con franjas diagonales brillantes
+                    const diag = (u + v) % 9;
+                    if (dmg && ((u * v) % 23 < 4)) {
+                        c.fillStyle = '#1e293b'; // Grieta oscura en celda rota
+                    } else if (diag === 0 || diag === 1) {
+                        c.fillStyle = dmg ? '#3b82f6' : '#7dd3fc';
+                    } else if (diag === 2) {
+                        c.fillStyle = '#38bdf8';
+                    } else {
+                        c.fillStyle = dmg ? '#1d4ed8' : '#0284c7';
+                    }
+                }
+                c.fillRect(px, py, 1, 1);
+            }
+        }
+    }
+
+    // --- ANTENAS DE COMUNICACIÓN (NUEVAS Y DAÑADAS) ---
+    function buildAntennaSprite(canv, dmg) {
+        canv.width = 80;
+        canv.height = 80;
+        const c = canv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+
+        const out = '#121622';
+        const shadow = '#181c28';
+        const metalLight = dmg ? '#7c5a46' : '#e2e8f0';
+        const metalMid   = dmg ? '#5c4033' : '#94a3b8';
+        const metalDark  = dmg ? '#3b2820' : '#475569';
+
+        // Sombra en el suelo
+        drawPixelEllipse(c, 42, 66, 28, 10, shadow, 0);
+
+        // 1. Torre de celosía derecha
+        const tx = 44, ty = 14;
+        drawPixelLine(c, tx, ty, tx - 5, 66, out, 2);
+        drawPixelLine(c, tx + 6, ty, tx + 11, 66, out, 2);
+        drawPixelLine(c, tx, ty, tx - 5, 66, metalMid, 1);
+        drawPixelLine(c, tx + 6, ty, tx + 11, 66, metalLight, 1);
+        // Travesaños en X de la torre
+        for (let y = 22; y < 64; y += 8) {
+            drawPixelLine(c, tx - 3, y, tx + 8, y + 6, out, 1);
+            drawPixelLine(c, tx + 8, y, tx - 3, y + 6, out, 1);
+        }
+
+        // Baliza luminosa en la punta de la torre
+        c.fillStyle = out;
+        c.fillRect(tx + 1, 6, 5, 8);
+        c.fillStyle = dmg ? '#ef4444' : '#84cc16';
+        c.fillRect(tx + 2, 7, 3, 4);
+
+        // 2. Trípode y plato parabólico izquierdo
+        drawPixelLine(c, 22, 46, 14, 66, out, 3);
+        drawPixelLine(c, 22, 46, 30, 66, out, 3);
+        drawPixelLine(c, 22, 46, 22, 67, out, 3);
+        drawPixelLine(c, 22, 46, 14, 66, metalMid, 1);
+        drawPixelLine(c, 22, 46, 30, 66, metalDark, 1);
+
+        // Plato parabólico inclinado
+        drawPixelEllipse(c, 22, 34, 14, 18, out, 0);
+        drawPixelEllipse(c, 22, 34, 12, 16, metalMid, 0);
+        drawPixelEllipse(c, 20, 33, 9, 13, metalLight, 0);
+        // Líneas internas del plato y receptor central
+        drawPixelLine(c, 22, 34, 11, 25, out, 1);
+        drawPixelLine(c, 14, 42, 11, 25, out, 1);
+        drawPixelLine(c, 28, 24, 11, 25, out, 1);
+        c.fillStyle = dmg ? '#ef4444' : '#a3e635';
+        c.fillRect(10, 24, 3, 3);
+
+        // Cable negro colgante entre el plato y la torre
+        drawPixelLine(c, 28, 44, 36, 50, out, 2);
+        drawPixelLine(c, 36, 50, 44, 38, out, 2);
+    }
+
+    // --- RESTOS DE NAVES DESTRUIDAS (MODO DAÑADO/TENEBROSO) ---
+    function buildDebrisSprite(canv) {
+        canv.width = 110;
+        canv.height = 75;
+        const c = canv.getContext('2d');
+        c.imageSmoothingEnabled = false;
+
+        const out = '#121622';
+        const shadow = '#181c28';
+
+        // Sombra
+        drawPixelEllipse(c, 55, 48, 42, 16, shadow, 0);
+
+        // Turbina cilíndrica rota (abajo izquierda)
+        c.fillStyle = out;
+        c.fillRect(14, 34, 28, 18);
+        c.fillStyle = '#475569';
+        c.fillRect(15, 35, 26, 8);
+        c.fillStyle = '#334155';
+        c.fillRect(15, 43, 26, 8);
+        drawPixelEllipse(c, 14, 43, 6, 9, out, 0);
+        drawPixelEllipse(c, 14, 43, 4, 7, '#1e293b', 0);
+
+        // Fuselaje trasero con aleta caudal (derecha)
+        drawPixelLine(c, 48, 44, 88, 26, out, 18);
+        drawPixelLine(c, 48, 44, 88, 26, '#64748b', 14);
+        drawPixelLine(c, 48, 48, 88, 30, '#334155', 8);
+        // Aleta superior
+        c.fillStyle = out;
+        c.beginPath();
+        c.moveTo(72, 24); c.lineTo(84, 8); c.lineTo(90, 22); c.closePath();
+        c.fill();
+        c.fillStyle = '#475569';
+        c.fillRect(78, 14, 6, 10);
+
+        // Manchas de quemaduras y óxido
+        c.fillStyle = '#7c3a1d';
+        c.fillRect(22, 36, 8, 5);
+        c.fillRect(58, 34, 10, 6);
+    }
+
+    // ============================================================================
+    // 4. ALGORITMO MEJORADO PARA QUITAR FONDO OSCURO Y ESTRELLAS DEL ASTRONAUTA
+    // ============================================================================
+    function removeAstronautBackground(img) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(img, 0, 0);
+
+        const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imgData.data;
+        const w = tempCanvas.width;
+        const h = tempCanvas.height;
+
+        const bgR = data[0], bgG = data[1], bgB = data[2];
+
+        // Caso 1: Fondo verde (chroma key)
+        if (bgG > 165 && bgR < 105 && bgB < 105) {
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 1] > 160 && data[i] < 115 && data[i + 2] < 115) {
+                    data[i + 3] = 0;
+                }
+            }
+            tCtx.putImageData(imgData, 0, 0);
+            return tempCanvas;
+        }
+
+        // Caso 2: Fondo azul noche espacial con estrellas (WhatsApp Image)
+        const visited = new Uint8Array(w * h);
+        const queue = [];
+
+        for (let x = 0; x < w; x++) { queue.push(x, 0); queue.push(x, h - 1); }
+        for (let y = 0; y < h; y++) { queue.push(0, y); queue.push(w - 1, y); }
+
+        const isBlackOutline = (r, g, b) => (r < 10 && g < 11 && b < 17);
+
+        while (queue.length > 0) {
+            const y = queue.pop();
+            const x = queue.pop();
+            const idx = y * w + x;
+            if (x < 0 || x >= w || y < 0 || y >= h || visited[idx]) continue;
+            visited[idx] = 1;
+
+            const p = idx * 4;
+            const r = data[p], g = data[p + 1], b = data[p + 2];
+            const distToBg = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+            const inAstronautBox = (x > w * 0.28 && x < w * 0.72 && y > h * 0.08 && y < h * 0.91);
+
+            if (!inAstronautBox || (distToBg < 52 && !isBlackOutline(r, g, b))) {
+                data[p + 3] = 0;
+                queue.push(x + 1, y);
+                queue.push(x - 1, y);
+                queue.push(x, y + 1);
+                queue.push(x, y - 1);
+            }
+        }
+
+        tCtx.putImageData(imgData, 0, 0);
+        return tempCanvas;
+    }
+
+    // ============================================================================
+    // 5. CONTROLES, INTERACCIÓN Y LÓGICA DEL JUEGO
+    // ============================================================================
+    window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.key === 'ArrowUp') keys.w = true;
+        if (k === 's' || e.key === 'ArrowDown') keys.s = true;
+        if (k === 'a' || e.key === 'ArrowLeft') keys.a = true;
+        if (k === 'd' || e.key === 'ArrowRight') keys.d = true;
+
+        if (k === 'l' || k === 'f') toggleNightMode();
+        if (k === 'k') toggleDamagedState();
+        if (k === 'e') triggerInteraction();
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.key === 'ArrowUp') keys.w = false;
+        if (k === 's' || e.key === 'ArrowDown') keys.s = false;
+        if (k === 'a' || e.key === 'ArrowLeft') keys.a = false;
+        if (k === 'd' || e.key === 'ArrowRight') keys.d = false;
+    });
+
+    document.querySelectorAll('.touch-btn').forEach(btn => {
+        const k = btn.dataset.key;
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (k === 'e') triggerInteraction();
+            else keys[k] = true;
+        });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (k !== 'e') keys[k] = false;
+        });
+    });
+
+    let activeStructure = null;
+
+    function triggerInteraction() {
+        const modal = document.getElementById('inspect-modal');
+        if (activeStructure) {
+            document.getElementById('inspect-title').textContent = activeStructure.name;
+            document.getElementById('inspect-desc').textContent = damagedState ? activeStructure.descDamaged : activeStructure.descNew;
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+
+    function toggleNightMode() {
+        nightMode = !nightMode;
+        document.getElementById('night-label').textContent = nightMode
+            ? 'Iluminación: Noche Tenebrosa (L)'
+            : 'Iluminación: Día Lunar (L)';
+    }
+
+    function toggleDamagedState() {
+        damagedState = !damagedState;
+        document.getElementById('state-label').textContent = damagedState
+            ? 'Estado: Base Dañada (K)'
+            : 'Estado: Días Iniciales (K)';
+        document.getElementById('hud-day-title').textContent = damagedState
+            ? 'Objetivo actual: Modo Supervivencia (Base Dañada)'
+            : 'Objetivo actual: Días Iniciales (Base Nueva)';
+        buildLunarTerrain();
+        if (activeStructure) triggerInteraction();
+    }
+
+    document.getElementById('btn-toggle-night').addEventListener('click', toggleNightMode);
+    document.getElementById('btn-toggle-state').addEventListener('click', toggleDamagedState);
+
+    const uploadModal = document.getElementById('upload-modal');
+    document.getElementById('btn-toggle-upload').addEventListener('click', () => uploadModal.classList.toggle('hidden'));
+    document.getElementById('btn-close-upload').addEventListener('click', () => uploadModal.classList.add('hidden'));
+    document.getElementById('btn-done-upload').addEventListener('click', () => uploadModal.classList.add('hidden'));
+
+    function loadImageFile(file) {
+        return new Promise((resolve, reject) => {
+            if (!file) return resolve(null);
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer ' + file.name)); };
+            img.src = url;
+        });
+    }
+    function sortFiles(files) {
+        return [...files].sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+    }
+    async function loadDirectionFrames(direction, inputId) {
+        const files = sortFiles(document.getElementById(inputId).files).slice(0,4);
+        if (!files.length) return;
+        if (files.length !== 4) {
+            document.getElementById('astro-upload-status').textContent = `Para ${direction} selecciona 4 imágenes; recibidas: ${files.length}.`;
+            return;
+        }
+        try {
+            uploadedSprites[direction] = await Promise.all(files.map(loadImageFile));
+            document.getElementById('astro-upload-status').textContent = `Dirección ${direction}: 4 frames cargados.`;
+        } catch (err) { alert(err.message); }
+    }
+    [['up','frames-up'],['down','frames-down'],['left','frames-left'],['right','frames-right']].forEach(([dir,id]) => {
+        document.getElementById(id).addEventListener('change', () => loadDirectionFrames(dir,id));
+    });
+    const assetInputs = { background:'asset-background', base:'asset-base', tanks:'asset-tanks', solar:'asset-solar', antenna:'asset-antenna', debris:'asset-debris' };
+    Object.entries(assetInputs).forEach(([key,id]) => {
+        document.getElementById(id).addEventListener('change', async e => {
+            const file = e.target.files[0]; if (!file) return;
+            try {
+                const img = await loadImageFile(file);
+                if (key === 'background') customBgImage = img;
+                else uploadedSprites[key] = img;
+            } catch (err) { alert(err.message); }
+        });
+    });
+    document.getElementById('btn-reset-sprites').addEventListener('click', () => {
+        customBgImage = null; customAstroCanvas = null;
+        Object.keys(uploadedSprites).forEach(k => uploadedSprites[k] = Array.isArray(uploadedSprites[k]) ? [] : null);
+        document.getElementById('astro-upload-status').textContent = 'Sprites originales activos.';
+        buildAstronautSprites();
+    });
+
+    // ============================================================================
+    // 6. BUCLE PRINCIPAL DE ACTUALIZACIÓN Y RENDERIZADO PIXEL-PERFECT
+    // ============================================================================
+    let stepCounter = 0;
+
+    function update() {
+        tick++;
+        let dx = 0, dy = 0;
+        if (keys.w) dy -= 1;
+        if (keys.s) dy += 1;
+        if (keys.a) dx -= 1;
+        if (keys.d) dx += 1;
+        // La orientación prioriza el eje con mayor desplazamiento.
+        if (dx || dy) {
+            if (Math.abs(dx) > Math.abs(dy)) player.direction = dx < 0 ? 'left' : 'right';
+            else player.direction = dy < 0 ? 'up' : 'down';
+        }
+
+        player.moving = (dx !== 0 || dy !== 0);
+
+        if (player.moving) {
+            const len = Math.hypot(dx, dy);
+            dx = (dx / len) * player.speed;
+            dy = (dy / len) * player.speed * 0.8;
+
+            player.flashlightAngle = Math.atan2(dy, dx);
+            player.walkCycle += 0.18;
+            player.animationClock++;
+            if (player.animationClock >= 7) { player.animationClock = 0; player.animationFrame = (player.animationFrame + 1) % 4; }
+
+            const nextX = Math.max(18, Math.min(WORLD_W - 18, player.x + dx));
+            const nextY = Math.max(24, Math.min(WORLD_H - 12, player.y + dy));
+
+            // Colisión suave con los módulos activos y el cráter
+            let blocked = false;
+            for (const s of structures) {
+                if (s.onlyDamaged && !damagedState) continue;
+                const footY = nextY + 14;
+                const normDist = Math.hypot((nextX - s.x) / (s.rx * 0.78), (footY - s.y) / (s.ry * 0.75));
+                if (normDist < 1.0) {
+                    blocked = true;
+                    break;
+                }
+            }
+
+            if (!blocked) {
+                player.x = nextX;
+                player.y = nextY;
+            }
+
+            // Dejar huellas pixeladas y partículas de polvo lunar al caminar
+            stepCounter++;
+            if (stepCounter % 11 === 0) {
+                player.footprints.push({ x: Math.round(player.x - 3), y: Math.round(player.y + 16), alpha: 0.85 });
+                if (player.footprints.length > 40) player.footprints.shift();
+
+                for (let i = 0; i < 2; i++) {
+                    player.dustParticles.push({
+                        x: player.x + (Math.random() * 8 - 4),
+                        y: player.y + 17,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: -Math.random() * 0.45,
+                        alpha: 0.9
+                    });
+                }
+            }
+        } else {
+            player.walkCycle = 0;
+            player.animationFrame = 0;
+            player.animationClock = 0;
+        }
+
+        for (let i = player.dustParticles.length - 1; i >= 0; i--) {
+            const p = player.dustParticles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.alpha -= 0.04;
+            if (p.alpha <= 0) player.dustParticles.splice(i, 1);
+        }
+
+        // Comprobar cercanía a estructuras para inspección [E]
+        activeStructure = null;
+        for (const s of structures) {
+            if (s.onlyDamaged && !damagedState) continue;
+            const dist = Math.hypot(player.x - s.x, (player.y + 10) - s.y);
+            if (dist < Math.max(s.rx, s.ry) + 22) {
+                activeStructure = s;
+                break;
+            }
+        }
+        if (!activeStructure) {
+            document.getElementById('inspect-modal').classList.add('hidden');
+        }
+        updateCamera();
+    }
+
+    function drawModuleInstance(s) {
+        if (s.id === 'base') {
+            const sp = uploadedSprites.base || (damagedState ? moduleSprites.baseDamaged : moduleSprites.baseNew);
+            ctx.drawImage(sp, Math.round(s.x - 58), Math.round(s.y - 54), 140, 110);
+        } else if (s.id === 'tanques') {
+            const sp = uploadedSprites.tanks || (damagedState ? moduleSprites.tanksDamaged : moduleSprites.tanksNew);
+            ctx.drawImage(sp, Math.round(s.x - 66), Math.round(s.y - 52), 135, 105);
+        } else if (s.id === 'panel') {
+            const sp = uploadedSprites.solar || (damagedState ? moduleSprites.solarDamaged : moduleSprites.solarNew);
+            ctx.drawImage(sp, Math.round(s.x - 42), Math.round(s.y - 44), 90, 80);
+        } else if (s.id === 'antena') {
+            const sp = uploadedSprites.antenna || (damagedState ? moduleSprites.antennaDamaged : moduleSprites.antennaNew);
+            ctx.drawImage(sp, Math.round(s.x - 36), Math.round(s.y - 52), 80, 80);
+            // Parpadeo de la baliza superior
+            if (Math.floor(tick / 20) % 2 === 0) {
+                ctx.fillStyle = damagedState ? '#fca5a5' : '#bef264';
+                ctx.fillRect(Math.round(s.x + 10), Math.round(s.y - 45), 3, 3);
+            }
+        } else if (s.id === 'restos' && damagedState) {
+            const sp = uploadedSprites.debris || moduleSprites.debrisDamaged;
+            ctx.drawImage(sp, Math.round(s.x - 52), Math.round(s.y - 38), 100, 76);
+            // Chispas eléctricas animadas en los cables rotos
+            if (tick % 9 < 3) {
+                ctx.fillStyle = '#facc15';
+                ctx.fillRect(Math.round(s.x + 6), Math.round(s.y + 12), 2, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(Math.round(s.x + 7), Math.round(s.y + 11), 1, 1);
+            }
+        }
+    }
+
+    function drawPlayerPixelArt() {
+        const px = Math.round(player.x);
+        const py = Math.round(player.y);
+        const bob = player.moving ? (Math.floor(player.walkCycle * 2) % 2) : 0;
+        drawPixelEllipse(ctx, px, py + 18, 10, 4, '#181c28', 0);
+        ctx.save(); ctx.translate(px, py - bob);
+        const frames = uploadedSprites[player.direction];
+        if (frames && frames.length === 4) {
+            const img = frames[player.moving ? player.animationFrame : 0];
+            ctx.drawImage(img, -20, -22, 40, 44);
+        } else if (customAstroCanvas) {
+            ctx.drawImage(customAstroCanvas, -20, -22, 40, 44);
+        } else {
+            let frameIdx = player.moving ? ((Math.floor(player.walkCycle) % 2 === 0) ? 1 : 2) : 0;
+            ctx.drawImage(astroFrames[frameIdx], -20, -22);
+        }
+        ctx.restore();
+    }
+
+    function drawLightingLayer() {
+        if (!nightMode) return;
+
+        lightCtx.globalCompositeOperation = 'source-over';
+        lightCtx.fillStyle = 'rgba(6, 9, 20, 0.86)';
+        lightCtx.fillRect(0, 0, W, H);
+
+        lightCtx.globalCompositeOperation = 'destination-out';
+
+        // La capa de iluminación se calcula en coordenadas de pantalla.
+        const sx = player.x - camera.x, sy = player.y - camera.y;
+        const halo = lightCtx.createRadialGradient(sx, sy, 4, sx, sy, 46);
+        halo.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        halo.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        lightCtx.fillStyle = halo;
+        lightCtx.beginPath();
+        lightCtx.arc(sx, sy, 46, 0, Math.PI * 2);
+        lightCtx.fill();
+
+        // Cono de linterna direccional
+        lightCtx.save();
+        lightCtx.translate(sx, sy);
+        lightCtx.rotate(player.flashlightAngle);
+        const coneGrad = lightCtx.createLinearGradient(0, 0, 145, 0);
+        coneGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        coneGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        lightCtx.fillStyle = coneGrad;
+        lightCtx.beginPath();
+        lightCtx.moveTo(0, 0);
+        lightCtx.lineTo(145, -38);
+        lightCtx.lineTo(145, 38);
+        lightCtx.closePath();
+        lightCtx.fill();
+        lightCtx.restore();
+
+        // Resplandor ambiental en los módulos de la base
+        structures.forEach(s => {
+            if (s.id === 'crater' || (s.onlyDamaged && !damagedState)) return;
+            const lx = s.x - camera.x, ly = s.y - camera.y;
+            const g = lightCtx.createRadialGradient(lx, ly, 3, lx, ly, 36);
+            g.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
+            g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            lightCtx.fillStyle = g;
+            lightCtx.beginPath();
+            lightCtx.arc(lx, ly, 36, 0, Math.PI * 2);
+            lightCtx.fill();
+        });
+
+        ctx.drawImage(lightCanvas, camera.x, camera.y);
+    }
+
+    function drawRadar() {
+        radarCtx.fillStyle = '#07101e';
+        radarCtx.fillRect(0, 0, 84, 84);
+
+        radarCtx.strokeStyle = 'rgba(0, 180, 216, 0.25)';
+        radarCtx.lineWidth = 1;
+        radarCtx.beginPath(); radarCtx.arc(42, 42, 18, 0, Math.PI * 2); radarCtx.stroke();
+        radarCtx.beginPath(); radarCtx.arc(42, 42, 34, 0, Math.PI * 2); radarCtx.stroke();
+
+        structures.forEach(s => {
+            if (s.onlyDamaged && !damagedState) return;
+            const rx = (s.x / WORLD_W) * 84;
+            const ry = (s.y / WORLD_H) * 84;
+            radarCtx.fillStyle = s.id === 'crater' ? '#64748b' : (damagedState ? '#ef4444' : '#38bdf8');
+            radarCtx.fillRect(rx - 2.5, ry - 2.5, 5, 5);
+        });
+
+        const px = (player.x / WORLD_W) * 84;
+        const py = (player.y / WORLD_H) * 84;
+        radarCtx.fillStyle = '#facc15';
+        radarCtx.fillRect(px - 2, py - 2, 4, 4);
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.save();
+        ctx.translate(-Math.round(camera.x), -Math.round(camera.y));
+        if (customBgImage) ctx.drawImage(customBgImage, 0, 0, WORLD_W, WORLD_H);
+        else ctx.drawImage(terrainCanvas, 0, 0);
+
+        player.footprints.forEach(fp => {
+            ctx.fillStyle = '#5a6275'; ctx.fillRect(fp.x, fp.y, 5, 2);
+            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(fp.x, fp.y - 1, 5, 1);
+        });
+        const drawables = [];
+        structures.forEach(o => {
+            if (o.id === 'crater' || (o.onlyDamaged && !damagedState)) return;
+            drawables.push({type:'struct', y:o.sortY, obj:o});
+        });
+        drawables.push({type:'player', y:player.y + 18});
+        drawables.sort((a,b) => a.y - b.y);
+        drawables.forEach(d => d.type === 'struct' ? drawModuleInstance(d.obj) : drawPlayerPixelArt());
+        player.dustParticles.forEach(p => { ctx.fillStyle='#f1f5f9'; ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2); });
+        drawLightingLayer();
+        if (activeStructure) {
+            const bx = Math.round(activeStructure.x);
+            const by = Math.round(activeStructure.y - activeStructure.ry - 18);
+            ctx.fillStyle='#0b1120'; ctx.fillRect(bx-24,by-7,48,11);
+            ctx.strokeStyle='#38bdf8'; ctx.lineWidth=1; ctx.strokeRect(bx-24.5,by-7.5,49,12);
+            ctx.fillStyle='#facc15'; ctx.font='bold 7px monospace'; ctx.textAlign='center'; ctx.fillText('[E] VER',bx,by+1);
+        }
+        ctx.restore();
+        drawRadar();
+    }
+
+    function gameLoop() {
+        update();
+        render();
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.onload = () => {
+        buildAstronautSprites();
+        buildLunarTerrain();
+        buildAllModuleSprites();
+        updateCamera();
+        gameLoop();
+    };
+</script>
+</body>
+</html>
