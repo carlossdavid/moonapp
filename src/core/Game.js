@@ -21,6 +21,7 @@ export class Game {
     this.debug = false;
     /** @type {'loading'|'menu'|'playing'} */
     this.state = 'loading';
+    this.mouse = { x: 0, y: 0, over: false };
 
     this.loop = new GameLoop({
       fixedDt: FIXED_DT,
@@ -29,13 +30,52 @@ export class Game {
     });
 
     window.addEventListener('resize', () => this.renderer.resize());
-    canvas.addEventListener('click', () => this._onStartAction());
-    canvas.addEventListener('touchstart', () => this._onStartAction(), { passive: true });
+    canvas.addEventListener('click', (e) => this._onCanvasClick(e));
+    canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
+    canvas.addEventListener('mouseleave', () => { this.mouse.over = false; });
+    canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: true });
+  }
+
+  /** @param {MouseEvent|Touch} e */
+  _updateMouseFromEvent(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (LOGICAL_WIDTH / rect.width);
+    const y = (e.clientY - rect.top) * (LOGICAL_HEIGHT / rect.height);
+    this.mouse.x = x;
+    this.mouse.y = y;
+    this.mouse.over = true;
+  }
+
+  /** @param {MouseEvent} e */
+  _onMouseMove(e) {
+    this._updateMouseFromEvent(e);
+  }
+
+  /** @param {MouseEvent} e */
+  _onCanvasClick(e) {
+    this._updateMouseFromEvent(e);
+    this._onStartAction(true);
+  }
+
+  /** @param {TouchEvent} e */
+  _onTouchStart(e) {
+    const t = e.changedTouches && e.changedTouches[0];
+    if (t) this._updateMouseFromEvent(t);
+    this._onStartAction(true);
   }
 
   /** Initialize assets and scene hook. Override/extend as needed. */
   async init() {
     try {
+      // Load UI font for menu
+      try {
+        const font = new FontFace('Press Start 2P', 'url(./assets/fonts/PressStart2P-Regular.ttf)');
+        const loaded = await font.load();
+        document.fonts.add(loaded);
+      } catch (e) {
+        console.warn('Font load skipped:', e.message);
+      }
+
       await this.assets.loadManifest('./assets/manifest.json');
       const loadingEl = document.getElementById('loading');
       await this.assets.loadAll((loaded, total) => {
@@ -84,8 +124,26 @@ export class Game {
     this.state = 'playing';
   }
 
-  _onStartAction() {
-    if (this.state === 'menu') this.beginPlay();
+  _getMenuButtonRect() {
+    const btnW = 180;
+    const btnH = 32;
+    const btnX = Math.floor((LOGICAL_WIDTH - btnW) / 2);
+    const btnY = Math.floor(LOGICAL_HEIGHT * 0.68);
+    return { x: btnX, y: btnY, w: btnW, h: btnH };
+  }
+
+  _isPointInRect(px, py, r) {
+    return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+  }
+
+  /** @param {boolean} [fromPointer=false] */
+  _onStartAction(fromPointer = false) {
+    if (this.state !== 'menu') return;
+    if (fromPointer) {
+      const r = this._getMenuButtonRect();
+      if (!this._isPointInRect(this.mouse.x, this.mouse.y, r)) return;
+    }
+    this.beginPlay();
   }
 
   /** @param {number} dt */
@@ -135,21 +193,44 @@ export class Game {
   _renderMenu() {
     this.renderer.clear('#000000');
     const bg = this.assets.get('menu_bg');
+    const btnNormal = this.assets.get('btn_normal');
+    const btnHover = this.assets.get('btn_hover');
+    const btnPressed = this.assets.get('btn_pressed');
     this.renderer.begin(null);
+
     if (bg) {
       this.renderer.drawImage(bg, 0, 0, bg.width, bg.height, 0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT, false);
     }
-    // Dim overlay for readability
-    this.renderer.drawRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT, 'rgba(0,0,0,0.25)', true);
 
-    const btnW = 170;
-    const btnH = 26;
-    const btnX = Math.floor((LOGICAL_WIDTH - btnW) / 2);
-    const btnY = Math.floor(LOGICAL_HEIGHT * 0.68);
-    this.renderer.drawRect(btnX, btnY, btnW, btnH, 'rgba(20,24,36,0.75)', true);
-    this.renderer.drawRect(btnX, btnY, btnW, btnH, '#ffffff', false);
-    this.renderer.drawText('INICIAR JUEGO', btnX + 34, btnY + 9, '#ffffff');
-    this.renderer.drawText('Enter / Espacio / Click', btnX + 26, btnY + 34, '#e0e0e0');
+    const r = this._getMenuButtonRect();
+    const hovered = this.mouse.over && this._isPointInRect(this.mouse.x, this.mouse.y, r);
+    const btnImg = hovered ? (btnHover || btnNormal) : btnNormal;
+
+    if (btnImg) {
+      this.renderer.drawImage(btnImg, 0, 0, btnImg.width, btnImg.height, r.x, r.y, r.w, r.h, false);
+    } else {
+      this.renderer.drawRect(r.x, r.y, r.w, r.h, 'rgba(20,24,36,0.75)', true);
+      this.renderer.drawRect(r.x, r.y, r.w, r.h, '#ffffff', false);
+    }
+
+    // Button label with Press Start 2P
+    const ctx = this.renderer.context;
+    ctx.save();
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillText('INICIAR JUEGO', Math.round(r.x + r.w / 2), Math.round(r.y + r.h / 2) + 1);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#e0e0e0';
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'center';
+    ctx.fillText('ENTER / CLICK', Math.round(LOGICAL_WIDTH / 2), Math.round(r.y + r.h + 8));
+    ctx.restore();
+
     this.renderer.end();
   }
 

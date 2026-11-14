@@ -1,7 +1,10 @@
 {
   "images": [
-    { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.jpg" },
+    { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.png" },
     { "key": "mapa_bg", "src": "./RecursosVisuales/Base%20exterior/FondoMapaExterior.png" },
+    { "key": "btn_normal", "src": "./assets/Sprites/interfaz/btn_fondo_normal.png" },
+    { "key": "btn_hover", "src": "./assets/Sprites/interfaz/btn_fondo_hover.png" },
+    { "key": "btn_pressed", "src": "./assets/Sprites/interfaz/btn_fondo_pressed.png" },
 
     { "key": "struct_base_main", "src": "./assets/Sprites/Estructuras%20exteriores/01_base_nueva.png" },
     { "key": "struct_solar", "src": "./assets/Sprites/Estructuras%20exteriores/02_panel_solar.png" },

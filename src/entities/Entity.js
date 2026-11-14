@@ -44,6 +44,10 @@ export class Entity {
     const { w, h } = this.sprite.getFrameSize();
     const ix = this.prevX + (this.x - this.prevX) * alpha;
     const iy = this.prevY + (this.y - this.prevY) * alpha;
+
+    // Simple drop shadow at feet/base
+    this.renderShadow(renderer, ix, iy, w, h);
+
     const dx = ix - w * this.sprite.originX;
     const dy = iy - h * this.sprite.originY;
     renderer.drawImage(
@@ -52,6 +56,26 @@ export class Entity {
       dx, dy, w, h,
       this.sprite.flipX,
     );
+  }
+
+  /**
+   * Draw a simple shadow at the entity's feet.
+   * @param {import('../graphics/Renderer.js').Renderer} renderer
+   * @param {number} x
+   * @param {number} y
+   * @param {number} w
+   * @param {number} h
+   */
+  renderShadow(renderer, x, y, w, h) {
+    const ctx = renderer.context;
+    const rx = Math.max(4, w * 0.28);
+    const ry = Math.max(2, h * 0.08);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(Math.round(x), Math.round(y), rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   /** @returns {number} */
