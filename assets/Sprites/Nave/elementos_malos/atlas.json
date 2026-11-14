@@ -1,0 +1,282 @@
+{
+  "tanque_1": {
+    "categoria": "agua",
+    "hoja": "agua/tanque_1_dano_sheet.png",
+    "frame_ancho": 126,
+    "frame_alto": 126,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "tanque_2": {
+    "categoria": "agua",
+    "hoja": "agua/tanque_2_dano_sheet.png",
+    "frame_ancho": 126,
+    "frame_alto": 126,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "tanque_3": {
+    "categoria": "agua",
+    "hoja": "agua/tanque_3_dano_sheet.png",
+    "frame_ancho": 126,
+    "frame_alto": 126,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "ventilador_1": {
+    "categoria": "agua",
+    "hoja": "agua/ventilador_1_dano_sheet.png",
+    "frame_ancho": 80,
+    "frame_alto": 80,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "ventilador_2": {
+    "categoria": "agua",
+    "hoja": "agua/ventilador_2_dano_sheet.png",
+    "frame_ancho": 80,
+    "frame_alto": 80,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "ventilador_3": {
+    "categoria": "agua",
+    "hoja": "agua/ventilador_3_dano_sheet.png",
+    "frame_ancho": 80,
+    "frame_alto": 80,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "caja_control_1": {
+    "categoria": "agua",
+    "hoja": "agua/caja_control_1_dano_sheet.png",
+    "frame_ancho": 39,
+    "frame_alto": 42,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "caja_control_2": {
+    "categoria": "agua",
+    "hoja": "agua/caja_control_2_dano_sheet.png",
+    "frame_ancho": 41,
+    "frame_alto": 42,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "consola_medica": {
+    "categoria": "enfermeria",
+    "hoja": "enfermeria/consola_medica_dano_sheet.png",
+    "frame_ancho": 101,
+    "frame_alto": 81,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_1": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_1_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_2": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_2_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_3": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_3_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_4": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_4_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_5": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_5_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "maceta_larga_6": {
+    "categoria": "huerto",
+    "hoja": "huerto/maceta_larga_6_dano_sheet.png",
+    "frame_ancho": 42,
+    "frame_alto": 202,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "consola_curva_der": {
+    "categoria": "puente",
+    "hoja": "puente/consola_curva_der_dano_sheet.png",
+    "frame_ancho": 72,
+    "frame_alto": 205,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "consola_curva_izq": {
+    "categoria": "puente",
+    "hoja": "puente/consola_curva_izq_dano_sheet.png",
+    "frame_ancho": 61,
+    "frame_alto": 170,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "consola_principal": {
+    "categoria": "puente",
+    "hoja": "puente/consola_principal_dano_sheet.png",
+    "frame_ancho": 197,
+    "frame_alto": 89,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "mesa_holografica": {
+    "categoria": "puente",
+    "hoja": "puente/mesa_holografica_dano_sheet.png",
+    "frame_ancho": 127,
+    "frame_alto": 130,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  },
+  "reactor": {
+    "categoria": "reactor",
+    "hoja": "reactor/reactor_dano_sheet.png",
+    "frame_ancho": 212,
+    "frame_alto": 214,
+    "columnas": 3,
+    "filas": 4,
+    "filas_significado": [
+      "intacto",
+      "dano_leve",
+      "dano_grave",
+      "destruido"
+    ]
+  }
+}
