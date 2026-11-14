@@ -54,6 +54,17 @@ export class Game {
     this.scene = scene;
   }
 
+  /**
+   * Switch to a new scene (inits it). Use during gameplay transitions.
+   * @param {import('../scenes/Scene.js').Scene} scene
+   */
+  async changeScene(scene) {
+    this.setScene(scene);
+    if (scene && typeof scene.init === 'function') {
+      await scene.init();
+    }
+  }
+
   /** Start the game loop (shows menu when ready). */
   start() {
     const loadingEl = document.getElementById('loading');
