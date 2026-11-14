@@ -1,7 +1,7 @@
 {
   "images": [
     { "key": "menu_bg", "src": "./assets/Sprites/fondos/fondoInterfazMenuInicio.png" },
-    { "key": "mapa_bg", "src": "./RecursosVisuales/Base%20exterior/FondoMapaExterior.png" },
+    { "key": "mapa_bg", "src": "./assets/Sprites/fondos/fondoSuperficieLunar.png" },
     { "key": "btn_normal", "src": "./assets/Sprites/interfaz/btn_fondo_normal.png" },
     { "key": "btn_hover", "src": "./assets/Sprites/interfaz/btn_fondo_hover.png" },
     { "key": "btn_pressed", "src": "./assets/Sprites/interfaz/btn_fondo_pressed.png" },
@@ -19,29 +19,17 @@
     { "key": "rock_med", "src": "./assets/Sprites/Estructuras%20exteriores/roca_2_mediana_dia.png" },
     { "key": "rock_small", "src": "./assets/Sprites/Estructuras%20exteriores/roca_3_pequena_dia.png" },
 
-    { "key": "astro_idle_0", "src": "./assets/Sprites/Astronauta/idle_0.png" },
-    { "key": "astro_idle_1", "src": "./assets/Sprites/Astronauta/idle_1.png" },
-    { "key": "astro_idle_2", "src": "./assets/Sprites/Astronauta/idle_2.png" },
-    { "key": "astro_idle_3", "src": "./assets/Sprites/Astronauta/idle_3.png" },
-
-    { "key": "astro_walk_down_0", "src": "./assets/Sprites/Astronauta/walk_down_0.png" },
-    { "key": "astro_walk_down_1", "src": "./assets/Sprites/Astronauta/walk_down_1.png" },
-    { "key": "astro_walk_down_2", "src": "./assets/Sprites/Astronauta/walk_down_2.png" },
-    { "key": "astro_walk_down_3", "src": "./assets/Sprites/Astronauta/walk_down_3.png" },
-
-    { "key": "astro_walk_up_0", "src": "./assets/Sprites/Astronauta/walk_up_0.png" },
-    { "key": "astro_walk_up_1", "src": "./assets/Sprites/Astronauta/walk_up_1.png" },
-    { "key": "astro_walk_up_2", "src": "./assets/Sprites/Astronauta/walk_up_2.png" },
-    { "key": "astro_walk_up_3", "src": "./assets/Sprites/Astronauta/walk_up_3.png" },
-
-    { "key": "astro_walk_left_0", "src": "./assets/Sprites/Astronauta/walk_left_0.png" },
-    { "key": "astro_walk_left_1", "src": "./assets/Sprites/Astronauta/walk_left_1.png" },
-    { "key": "astro_walk_left_2", "src": "./assets/Sprites/Astronauta/walk_left_2.png" },
-    { "key": "astro_walk_left_3", "src": "./assets/Sprites/Astronauta/walk_left_3.png" },
-
-    { "key": "astro_walk_right_0", "src": "./assets/Sprites/Astronauta/walk_right_0.png" },
-    { "key": "astro_walk_right_1", "src": "./assets/Sprites/Astronauta/walk_right_1.png" },
-    { "key": "astro_walk_right_2", "src": "./assets/Sprites/Astronauta/walk_right_2.png" },
-    { "key": "astro_walk_right_3", "src": "./assets/Sprites/Astronauta/walk_right_3.png" }
+    { "key": "astro_stay_down_1", "src": "./assets/Sprites/Astronauta/stay_down_1.png" },
+    { "key": "astro_stay_up_1", "src": "./assets/Sprites/Astronauta/stay_up_1.png" },
+    { "key": "astro_down_2", "src": "./assets/Sprites/Astronauta/down_2.png" },
+    { "key": "astro_down_3", "src": "./assets/Sprites/Astronauta/down_3.png" },
+    { "key": "astro_up_2", "src": "./assets/Sprites/Astronauta/up_2.png" },
+    { "key": "astro_up_3", "src": "./assets/Sprites/Astronauta/up_3.png" },
+    { "key": "astro_left_1", "src": "./assets/Sprites/Astronauta/left_1.png" },
+    { "key": "astro_left_2", "src": "./assets/Sprites/Astronauta/left_2.png" },
+    { "key": "astro_left_3", "src": "./assets/Sprites/Astronauta/left_3.png" },
+    { "key": "astro_right_1", "src": "./assets/Sprites/Astronauta/right_1.png" },
+    { "key": "astro_right_2", "src": "./assets/Sprites/Astronauta/right_2.png" },
+    { "key": "astro_right_3", "src": "./assets/Sprites/Astronauta/right_3.png" }
   ]
 }

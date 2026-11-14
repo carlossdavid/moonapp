@@ -9,6 +9,8 @@ import { PhysicsWorld } from '../physics/PhysicsWorld.js';
 import { PhysicsBody } from '../physics/PhysicsBody.js';
 import { BoxCollider } from '../physics/BoxCollider.js';
 import { Minimap } from '../ui/Minimap.js';
+import { readSuitResources, shouldShowResourceHUD, renderResourceHUD } from '../ui/ResourceHUD.js';
+import { renderInventoryPanel } from '../ui/InventoryPanel.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, CAMERA_LERP,
   PLAYER_FOOT_WIDTH, PLAYER_FOOT_HEIGHT, SPATIAL_CELL_SIZE, Layer,
@@ -43,19 +45,25 @@ function createInteriorBackground(w, h) {
 }
 
 function createAstronautSheet(assets) {
-  const srcW = 44, srcH = 58, fw = 22, fh = 29, cols = 4;
+  // New astronaut sprites: 327x507 source frames, scaled down to keep in-game size small
+  const srcW = 327;
+  const srcH = 507;
+  const fw = 18; // a bit smaller
+  const fh = 28; // proportional-ish smaller display height
+  const cols = 4;
   const rowsDef = [
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_down_0', 'astro_walk_down_1', 'astro_walk_down_2', 'astro_walk_down_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_up_0', 'astro_walk_up_1', 'astro_walk_up_2', 'astro_walk_up_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_right_0', 'astro_walk_right_1', 'astro_walk_right_2', 'astro_walk_right_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_left_0', 'astro_walk_left_1', 'astro_walk_left_2', 'astro_walk_left_3'],
+    ['astro_stay_down_1', 'astro_stay_down_1', 'astro_stay_down_1', 'astro_stay_down_1'], // idle-down (frente)
+    ['astro_stay_down_1', 'astro_down_2', 'astro_stay_down_1', 'astro_down_3'],           // walk-down
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-up (espalda)
+    ['astro_stay_up_1', 'astro_up_2', 'astro_stay_up_1', 'astro_up_3'],                   // walk-up
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-right -> stay_up
+    ['astro_right_1', 'astro_right_2', 'astro_right_1', 'astro_right_3'],                 // walk-right
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-left -> stay_up
+    ['astro_left_1', 'astro_left_2', 'astro_left_1', 'astro_left_3'],                     // walk-left
   ];
   const c = document.createElement('canvas');
-  c.width = fw * cols; c.height = fh * rowsDef.length;
+  c.width = fw * cols;
+  c.height = fh * rowsDef.length;
   const ctx = c.getContext('2d');
   if (!ctx) return c;
   ctx.imageSmoothingEnabled = false;
@@ -65,6 +73,7 @@ function createAstronautSheet(assets) {
       if (img) ctx.drawImage(img, 0, 0, srcW, srcH, col * fw, r * fh, fw, fh);
     });
   });
+  c.dataset.kind = 'astronaut';
   return c;
 }
 
@@ -80,11 +89,13 @@ function createPlayerSprite(sheetImage) {
     sheetImage = c;
   }
   const imgW = /** @type {any} */ (sheetImage).width || 64;
-  const isAstronaut = imgW >= 88;
+  const imgH = /** @type {any} */ (sheetImage).height || 144;
+  const isAstronaut = sheetImage.dataset?.kind === 'astronaut' || (imgW >= 72 && imgW !== 64);
   if (isAstronaut) {
-    const imgH = /** @type {any} */ (sheetImage).height || 232;
-    const cols = 4, rows = 8;
-    const fw = Math.floor(imgW / cols), fh = Math.floor(imgH / rows);
+    const cols = 4;
+    const rows = 8;
+    const fw = Math.floor(imgW / cols);
+    const fh = Math.floor(imgH / rows);
     const sheet = new SpriteSheet(sheetImage, fw, fh, { columns: cols });
     const sprite = new Sprite(sheet);
     sprite.originX = 0.5; sprite.originY = 1;
@@ -116,6 +127,7 @@ export class InteriorBaseScene extends Scene {
   constructor(game, opts = {}) {
     super(game);
     this.opts = opts;
+    this.isInterior = true;
     this.player = null;
     this.interactables = [];
     this.promptText = '';
@@ -170,14 +182,117 @@ export class InteriorBaseScene extends Scene {
     this._spawnPlayer(assets, worldW / 2, worldH - 28);
     this._spawnExitZone(worldW, worldH);
     this.exitMarker = { x: worldW / 2, y: worldH - 10 };
+    this._spawnInteriorCollisions(worldW, worldH);
 
     this.camera.setTarget(this.player);
     this.camera.follow(this.player, 1);
   }
 
+  _addSolidBox(x, y, w, h) {
+    // x,y is top-left of solid wall box
+    const body = new PhysicsBody({
+      isStatic: true,
+      collider: new BoxCollider({
+        width: w,
+        height: h,
+        offsetX: 0,
+        offsetY: 0,
+        layer: Layer.SOLID,
+        mask: Layer.PLAYER,
+      }),
+    });
+    // Entity position is used as collider origin; with offset 0,0 AABB starts at (x,y)
+    const ent = new InteractableZone({ x, y, body });
+    // Make it purely solid (no prompt/interaction)
+    ent.prompt = '';
+    ent.playerInside = false;
+    this.addEntity(ent);
+    return ent;
+  }
+
+  _spawnInteriorCollisions(worldW, worldH) {
+    const cx = worldW / 2;
+
+    // Layout (approx): bottom door -> short central hallway -> circular room
+    const doorGap = 44;
+    const bottomWallY = worldH - 12;
+    const bottomWallH = 12;
+
+    // 1) Door threshold: block passing below/through door except the opening
+    this._addSolidBox(0, bottomWallY, cx - doorGap / 2, bottomWallH);
+    this._addSolidBox(cx + doorGap / 2, bottomWallY, worldW - (cx + doorGap / 2), bottomWallH);
+
+    // 2) Small central hallway walls (bottom corridor leading up to room)
+    const hallTop = worldH * 0.56;
+    const hallBottom = bottomWallY;
+    const hallW = 54;
+    const hallH = Math.max(0, hallBottom - hallTop);
+    const hallLeftX = cx - hallW / 2;
+    const hallRightX = cx + hallW / 2;
+    // Left side blocks flanking hallway from hallTop down to bottom
+    this._addSolidBox(0, hallTop, hallLeftX, hallH);
+    // Right side blocks
+    this._addSolidBox(hallRightX, hallTop, worldW - hallRightX, hallH);
+
+    // 3) Circular room boundary approximated with box segments
+    // Walkable circle interior: center above hallway, radius fits inside upper area
+    const roomCx = cx;
+    const roomCy = worldH * 0.34;
+    const roomR = Math.min(worldW, worldH) * 0.30; // walkable radius (interior)
+    const wallThickness = 14;
+    const segments = 28;
+    const hallHalf = hallW / 2;
+
+    for (let i = 0; i < segments; i++) {
+      const a0 = (i / segments) * Math.PI * 2;
+      const a1 = ((i + 1) / segments) * Math.PI * 2;
+      const am = (a0 + a1) / 2;
+      // Place a wall box centered on the ring just outside the walkable radius
+      const ringR = roomR + wallThickness / 2;
+      const bx = roomCx + Math.cos(am) * ringR;
+      const by = roomCy + Math.sin(am) * ringR;
+      const segLen = 2 * ringR * Math.sin(Math.PI / segments) + 6;
+      const bw = Math.max(wallThickness, segLen);
+      const bh = wallThickness;
+      let rx = bx - bw / 2;
+      let ry = by - bh / 2;
+
+      // Leave an opening at the bottom of the circle to connect with hallway
+      const isBottomOpening = (by > roomCy + roomR * 0.55) && (Math.abs(bx - roomCx) < hallHalf + 10);
+      if (isBottomOpening) continue;
+
+      // Skip segments that would intrude into the hallway corridor area
+      if (by > hallTop - 4 && Math.abs(bx - roomCx) < hallHalf + wallThickness) continue;
+
+      // Clamp boxes inside world
+      if (rx < 0) { /* shrink */ }
+      const cw = Math.min(bw, worldW - Math.max(0, rx)) - Math.max(0, -rx);
+      const ch = Math.min(bh, worldH - Math.max(0, ry)) - Math.max(0, -ry);
+      rx = Math.max(0, rx);
+      ry = Math.max(0, ry);
+      if (cw > 2 && ch > 2) this._addSolidBox(rx, ry, cw, ch);
+    }
+
+    // 4) Upper/side outer blockers to keep player inside room+hally footprint (approx rectangular bounds outside circle sides)
+    // Block areas left/right of circular room above hallway (outside the circle)
+    const outerTop = 0;
+    const outerBottom = hallTop;
+    // left outer block: from x=0 to left of circle
+    this._addSolidBox(0, outerTop, Math.max(0, roomCx - roomR - 2), outerBottom);
+    // right outer block
+    const rightBlockX = roomCx + roomR + 2;
+    this._addSolidBox(rightBlockX, outerTop, Math.max(0, worldW - rightBlockX), outerBottom);
+    // top block above circle
+    this._addSolidBox(Math.max(0, roomCx - roomR - 2), outerTop, Math.min(worldW, (roomR + 2) * 2), Math.max(0, roomCy - roomR - 2));
+  }
+
   _spawnPlayer(assets, x, y) {
     let sheet = assets.get('player');
-    if (!sheet && assets.has('astro_idle_0')) {
+    if (!sheet && assets.has('astro_stay_down_1')) {
+      sheet = createAstronautSheet(assets);
+      assets.set('player', sheet);
+    } else if (sheet && sheet.dataset?.kind !== 'astronaut' && assets.has('astro_stay_down_1')) {
+      // Rebuild if cached sheet was created with old astronaut format
       sheet = createAstronautSheet(assets);
       assets.set('player', sheet);
     }
@@ -245,7 +360,19 @@ export class InteriorBaseScene extends Scene {
   }
 
   drawUI(renderer) {
-    if (this.promptText) renderer.drawText(this.promptText, 8, 8, '#ffe066');
+    // HUD de recursos (solo lectura de sistemas existentes)
+    let hudBottom = 0;
+    if (shouldShowResourceHUD(this)) {
+      const res = readSuitResources(this.game, this);
+      if (res.sourceFound) {
+        hudBottom = renderResourceHUD(renderer, res).height + 2;
+      }
+    }
+    const topOffset = hudBottom ? (6 + hudBottom) : 0;
+
+    if (this.promptText && !this.game.inventoryOpen) {
+      renderer.drawText(this.promptText, 8, 8 + topOffset, '#ffe066');
+    }
 
     // Estado superior derecho
     renderer.drawText('Interior: Base operativa', LOGICAL_WIDTH - 108, 8, '#d8ecff');
@@ -284,17 +411,22 @@ export class InteriorBaseScene extends Scene {
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
       const lines = [
-        'Interior de la base | WASD: mover | E: salir | M: mapa',
+        'Interior de la base | WASD: mover | E: salir | M: mapa | I: inventario',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,
         `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
       ];
-      let ly = this.promptText ? 18 : 8;
+      let ly = (this.promptText ? 18 : 8) + topOffset;
       for (const line of lines) {
         renderer.drawText(line, 8, ly, '#00ff88');
         ly += 10;
       }
+    }
+
+    // Inventario (overlay)
+    if (this.game.inventoryOpen) {
+      renderInventoryPanel(renderer, this.game, this);
     }
   }
 }

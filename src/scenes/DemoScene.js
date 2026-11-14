@@ -12,6 +12,8 @@ import { PhysicsBody } from '../physics/PhysicsBody.js';
 import { BoxCollider } from '../physics/BoxCollider.js';
 import { Minimap } from '../ui/Minimap.js';
 import { InteriorBaseScene } from './InteriorBaseScene.js';
+import { readSuitResources, shouldShowResourceHUD, renderResourceHUD } from '../ui/ResourceHUD.js';
+import { renderInventoryPanel } from '../ui/InventoryPanel.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, TILE_SIZE, MAP_COLS, MAP_ROWS, CAMERA_LERP,
   PLAYER_FOOT_WIDTH, PLAYER_FOOT_HEIGHT, SPATIAL_CELL_SIZE, Layer,
@@ -91,19 +93,25 @@ function buildGround(cols, rows) {
 function iFrom(x, y, cols) { return y * cols + x; }
 
 function createAstronautSheet(assets) {
-  const srcW = 44, srcH = 58, fw = 22, fh = 29, cols = 4;
+  // New astronaut sprites: 327x507 source frames, scaled down to keep in-game size small
+  const srcW = 327;
+  const srcH = 507;
+  const fw = 18; // a bit smaller
+  const fh = 28; // proportional-ish smaller display height
+  const cols = 4;
   const rowsDef = [
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_down_0', 'astro_walk_down_1', 'astro_walk_down_2', 'astro_walk_down_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_up_0', 'astro_walk_up_1', 'astro_walk_up_2', 'astro_walk_up_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_right_0', 'astro_walk_right_1', 'astro_walk_right_2', 'astro_walk_right_3'],
-    ['astro_idle_0', 'astro_idle_1', 'astro_idle_2', 'astro_idle_3'],
-    ['astro_walk_left_0', 'astro_walk_left_1', 'astro_walk_left_2', 'astro_walk_left_3'],
+    ['astro_stay_down_1', 'astro_stay_down_1', 'astro_stay_down_1', 'astro_stay_down_1'], // idle-down (frente)
+    ['astro_stay_down_1', 'astro_down_2', 'astro_stay_down_1', 'astro_down_3'],           // walk-down
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-up (espalda)
+    ['astro_stay_up_1', 'astro_up_2', 'astro_stay_up_1', 'astro_up_3'],                   // walk-up
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-right -> stay_up
+    ['astro_right_1', 'astro_right_2', 'astro_right_1', 'astro_right_3'],                 // walk-right
+    ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-left -> stay_up
+    ['astro_left_1', 'astro_left_2', 'astro_left_1', 'astro_left_3'],                     // walk-left
   ];
   const c = document.createElement('canvas');
-  c.width = fw * cols; c.height = fh * rowsDef.length;
+  c.width = fw * cols;
+  c.height = fh * rowsDef.length;
   const ctx = c.getContext('2d');
   if (!ctx) return c;
   ctx.imageSmoothingEnabled = false;
@@ -113,6 +121,7 @@ function createAstronautSheet(assets) {
       if (img) ctx.drawImage(img, 0, 0, srcW, srcH, col * fw, r * fh, fw, fh);
     });
   });
+  c.dataset.kind = 'astronaut';
   return c;
 }
 
@@ -128,11 +137,13 @@ function createPlayerSprite(sheetImage) {
     sheetImage = c;
   }
   const imgW = /** @type {any} */ (sheetImage).width || 64;
-  const isAstronaut = imgW >= 88;
+  const imgH = /** @type {any} */ (sheetImage).height || 144;
+  const isAstronaut = sheetImage.dataset?.kind === 'astronaut' || (imgW >= 72 && imgW !== 64);
   if (isAstronaut) {
-    const imgH = /** @type {any} */ (sheetImage).height || 232;
-    const cols = 4, rows = 8;
-    const fw = Math.floor(imgW / cols), fh = Math.floor(imgH / rows);
+    const cols = 4;
+    const rows = 8;
+    const fw = Math.floor(imgW / cols);
+    const fh = Math.floor(imgH / rows);
     const sheet = new SpriteSheet(sheetImage, fw, fh, { columns: cols });
     const sprite = new Sprite(sheet);
     sprite.originX = 0.5; sprite.originY = 1;
@@ -165,6 +176,7 @@ export class DemoScene extends Scene {
   constructor(game, opts = {}) {
     super(game);
     this.opts = opts;
+    this.isExterior = true;
     this.player = null;
     this.interactables = [];
     this.activePrompt = '';
@@ -215,7 +227,7 @@ export class DemoScene extends Scene {
     } else {
       this._tilesetCols = 4;
     }
-    if (assets.has('astro_idle_0')) {
+    if (assets.has('astro_stay_down_1')) {
       assets.set('player', createAstronautSheet(assets));
     }
 
@@ -352,7 +364,7 @@ export class DemoScene extends Scene {
 
   _spawnPlayer(assets, worldW, worldH) {
     let sheet = assets.get('player');
-    if (!sheet && assets.has('astro_idle_0')) {
+    if (!sheet && assets.has('astro_stay_down_1')) {
       sheet = createAstronautSheet(assets);
       assets.set('player', sheet);
     }
@@ -501,8 +513,18 @@ export class DemoScene extends Scene {
   }
 
   drawUI(renderer) {
+    // HUD de recursos (solo lectura de sistemas existentes)
+    let hudBottom = 0;
+    if (shouldShowResourceHUD(this)) {
+      const res = readSuitResources(this.game, this);
+      if (res.sourceFound) {
+        hudBottom = renderResourceHUD(renderer, res).height + 2;
+      }
+    }
+
+    const topOffset = hudBottom ? (6 + hudBottom) : 0;
     if (this.inspectTimer > 0 && this.inspectMsg) {
-      renderer.drawText(this.inspectMsg, 8, 8, '#b6fcb6');
+      renderer.drawText(this.inspectMsg, 8, 8 + topOffset, '#b6fcb6');
     }
 
     // Estado superior derecho
@@ -523,7 +545,7 @@ export class DemoScene extends Scene {
       });
     }
 
-    if (this.activePrompt && !this.interactionWindow) {
+    if (this.activePrompt && !this.interactionWindow && !this.game.inventoryOpen) {
       renderer.drawText(this.activePrompt, 8, LOGICAL_HEIGHT - 18, '#ffe066');
     }
 
@@ -552,18 +574,23 @@ export class DemoScene extends Scene {
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
       const lines = [
-        'WASD/flechas: mover | E: interactuar | M: mapa',
+        'WASD/flechas: mover | E: interactuar | M: mapa | I: inventario',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,
         `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
       ];
-      let ly = 8;
-      if (this.inspectTimer > 0 && this.inspectMsg) ly = 18;
+      let ly = 8 + topOffset;
+      if (this.inspectTimer > 0 && this.inspectMsg) ly = 18 + topOffset;
       for (const line of lines) {
         renderer.drawText(line, 8, ly, '#00ff88');
         ly += 10;
       }
+    }
+
+    // Inventario (overlay)
+    if (this.game.inventoryOpen) {
+      renderInventoryPanel(renderer, this.game, this);
     }
   }
 }
