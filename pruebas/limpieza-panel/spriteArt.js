@@ -81,10 +81,43 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const i = row * COLS + col;
-      const frame = !model.dust[i] ? 'clean'
+      const frame = model.phase === 'discover'
+        ? model.discoveryStep === 2 && i % 3 === 0 ? 'dusty' : 'clean'
+        : !model.dust[i] ? 'clean'
         : model.phase === 'sweeping' && i === model.cleanCells ? 'partial' : 'dusty';
       art(frame, PANEL.x + col * cw, PANEL.y + row * ch, cw, ch);
     }
+  }
+  if (model.phase === 'discover') {
+    if (model.discoveryStep > 0) {
+      // Sol y flecha de luz: ilustración conceptual, no medidor de potencia.
+      const sunX = PANEL.x + 28;
+      const sunY = PANEL.y + 26;
+      ctx.fillStyle = '#ffd877';
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff1ad';
+      ctx.lineWidth = 3;
+      for (let ray = 0; ray < 8; ray++) {
+        const angle = ray * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(sunX + Math.cos(angle) * 17, sunY + Math.sin(angle) * 17);
+        ctx.lineTo(sunX + Math.cos(angle) * 23, sunY + Math.sin(angle) * 23);
+        ctx.stroke();
+      }
+      block('#0b1c38e6', PANEL.x + 13, PANEL.y + 119, PANEL.w - 26, 37);
+      text(model.discoveryStep === 1 ? 'LUZ → ELECTRICIDAD' : 'POLVO → MENOS LUZ',
+        PANEL.x + 20, PANEL.y + 143, '#fff0ba', 17);
+    } else {
+      block('#0b1c38e6', PANEL.x + 27, PANEL.y + 118, PANEL.w - 54, 37);
+      text('TOCA EL PANEL', PANEL.x + 44, PANEL.y + 143, '#e8f8ff', 17);
+    }
+    block('#162a47', 38, 261, 564, 37);
+    text(model.discoveryStep === 0 ? '¿QUÉ HACE UN PANEL SOLAR?'
+      : model.discoveryStep === 1 ? 'SOL → CELDAS → ELECTRICIDAD → BASE'
+        : 'EL POLVO TAPA PARTE DE LAS CELDAS', 48, 285, '#f6e4b3', 15);
+    return;
   }
   if (model.phase === 'sweeping') {
     const sx = PANEL.x + (model.cleanCells % COLS + .5) * cw;

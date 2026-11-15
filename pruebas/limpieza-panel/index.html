@@ -26,19 +26,22 @@
           <button id="cancel-task" class="exit-button" type="button" aria-label="Salir de la actividad">Salir <span aria-hidden="true">×</span></button>
         </header>
         <div class="stages" aria-label="Pasos de la actividad">
-          <span class="stage stage-connect"><b>01</b><span>Conectar A y B</span></span>
-          <span class="stage stage-ready"><b>02</b><span>Activar el haz</span></span>
-          <span class="stage stage-sweeping"><b>03</b><span>Verificar 24/24</span></span>
+          <span class="stage stage-discover"><b>01</b><span>Descubrir</span></span>
+          <span class="stage stage-connect"><b>02</b><span>Conectar A/B</span></span>
+          <span class="stage stage-ready"><b>03</b><span>Activar haz</span></span>
+          <span class="stage stage-sweeping"><b>04</b><span>Limpiar</span></span>
         </div>
         <div class="workbench">
           <div class="workbench-top">
             <span><i class="indicator" aria-hidden="true"></i> Consola de mantenimiento</span>
             <strong id="progress-display" aria-live="off">0 / 24 zonas</strong>
           </div>
-          <canvas id="task-canvas" width="640" height="360" tabindex="0" aria-label="Generador a la izquierda, un imán con dos tomas en el centro y el panel a la derecha: arrastra el cable A hasta A y el B hasta B"></canvas>
+          <canvas id="task-canvas" width="640" height="360" tabindex="0" aria-label="Panel solar a la derecha: tócalo para descubrir qué hace"></canvas>
+          <p id="discovery-message" class="discovery-message">Toca el panel: descubre cómo usa la luz del Sol.</p>
           <p class="instructions">Conecta tú mismo los cables: arrastra <b>A → A</b> y <b>B → B</b> en el único imán. Después activa el haz para limpiar las 24 zonas.</p>
         </div>
         <div class="task-controls">
+          <button id="discover-action" type="button">Mostrar luz del Sol</button>
           <details class="connect-controls">
             <summary>Alternativa sin arrastrar</summary>
             <div class="connect-buttons" aria-label="Conexión accesible de los cables">

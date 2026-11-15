@@ -18,13 +18,18 @@ solares a la izquierda de la base** con WASD o flechas, acércate por su
 borde inferior y pulsa **E**. Cada panel conserva su propio progreso.
 Se abre una actividad superpuesta, al estilo de una tarea corta de juego:
 
-1. **Conectar un solo electroimán con dos tomas:** arrastra tú mismo el cable
+1. **Descubrir el panel solar:** toca el panel o usa el botón para ver cómo
+   recibe luz del Sol, cómo sus celdas la convierten en electricidad para
+   la base y qué cambia cuando el polvo tapa parte de ellas. Es un ejemplo
+   visual sin porcentajes físicos: al continuar comienza la limpieza del
+   panel polvoriento del juego.
+2. **Conectar un solo electroimán con dos tomas:** arrastra tú mismo el cable
    A del generador a la toma A del imán y el B a la toma B. Los cables no
    aparecen conectados antes del arrastre. «Alternativa sin arrastrar»
    despliega botones para conectar A/B con teclado o pantalla táctil.
-2. **Activar el haz:** el botón se habilita solo cuando las dos conexiones
+3. **Activar el haz:** el botón se habilita solo cuando las dos conexiones
    están hechas. Antes de activarlo, nada se limpia.
-3. **Observar el barrido automático** hasta limpiar **las 24/24 zonas**.
+4. **Observar el barrido automático** hasta limpiar **las 24/24 zonas**.
    Únicamente entonces se habilita **Finalizar limpieza**. No hay meta de
    80 % ni basta con mover el ratón por el panel.
 

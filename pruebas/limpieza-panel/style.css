@@ -16,7 +16,7 @@ html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background:
 #loading { position: absolute; inset: 0; display: grid; place-items: center; background: #050a11; z-index: 3; }
 #loading.hidden { display: none; }
 .trial-label { position: absolute; top: 12px; left: 12px; color: #c9e8e3; background: #101d2de0; padding: 6px 9px; font: bold 11px monospace; pointer-events: none; }
-#cleaning-task[hidden], #finish-task[hidden] { display: none; }
+#cleaning-task[hidden], #finish-task[hidden], #discover-action[hidden] { display: none; }
 #cleaning-task {
   position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
   padding: 12px; overflow: auto; background: rgba(4, 9, 25, .92);
@@ -56,7 +56,7 @@ button:focus-visible, #task-canvas:focus-visible { outline: 3px solid #ffe19f; o
 button:disabled { opacity: .53; cursor: default; }
 .exit-button { background: #202d49; border-color: #8299b5; min-height: 30px; padding: 3px 10px; white-space: nowrap; }
 .exit-button span { font-size: 18px; vertical-align: -1px; margin-left: 6px; }
-.stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 2px 6px; }
+.stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 2px 6px; }
 .stage {
   position: relative; display: flex; align-items: center; gap: 8px;
   min-height: 33px; padding: 3px 10px 3px 4px; border-bottom: 3px solid #526584;
@@ -68,8 +68,8 @@ button:disabled { opacity: .53; cursor: default; }
   border: 2px solid #8299b5; color: #d3def4; background: #1c3152;
   font: 700 11px monospace;
 }
-[data-phase="connect"] .stage-connect, [data-phase="ready"] .stage-ready, [data-phase="sweeping"] .stage-sweeping { color: var(--paper); border-bottom-color: var(--dust); }
-[data-phase="connect"] .stage-connect b, [data-phase="ready"] .stage-ready b, [data-phase="sweeping"] .stage-sweeping b { color: var(--night); background: var(--dust); border-color: var(--dust); }
+[data-phase="discover"] .stage-discover, [data-phase="connect"] .stage-connect, [data-phase="ready"] .stage-ready, [data-phase="sweeping"] .stage-sweeping { color: var(--paper); border-bottom-color: var(--dust); }
+[data-phase="discover"] .stage-discover b, [data-phase="connect"] .stage-connect b, [data-phase="ready"] .stage-ready b, [data-phase="sweeping"] .stage-sweeping b { color: var(--night); background: var(--dust); border-color: var(--dust); }
 [data-phase="complete"] .stage { color: var(--paper); border-bottom-color: var(--beam); }
 [data-phase="complete"] .stage b { color: #0b2529; border-color: var(--beam); background: var(--beam); }
 .workbench {
@@ -88,8 +88,12 @@ button:disabled { opacity: .53; cursor: default; }
 }
 [data-phase="sweeping"] .indicator, [data-phase="complete"] .indicator { background: var(--beam); }
 #task-canvas { display: block; max-width: 100%; height: auto !important; image-rendering: auto; touch-action: none; outline: none; background: #0b1529; }
-.instructions { margin: 5px 2px 1px; max-width: 640px; color: #d7e5f5; font-size: 12px; line-height: 1.35; }
+.instructions, .discovery-message { margin: 5px 2px 1px; max-width: 640px; color: #d7e5f5; font-size: 12px; line-height: 1.35; }
 .instructions b { color: var(--dust); }
+.discovery-message { color: #f5dfb1; }
+[data-phase="discover"] .instructions, #discovery-message[hidden] { display: none; }
+[data-phase="discover"] .connect-controls, [data-phase="discover"] #activate-task { display: none; }
+#discover-action { background: #355c73; border-color: #80dceb; }
 .task-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 1px; }
 .connect-controls { align-self: center; }
 .connect-controls summary { display: inline-block; min-height: 35px; padding: 7px 12px; border: 2px solid #7aafcb; background: #213f64; color: var(--paper); cursor: pointer; font-size: 13px; font-weight: 700; }
@@ -124,13 +128,14 @@ kbd { padding: 1px 3px; border: 1px solid #869b9a; font-family: monospace; }
   .task-identity { gap: 6px; }
   .eyebrow { font-size: 9px; }
   .subtitle { font-size: 10px; }
-  .stage { font-size: 10px; gap: 3px; padding-right: 0; }
-  .stage b { width: 23px; height: 23px; }
+  .stage { font-size: 9px; gap: 3px; padding-right: 0; }
+  .stage b { width: 21px; height: 23px; }
   #task-canvas { width: 100% !important; margin-inline: auto; }
   .task-controls { align-items: stretch; }
   .connect-controls { flex: 1; }
   .connect-controls summary { width: 100%; }
   .connect-buttons button { flex: 1; }
+  #discover-action { width: 100%; }
   #activate-task { flex: 1; }
   .task-footnotes { flex-direction: column; gap: 0; }
   .disclaimer { max-width: none; }

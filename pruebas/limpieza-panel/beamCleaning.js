@@ -16,13 +16,26 @@ export class BeamCleaning {
   reset() {
     this.connected = [false, false];
     this.dust = Array(COLS * ROWS).fill(true);
-    this.phase = 'connect'; // connect → ready → sweeping → complete
+    this.phase = 'discover'; // discover → connect → ready → sweeping → complete
+    this.discoveryStep = 0; // mirar → ver luz/electricidad → comparar con polvo
     this.elapsedInStep = 0;
     this.cleanCells = 0;
   }
 
   get progress() { return Math.round(this.cleanCells * 100 / this.dust.length); }
   get complete() { return this.phase === 'complete'; }
+
+  observe() {
+    if (this.phase !== 'discover' || this.discoveryStep >= 2) return false;
+    this.discoveryStep++;
+    return true;
+  }
+
+  beginCleaning() {
+    if (this.phase !== 'discover' || this.discoveryStep !== 2) return false;
+    this.phase = 'connect';
+    return true;
+  }
 
   connect(index) {
     if (index !== 0 && index !== 1) return false;
