@@ -203,6 +203,70 @@
     {
       "key": "bateria_nivel_10_t",
       "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_10_t.png"
+    },
+    {
+      "key": "recarga_mochila_base",
+      "src": "./assets/Sprites/RecargaOxigeno/mochila_base.png"
+    },
+    {
+      "key": "recarga_puerto_o2",
+      "src": "./assets/Sprites/RecargaOxigeno/puerto_o2.png"
+    },
+    {
+      "key": "recarga_puerto_co2",
+      "src": "./assets/Sprites/RecargaOxigeno/puerto_co2.png"
+    },
+    {
+      "key": "recarga_manguera_o2",
+      "src": "./assets/Sprites/RecargaOxigeno/manguera_o2.png"
+    },
+    {
+      "key": "recarga_manguera_co2",
+      "src": "./assets/Sprites/RecargaOxigeno/manguera_co2.png"
+    },
+    {
+      "key": "recarga_manija_valvula",
+      "src": "./assets/Sprites/RecargaOxigeno/manija_valvula.png"
+    },
+    {
+      "key": "recarga_icono_autorizado",
+      "src": "./assets/Sprites/RecargaOxigeno/icono_autorizado.png"
+    },
+    {
+      "key": "recarga_icono_alerta",
+      "src": "./assets/Sprites/RecargaOxigeno/icono_alerta.png"
+    },
+    {
+      "key": "recarga_fuga_gas",
+      "src": "./assets/Sprites/RecargaOxigeno/fuga_gas.png"
+    },
+    {
+      "key": "recarga_cilindro_o2",
+      "src": "./assets/Sprites/RecargaOxigeno/cilindro_o2.png"
+    },
+    {
+      "key": "recarga_cilindro_co2",
+      "src": "./assets/Sprites/RecargaOxigeno/cilindro_co2.png"
+    },
+    {
+      "key": "recarga_insignia_nasa",
+      "src": "./assets/Sprites/RecargaOxigeno/insignia_nasa.png"
+    },
+    {
+      "key": "recarga_manija",
+      "src": "./assets/Sprites/RecargaOxigeno/manija.png"
+    },
+    {
+      "key": "recarga_manija_giro",
+      "src": "./assets/Sprites/RecargaOxigeno/manija_giro_derecha.png"
+    },
+    {
+      "key": "recarga_tanque_o2_con_manguera",
+      "src": "./assets/Sprites/RecargaOxigeno/tanque_o2_con_manguera.png"
+    },
+    {
+      "key": "recarga_tanque_co2_con_manguera",
+      "src": "./assets/Sprites/RecargaOxigeno/tanque_co2_con_manguera.png"
     }
   ]
 }
