@@ -1,5 +1,10 @@
 # Prueba aislada: clima espacial simulado
 
+El monitor ahora se puede consultar junto al visor pixel art con **Shift**,
+sin crear otro simulador: ambos menús comparten lecturas y alertas en la misma
+página. Ver [MonitorVisor/README.md](../MonitorVisor/README.md) para la
+interfaz del visor y sus límites científicos.
+
 Esta carpeta **no modifica el juego de P1**. `index.html` carga el juego de
 `moonapp/src/main.js` y añade un monitor que solo existe en esta página de
 prueba. No carga `liveEventPanel.js`: no presenta registros reales como
