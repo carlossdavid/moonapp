@@ -6,6 +6,7 @@ import { SolarProgress } from '../pruebas/limpieza-panel/solarProgress.js';
 import { FASE } from '../src/minigames/RecargaOxigeno.js';
 import { startWeather } from './weather.js';
 import { MissionMessages } from './messages.js';
+import { localizeDocument, translate } from './i18n.js';
 
 const extraImages = {
   final_station: 'assets/Sprites/Estructuras exteriores/EstaciónLunar.png',
@@ -35,6 +36,58 @@ async function start() {
   const game = new IntegratedGame(document.getElementById('game'), ui, solar);
   game.interiors = new Map();
   ui.game = game;
+  localizeDocument(document, game.language);
+  if (game.language === 'en') {
+    document.title = 'Entropy Zero · Integrated system';
+    document.body.classList.add('language-en');
+    document.getElementById('death-screen-img').src =
+      'assets/Sprites/Astronauta/Pantalla_Fallo_Ingles.png';
+    const consoleFrame = document.querySelector('#monitor-content .console-frame');
+    for (const [label, top] of [
+      ['DONKI CONTROL CENTER · JANUARY 2026', '15%'],
+      ['FLR M/X', '31.3%'], ['CME ≥1000 km/s', '39.8%'],
+      ['Terrestrial GST', '48.3%'], ['FLR → filtered CME', '56.7%'],
+      ['CME → SEP', '65.1%'],
+    ]) {
+      const row = document.createElement('span');
+      row.className = 'english-console-label';
+      row.textContent = label;
+      row.style.top = top;
+      consoleFrame.append(row);
+    }
+    // Los mensajes de VEGA son imágenes con texto en español, no texto editable.
+    ui.disableArtMessages = true;
+  }
+  const settings = document.getElementById('settings');
+  const language = document.getElementById('language-setting');
+  const collisions = document.getElementById('collision-setting');
+  ui.settingsOpen = false;
+  ui.openSettings = () => {
+    if (game.state !== 'menu' || ui.settingsOpen) return;
+    ui.settingsOpen = true;
+    settings.hidden = false;
+    language.value = game.language;
+    collisions.checked = game.collisionsEnabled;
+    language.focus();
+  };
+  function closeSettings() { settings.hidden = true; ui.settingsOpen = false; game.input.update(); }
+  document.getElementById('settings-close').onclick = closeSettings;
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Escape' && ui.settingsOpen) { e.preventDefault(); closeSettings(); }
+  });
+  language.onchange = () => {
+    sessionStorage.setItem('final-language', language.value);
+    location.reload();
+  };
+  collisions.onchange = () => {
+    game.collisionsEnabled = collisions.checked;
+    localStorage.setItem('final-collisions', String(collisions.checked));
+    document.getElementById('collision-label').textContent = collisions.checked
+      ? (game.language === 'en' ? 'Collisions on' : 'Colisiones activadas')
+      : (game.language === 'en' ? 'Collisions off' : 'Colisiones desactivadas');
+  };
+  collisions.checked = game.collisionsEnabled;
+  collisions.onchange();
   document.getElementById('restart-mission').onclick = () => location.reload();
   mountVisor(ui);
   // Contrato público de inspección de esta entrada; no se instala en originales.
@@ -65,9 +118,7 @@ async function start() {
   game.setScene(new FinalExterior(game, { spawnX: 285, spawnY: 198 }));
   await game.init();
   game.messages = new MissionMessages(document.getElementById('vega-message'), game.assets);
-  document.getElementById('motion-toggle').checked = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  game.impacts.motion = document.getElementById('motion-toggle').checked;
-  document.getElementById('motion-toggle').onchange = event => { game.impacts.motion = event.target.checked; };
+  game.impacts.motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   for (const key of ['menu_bg', 'mapa_bg', ...Object.keys(extraImages)]) {
     if (!game.assets.has(key)) throw new Error(`No se cargó ${key}`);
   }
@@ -88,8 +139,8 @@ async function start() {
     updateLocation();
   };
   function updateLocation() {
-    document.getElementById('location-label').textContent = game.scene?.station?.name
-      ?? (game.scene?.isRecarga ? 'RECARGA INTEGRAL DEL TRAJE' : 'SUPERFICIE LUNAR · SISTEMA INTEGRADO');
+    document.getElementById('location-label').textContent = translate(game.scene?.station?.name
+      ?? (game.scene?.isRecarga ? 'RECARGA INTEGRAL DEL TRAJE' : 'SUPERFICIE LUNAR · SISTEMA INTEGRADO'), game.language);
   }
   updateLocation();
   game.start();

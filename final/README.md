@@ -37,19 +37,33 @@ el juego y muestra una indicación. La carpeta final reutiliza archivos de
 
 ## Flujo
 
-1. Iniciar desde el menú (Enter o clic). Se conserva la introducción; se puede
-   saltar con Espacio/Enter.
+1. Iniciar desde el menú (Enter o clic). Introducción automática con fundido:
+   `completa_intro.mp4` en español, `intro.mp4` en inglés. Se puede
+   saltar con Espacio/Enter; el reloj de 3 minutos arranca al entrar al juego.
 2. Explorar/limpiar los paneles: explicación, recoger imán, conectar A/B,
-   activar el barrido, terminar las 24 zonas y buscar repuesto para otro panel.
-   Dos paneles distintos limpios habilitan las puertas de las estaciones.
-   Conservan la limpieza 300 segundos de juego activo, como en la prueba.
+    activar el barrido, terminar las 24 zonas y buscar repuesto para otro panel.
+    Dos paneles distintos limpios habilitan las puertas de las estaciones.
+    Conservan la limpieza 300 segundos de juego activo, como en la prueba.
+    La interfaz integrada oculta notas y texto duplicado del pie, sin quitar
+    controles ni progreso; al finalizar no abre una ventana de confirmación.
 3. Acercarse a una puerta y pulsar E. La salida devuelve a esa puerta.
 4. **Consola de control + E:** sprite DONKI con las cinco tasas históricas de
    enero 2026 y curvas/valores simulados; X/Escape cierra.
-5. Un imán inicial y uno cada **60 s activos**, máximo tres en el mapa.
+5. Un imán inicial, el primer repuesto a los **20 s activos** y los siguientes
+   cada **60 s activos**, máximo tres en el mapa.
    Pedir uno desde un panel solo informa; no genera repuestos.
-6. A los **180 s activos** aparece el aviso de limpieza. Ver transmisión
-   reproduce `segunda_escena.mp4`; terminar/salir habilita **Shift**.
+6. A los **3 minutos reales desde el inicio de la partida**, aun si se pasó
+   tiempo en una tarea, se reproduce automáticamente `segunda_escena.mp4`
+   cuando no hay otra actividad abierta. Al terminar habilita **Shift**.
+   Un cronómetro en la esquina superior derecha muestra el tiempo restante
+   y, si vence durante una actividad, indica «PENDIENTE» / «PENDING».
+   La primera apertura del visor reproduce la cinemática de radiación. Después
+   se activa la misión final: entrar en la estación principal y calibrar **Tortuga**.
+    Las tres cinemáticas usan fundidos y video a pantalla completa; no hay
+    botón de «Ver transmisión». Tras activar Tortuga aparecen los créditos:
+    imagen original en español o imagen inglesa según el idioma.
+    En inglés se omiten solo la segunda y tercera cinemáticas, que contienen
+    texto español; se conservan el desbloqueo, las actividades y la misión final.
 7. **Recarga + E:** conectar mangueras y girar válvulas para O₂; autorizar
    cargador para batería. La transferencia acelerada de entrenamiento usa las
    reservas y eficiencias reales, sin avanzar el reloj ni rellenar solo el dibujo.
@@ -70,6 +84,10 @@ el drenaje ficticio del JSON T/R solo en esta entrada.
 - 1/2/3: esfuerzo normal/alto/pico del traje.
 - X: sombra solar manual. N ya no reinicia los recursos.
 - Escape: cerrar actividades o volver de recarga.
+- Configuraciones (menú principal): Español/English y colisiones físicas
+  activadas/desactivadas. El cambio de idioma reinicia la partida; las
+  interacciones de puertas y módulos permanecen activas sin colisiones.
+  Controles es solo una guía, sin opciones configurables.
 - En tareas/diálogos y recarga no se consume del traje ni avanza mantenimiento,
   igual que la pausa de limpieza original.
 - Un recurso agotado causa daño y muerte a los **cinco segundos continuos**.

@@ -31,6 +31,20 @@ export function mountVisor(ui) {
       <div class="visor-vega" aria-live="polite"></div>
     </div>`;
   document.body.append(launcher, overlay);
+  if (ui.game?.language === 'en') {
+    overlay.classList.add('language-en');
+    const frame = overlay.querySelector('.visor-frame');
+    for (const [text, position] of [
+      ['SPACE WEATHER', 'visor-english-title'],
+      ['ALERTS', 'visor-english-alerts'],
+      ['VEGA', 'visor-english-vega'],
+    ]) {
+      const label = document.createElement('span');
+      label.className = `visor-english-label ${position}`;
+      label.textContent = text;
+      frame.append(label);
+    }
+  }
   const close = overlay.querySelector('.visor-close'), points = [];
   const alerts = overlay.querySelector('.visor-alerts'), vega = overlay.querySelector('.visor-vega');
   let previousFocus, timer, count = 0;
@@ -57,7 +71,7 @@ export function mountVisor(ui) {
     }
   }
   function openVisor() {
-    ui.transition();
+    if (!ui.transitionActive) ui.transition();
     overlay.hidden = false;
     launcher.setAttribute('aria-expanded', 'true');
     previousFocus = document.activeElement;
@@ -72,6 +86,13 @@ export function mountVisor(ui) {
     }
     if (open && (ui.blocked || ui.game?.scene?.isRecarga || ui.game?.state !== 'playing')) return;
     if (open && ui.game?.mission && !ui.game.mission.radiacionCinematicShown) {
+      if (ui.game.language === 'en') {
+        ui.game.mission.radiacionCinematicShown = true;
+        ui.game.mission.turtleMission = true;
+        ui.notify('FINAL MISSION: enter the main station and set its energy module to Turtle mode.');
+        openVisor();
+        return;
+      }
       const opened = ui.openCinematic({
         src: 'assets/video/radiacion.mp4',
         exitText: 'Salir · abrir visor',
@@ -79,8 +100,9 @@ export function mountVisor(ui) {
         showAviso: false,
         autoCloseOnEnd: true,
         onClose: () => {
-          if (typeof ui.openFarewell === 'function') ui.openFarewell(() => openVisor());
-          else openVisor();
+          ui.game.mission.turtleMission = true;
+          ui.notify('MISIÓN FINAL: entra en la estación principal y cambia el módulo de energía a modo Tortuga.');
+          openVisor();
         },
       });
       if (opened) {
@@ -119,10 +141,14 @@ export function mountVisor(ui) {
     if (!count++) alerts.replaceChildren();
     const card = document.createElement('article');
     card.className = 'visor-alert';
-    card.textContent = `${detail.test ? 'PRUEBA · ' : ''}${detail.type} · ${detail.assessment.title}`;
+    card.textContent = ui.game?.language === 'en'
+      ? `${detail.test ? 'TEST · ' : ''}${detail.type} · simulated space weather alert`
+      : `${detail.test ? 'PRUEBA · ' : ''}${detail.type} · ${detail.assessment.title}`;
     alerts.prepend(card);
     while (alerts.children.length > 5) alerts.lastElementChild.remove();
-    vega.textContent = `VEGA: ${detail.assessment.title}. ${detail.assessment.action}`;
+    vega.textContent = ui.game?.language === 'en'
+      ? 'VEGA: Check the station and adjust your activities before continuing.'
+      : `VEGA: ${detail.assessment.title}. ${detail.assessment.action}`;
     clearTimeout(timer);
     timer = setTimeout(() => vega.replaceChildren(), 18000);
   });

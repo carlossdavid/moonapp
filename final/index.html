@@ -15,9 +15,10 @@
 <body>
   <main id="game-root">
     <canvas id="game" aria-label="Juego lunar integrado"></canvas>
-    <video id="introVideo" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none;z-index:10;"></video>
+    <video id="introVideo" autoplay muted playsinline></video>
     <div id="loading" role="status">Cargando sistema integrado…</div>
     <div id="location-label"></div>
+    <div id="cinematic-timer" class="pixel-panel" role="timer" hidden></div>
     <button id="help-toggle" type="button" aria-controls="help-panel" aria-expanded="false">Controles</button>
     <aside id="help-panel" hidden>
       <b>Sistema integrado</b>
@@ -26,10 +27,18 @@
       <p>1/2/3: esfuerzo normal/alto/pico · T: mostrar/ocultar HUD.</p>
       <p>Casa verde: alimentación. Casa amarilla: electrólisis.</p>
       <p>Paneles solares a la izquierda. Limpia dos distintos para habilitar las puertas.</p>
-      <p>Imanes cada 60 s. A los 180 s llega el aviso y la cinemática que habilita Shift.</p>
+      <p>Primer repuesto a los 20 s; después cada 60 s. A los 3 minutos reales se reproduce la segunda cinemática.</p>
       <p>Un recurso vacío causa daño: tienes cinco segundos activos para recuperarlo.</p>
-      <label class="motion-setting"><input type="checkbox" id="motion-toggle" checked> Sacudida al chocar</label>
     </aside>
+    <section id="settings" hidden role="dialog" aria-modal="true" aria-labelledby="settings-heading">
+      <div class="settings-card">
+        <h1 id="settings-heading">CONFIGURACIONES</h1>
+        <label for="language-setting">Idioma / Language</label>
+        <select id="language-setting"><option value="es">Español</option><option value="en">English</option></select>
+        <label class="setting-checkbox"><input id="collision-setting" type="checkbox" checked> <span id="collision-label">Colisiones activadas</span></label>
+        <button id="settings-close" type="button">Cerrar</button>
+      </div>
+    </section>
     <section id="activity" hidden role="dialog" aria-modal="true" aria-labelledby="activity-heading">
       <div class="activity-shell">
         <header><h1 id="activity-heading"></h1><button id="activity-close" type="button">Salir · Esc</button></header>
@@ -52,10 +61,9 @@
       <img alt=""><button type="button" aria-label="Cerrar consejo de VEGA">×</button>
     </aside>
     <div id="survival" class="pixel-panel" role="status" hidden><span id="survival-text"></span></div>
-    <section id="story" hidden role="dialog" aria-modal="true" aria-label="Aviso de limpieza">
-      <img src="pruebas/limpieza-panel/ImagenesLimpiezaPaneles/aviso.png" alt="Alerta: revisar la limpieza de los paneles solares">
-      <button id="story-start">Ver transmisión</button>
-      <video id="story-video" autoplay playsinline hidden style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:20;"></video>
+    <div id="mission-objective" class="pixel-panel" role="status" hidden></div>
+    <section id="story" hidden role="dialog" aria-modal="true" aria-label="Cinemática">
+      <video id="story-video" autoplay playsinline hidden></video>
       <button id="story-exit" hidden>Salir de la cinemática · activar visor</button>
     </section>
     <section id="death" hidden role="alertdialog" aria-modal="true" aria-label="Misión fallida">

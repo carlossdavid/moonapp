@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -17,7 +17,7 @@ function fingerprints() {
   }
   visit('src'); visit('pruebas');
   for (const path of ['index.html', 'assets/manifest.json', 'oxygen_system.js']) {
-    hashes[path] = createHash('sha256').update(readFileSync(join(root, path))).digest('hex');
+    if (existsSync(join(root, path))) hashes[path] = createHash('sha256').update(readFileSync(join(root, path))).digest('hex');
   }
   return hashes;
 }
@@ -71,10 +71,14 @@ try {
     await delay(120);
   };
   await call('Runtime.enable'); await call('Network.enable');
+  await call('Network.setCacheDisabled', { cacheDisabled: true });
   await call('Page.navigate', { url: 'http://127.0.0.1:8781/final/?seed=42' });
   await until(() => evaluate("window.finalSystem?.game.state==='menu'"), 'arranque integrado');
   assert.equal(await evaluate("document.getElementById('loading').classList.contains('hidden')"), true);
   await evaluate("window.g=finalSystem.game;window.ui=finalSystem.ui;window.solar=finalSystem.solar;g.beginPlay()");
+  await until(() => evaluate("g.state!=='menu'"), 'transición de introducción');
+  await until(() => evaluate("!ui.transitionActive"), 'fundido de introducción');
+  assert.equal(await evaluate("new URL(document.getElementById('introVideo').src).pathname.endsWith('/completa_intro.mp4')"), true);
   if (await evaluate("g.state==='video'")) await key('Space', ' ');
   await until(() => evaluate("g.state==='playing'"), 'introducción');
   console.log('PASS menú, introducción y partida');
@@ -107,6 +111,8 @@ try {
   console.log('PASS puertas bloqueadas hasta limpiar 2 paneles');
   await evaluate("g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 1'))");
   assert.equal(await evaluate("ui.cleaning.isOpen && ui.cleaning.model.phase==='discover'"), true);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#cleaning-task .task-footnotes')).display"), 'none');
+  await screenshot('limpieza-panel');
   await evaluate("ui.cleaning.advanceDiscovery();ui.cleaning.advanceDiscovery();ui.cleaning.advanceDiscovery()");
   assert.equal(await evaluate("solar.magnetQuest"), true);
   await evaluate("ui.cleaning.close();g.scene.magnetZones.values().next().value.onConfirm()");
@@ -118,6 +124,7 @@ try {
   assert.equal(await evaluate("ui.cleaning.model.complete"), true);
   await evaluate("ui.cleaning.onCompleted(ui.cleaning.model);ui.cleaning.onFinish(100);ui.cleaning.close()");
   assert.equal(await evaluate("solar.progress.cleanCount"), 1);
+  assert.equal(await evaluate("ui.kind"), null, 'sin ventana de confirmación al terminar el panel');
   assert.equal(await evaluate("solar.hasMagnet"), false);
   await evaluate("ui.close();g.mission.tick(60,[100]);g.scene.placeMagnet();g.scene.magnetZones.values().next().value.onConfirm();g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 2'));ui.cleaning.connect(0);ui.cleaning.connect(1);ui.cleaning.model.activate();for(let i=0;i<1000&&!ui.cleaning.model.complete;i++)ui.cleaning.model.tick(.1);ui.cleaning.onCompleted(ui.cleaning.model);ui.cleaning.close()");
   assert.equal(await evaluate("solar.progress.cleanCount"), 2);
@@ -160,16 +167,24 @@ try {
   await key('Escape', 'Escape');
   await key('ShiftLeft', 'Shift');
   assert.equal(await evaluate("document.getElementById('visor-overlay').hidden"), true);
-  await evaluate("g.mission.tick(180,[100]);ui.openStory()");
-  assert.equal(await evaluate("ui.kind"), 'story');
+  await until(() => evaluate("!ui.transitionActive"), 'cierre visor');
+  await evaluate("g.mission.startedAt=performance.now()-180001;g.update(1/60)");
+  await until(() => evaluate("ui.kind==='story'"), 'aviso a tres minutos reales');
   assert.equal(await evaluate("g.mission.visorUnlocked"), false);
   await screenshot('aviso');
-  await evaluate("document.getElementById('story-start').click()");
   await until(() => evaluate("document.getElementById('story-video').readyState>=2"), 'segunda cinemática');
+  assert.equal(await evaluate("document.getElementById('story-start')"), null);
   await screenshot('segunda-cinematica');
-  await evaluate("document.getElementById('story-exit').click()");
-  assert.equal(await evaluate("g.mission.visorUnlocked"), true);
+  await evaluate("document.getElementById('story-video').dispatchEvent(new Event('ended'))");
+  await until(() => evaluate("g.mission.visorUnlocked && !ui.transitionActive"), 'salida segunda cinemática');
   await key('ShiftLeft', 'Shift');
+  await until(() => evaluate("ui.kind==='story' && !ui.transitionActive"), 'tercera cinemática');
+  await until(() => evaluate("document.getElementById('story-video').readyState>=2"), 'radiación');
+  await screenshot('radiacion-cinematica');
+  await evaluate("document.getElementById('story-video').dispatchEvent(new Event('ended'))");
+  await until(() => evaluate("g.mission.turtleMission && !ui.transitionActive"), 'misión Tortuga');
+  await evaluate("ui.updateSurvival()");
+  assert.equal(await evaluate("document.getElementById('mission-objective').hidden"), false);
   assert.equal(await evaluate("document.getElementById('visor-overlay').hidden"), false);
   assert.equal(await evaluate("document.querySelector('.visor-art').naturalWidth>0"), true);
   await screenshot('visor');
@@ -190,10 +205,17 @@ try {
   await until(() => evaluate("!ui.currentFrame.contentDocument.querySelector('.seq-btn').disabled"), 'secuencia de calibración');
   await evaluate("for(let i=0;i<4;i++)ui.currentFrame.contentDocument.querySelector('[data-name=\"escudo\"]').click()");
   await until(() => evaluate("g.stationModes.get('principal')==='tortuga'"), 'modo calibrado');
+  assert.equal(await evaluate("g.mission.turtleComplete"), true);
+  await until(() => evaluate("!document.getElementById('farewell').hidden && !ui.transitionActive"), 'créditos tras modo Tortuga');
+  assert.equal(await evaluate("document.querySelector('#farewell img').getAttribute('src').includes('Pantallla_demo.png')"), true);
+  await evaluate("ui.updateSurvival()");
+  assert.equal(await evaluate("document.getElementById('mission-objective').hidden"), true);
   assert.equal(await evaluate("g.stationModes.get('principal')"), 'tortuga');
   assert.equal(await evaluate("g.scene.backgroundImage===g.assets.get('final_room_saving')"), true);
-  await screenshot('modos');
-  await evaluate("ui.close();ui.open('electrolysis',g.scene.station.id);document.querySelector('#activity-intro button').click()");
+  await screenshot('creditos');
+  await evaluate("document.getElementById('farewell-close').click()");
+  await until(() => evaluate("document.getElementById('farewell').hidden && !ui.transitionActive"), 'cerrar créditos');
+  await evaluate("ui.open('electrolysis',g.scene.station.id);document.querySelector('#activity-intro button').click()");
   await until(() => evaluate("!!ui.currentFrame.contentDocument?.querySelector('canvas')"), 'electrólisis');
   assert.equal(await evaluate("ui.kind"), 'electrolysis');
   await screenshot('electrolisis');
@@ -266,8 +288,14 @@ try {
   assert.ok(collision.velocity > 0, 'retroceso alejándose de la pared');
   assert.equal(collision.healthUnchanged, true);
   await screenshot('impacto');
-  await evaluate("document.getElementById('motion-toggle').click()");
-  assert.equal(await evaluate("g.impacts.motion"), false);
+  await evaluate("g.collisionsEnabled=false");
+  assert.equal(await evaluate(`(()=>{
+    const b=g.scene.player.body; b.position.x=192-b.collider.offsetX+.1; b.position.y=280;
+    b.velocity.x=-60; const before=g.impacts.count;
+    g.scene.physicsWorld.step(1/60);
+    return g.impacts.count===before && b.velocity.x<0;
+  })()`), true, 'colisiones desactivadas sin eliminar interacciones');
+  await evaluate("g.collisionsEnabled=true");
   await evaluate("g.messages.dismiss();g.messages.tick(0,g,false);ui.notify('Terminal disponible','COMUNICACIONES')");
   assert.ok((await evaluate("getComputedStyle(document.getElementById('notice')).borderImageSource")).includes('pixel-panel.svg'));
   await screenshot('aviso-pixel');
@@ -280,6 +308,7 @@ try {
   await evaluate("g.update(1/60)");
   assert.equal(await evaluate("g.mission.dead"), true);
   await screenshot('muerte');
+  assert.equal(await evaluate("document.getElementById('death-screen-img').getAttribute('src')"), 'assets/Sprites/Astronauta/Pantalla_fallo.png');
   console.log('PASS recarga integral, vida con sprites, puestos alineados, impactos reales y avisos pixelados');
   console.log('PASS Alimentos fijo y persistente, muerte a cinco segundos');
 
@@ -287,6 +316,106 @@ try {
   assert.deepEqual(network, [], 'sin archivos HTTP ausentes');
   assert.deepEqual(fingerprints(), before, 'originales intactos');
   console.log('PASS navegador sin excepciones/404 y originales intactos.');
+  await evaluate("sessionStorage.setItem('final-language','en');location.reload()");
+  await until(() => evaluate("window.finalSystem?.game.state==='menu' && window.finalSystem.game.language==='en'"), 'English menu');
+  await until(() => evaluate("document.getElementById('death-screen-img').complete && document.getElementById('death-screen-img').naturalWidth>0"), 'English death artwork');
+  assert.equal(await evaluate("document.getElementById('death-screen-img').getAttribute('src')"), 'assets/Sprites/Astronauta/Pantalla_Fallo_Ingles.png');
+  assert.equal(await evaluate("finalSystem.game._getMenuButtons()[0].label"), 'START GAME');
+  await evaluate(`(()=>{
+    const g=finalSystem.game; const btn=g._getMenuButtons()[1];
+    g.mouse.x=btn.x+2;g.mouse.y=btn.y+2;g._onPointerAction();
+  })()`);
+  assert.equal(await evaluate("document.getElementById('settings').hidden"), false);
+  assert.equal(await evaluate("document.getElementById('collision-label').textContent"), 'Collisions on');
+  await evaluate("document.getElementById('collision-setting').click()");
+  assert.equal(await evaluate("finalSystem.game.collisionsEnabled"), false);
+  await evaluate("document.getElementById('collision-setting').click();document.getElementById('settings-close').click();finalSystem.game.beginPlay()");
+  await until(() => evaluate("finalSystem.game.state==='video' && !finalSystem.ui.transitionActive"), 'English intro video');
+  assert.equal(await evaluate("new URL(document.getElementById('introVideo').src).pathname.endsWith('/intro.mp4')"), true);
+  await evaluate("document.getElementById('introVideo').dispatchEvent(new Event('ended'))");
+  await until(() => evaluate("finalSystem.game.state==='playing' && !finalSystem.ui.transitionActive"), 'English gameplay');
+  await until(() => evaluate("document.getElementById('cinematic-timer').textContent.includes('SPACE WEATHER')"), 'English countdown');
+  assert.equal(await evaluate("document.getElementById('cinematic-timer').hidden"), false);
+  assert.equal(await evaluate("finalSystem.game.mission.remainingAlertSeconds(finalSystem.game.mission.startedAt + 120000)"), 60);
+  await screenshot('hud-en');
+  assert.equal(await evaluate("document.querySelector('#cleaning-task #task-title').textContent"), 'Cleaning circuit');
+  assert.equal(await evaluate("document.querySelector('#help-toggle').textContent"), 'Controls');
+  assert.equal(await evaluate("document.getElementById('story').hidden"), true);
+  await evaluate("finalSystem.game.scene.openPanel(finalSystem.game.scene.interactables.find(z=>z.name==='Panel solar 1'))");
+  assert.equal(await evaluate("finalSystem.ui.cleaning.isOpen"), true);
+  await until(() => evaluate("document.getElementById('task-status').textContent.startsWith('Step')"), 'English panel task');
+  await evaluate("finalSystem.ui.cleaning.close()");
+  await evaluate("finalSystem.game.mission.tick(180,[100]);finalSystem.ui.openStory()");
+  assert.equal(await evaluate("finalSystem.game.mission.visorUnlocked"), true);
+  assert.equal(await evaluate("document.getElementById('story').hidden"), true);
+  await evaluate("document.querySelector('.visor-launcher').click()");
+  assert.equal(await evaluate("finalSystem.game.mission.turtleMission"), true);
+  assert.equal(await evaluate("document.querySelector('.visor-overlay.language-en .visor-art') !== null"), true);
+  await screenshot('visor-en');
+  await evaluate("document.querySelector('.visor-close').click();finalSystem.ui.open('food')");
+  await until(() => evaluate("!!finalSystem.ui.foodFrame?.contentDocument?.querySelector('#mission-title') && finalSystem.ui.foodFrame.contentDocument.getElementById('loading').hidden"), 'English food');
+  await until(() => evaluate("finalSystem.ui.foodFrame.contentDocument.querySelector('label[for=range-blanco]')?.textContent==='White light'"), 'English light controls');
+  assert.equal(await evaluate("finalSystem.ui.foodFrame.contentDocument.getElementById('number-rojo').getAttribute('aria-label')"), 'Red light percentage');
+  await screenshot('alimentos-en');
+  assert.deepEqual((await evaluate(`(()=>{
+    const d=finalSystem.ui.foodFrame.contentDocument;
+    return [...d.querySelectorAll('h1,h2,h3,p,button,span,option,summary')].filter(e=>/[áéíóúñ¿¡]/i.test(e.textContent) && e.children.length===0).map(e=>e.textContent.trim()).filter(Boolean).slice(0,25);
+  })()`)), [], 'food landing contains no Spanish UI');
+  await evaluate("finalSystem.ui.foodFrame.contentDocument.getElementById('mission-start').click()");
+  assert.deepEqual((await evaluate(`(()=>{
+    const d=finalSystem.ui.foodFrame.contentDocument;
+    return [...d.querySelectorAll('h1,h2,h3,p,button,span,li,legend,label')].filter(e=>/[áéíóúñ¿¡]/i.test(e.textContent) && e.children.length===0).map(e=>e.textContent.trim()).filter(Boolean).slice(0,25);
+  })()`)), [], 'food mission starts without Spanish UI');
+  await evaluate("finalSystem.ui.close();finalSystem.ui.open('electrolysis','amarilla')");
+  assert.equal(await evaluate("document.getElementById('activity-intro').textContent.includes('La electrólisis')"), false);
+  await evaluate("document.querySelector('#activity-intro button').click()");
+  await until(() => evaluate("!!finalSystem.ui.currentFrame?.contentWindow?.__ELECTROLISIS__"), 'English electrolysis');
+  await until(() => evaluate("finalSystem.ui.currentFrame.contentDocument.querySelector('.fire-text')?.textContent==='FIRE'"), 'English fire button');
+  assert.equal(await evaluate("finalSystem.ui.currentFrame.contentDocument.querySelector('#start-button').textContent"), 'START OPERATION');
+  assert.equal(await evaluate("finalSystem.ui.currentFrame.contentDocument.querySelector('#cannon-name').textContent"), 'RED CANNON');
+  assert.equal(await evaluate("finalSystem.ui.currentFrame.contentDocument.querySelector('#color-banner').textContent.startsWith('RED CANNON')"), true);
+  assert.equal(await evaluate("finalSystem.ui.currentFrame.contentWindow.ELECTROLISIS.Renderer.prototype.drawFloaters.toString().includes('translate')"), true);
+  await screenshot('electrolisis-en');
+  await evaluate("finalSystem.ui.close()");
+  await until(() => evaluate("!finalSystem.ui.transitionActive"), 'English electrolysis close');
+  await evaluate("(async()=>{const {FinalInterior,STATIONS}=await import('./final/scenes.js');await finalSystem.game.changeScene(new FinalInterior(finalSystem.game,STATIONS[0]));})()");
+  await until(() => evaluate("finalSystem.game.scene.isInterior && !finalSystem.game.transitioning"), 'English station');
+  await evaluate("finalSystem.game.scene.openOxygen()");
+  await until(() => evaluate("finalSystem.game.scene.isRecarga && !!finalSystem.game.scene.minigame && !finalSystem.game.transitioning"), 'English recharge');
+  await until(() => evaluate("document.getElementById('recarga-status').textContent.includes('Connect and turn')"), 'English recharge controls');
+  assert.equal(await evaluate("document.getElementById('recarga-o2').textContent"), 'Connect O2');
+  const rechargeText = await evaluate(`(()=>{
+    const ctx=finalSystem.game.renderer.context, original=ctx.fillText, texts=[];
+    // Capture the final text passed to Canvas after the integrated-only translation.
+    ctx.fillText=function(text,...args){ texts.push(text); return original.call(this,text,...args); };
+    finalSystem.game.render(1);
+    ctx.fillText=original;
+    return texts;
+  })()`);
+  assert.ok(rechargeText.includes('Drag O2 to blue and CO2 to green.'), JSON.stringify(rechargeText.slice(0, 30)));
+  assert.equal(rechargeText.some(text => /Arrastra|Reserva de|Extracción de|Conecta las líneas/.test(text)), false);
+  await screenshot('recarga-en');
+  await evaluate("finalSystem.game.scene.opts.onCancel()");
+  await until(() => evaluate("finalSystem.game.scene.isInterior && !finalSystem.game.transitioning"), 'English recharge close');
+  await evaluate("finalSystem.ui.close();finalSystem.ui.open('modes','principal')");
+  await until(() => evaluate("!!finalSystem.ui.currentFrame?.contentDocument?.getElementById('btn-tortuga')"), 'English modes');
+  await evaluate("finalSystem.ui.currentFrame.contentDocument.getElementById('btn-tortuga').click()");
+  assert.deepEqual((await evaluate(`(()=>{
+    const d=finalSystem.ui.currentFrame.contentDocument;
+    return [...d.querySelectorAll('h1,h2,h3,p,button,span')].filter(e=>/[áéíóúñ¿¡]/i.test(e.textContent) && e.children.length===0).map(e=>e.textContent.trim()).filter(Boolean).slice(0,25);
+  })()`)), [], 'Turtle calibration contains no Spanish UI');
+  await evaluate("(()=>{const w=finalSystem.ui.currentFrame.contentWindow;w.document.getElementById('modalClose').click();const random=w.Math.random;w.Math.random=()=>0;w.document.getElementById('btn-tortuga').click();w.Math.random=random;})()");
+  await until(() => evaluate("!finalSystem.ui.currentFrame?.contentDocument?.querySelector('.seq-btn')?.disabled"), 'English turtle sequence');
+  await evaluate("for(let i=0;i<4;i++)finalSystem.ui.currentFrame.contentDocument.querySelector('[data-name=\"escudo\"]').click()");
+  await until(() => evaluate("!document.getElementById('farewell').hidden && !finalSystem.ui.transitionActive"), 'English credits');
+  await until(() => evaluate("document.querySelector('#farewell img').complete && document.querySelector('#farewell img').naturalWidth>0"), 'English credits artwork');
+  assert.equal(await evaluate("document.querySelector('#farewell img').getAttribute('src')"), 'assets/Sprites/Astronauta/Pantallla_demo_ingles.png');
+  assert.notEqual(await evaluate("getComputedStyle(document.querySelector('#farewell img')).display"), 'none');
+  await screenshot('creditos-en');
+  assert.deepEqual(errors, [], 'English: no JavaScript exceptions');
+  assert.deepEqual(network, [], 'English: no missing files');
+  console.log('PASS English menu, settings, collisions, intro video and playable final mission.');
+  await evaluate("sessionStorage.removeItem('final-language')");
   console.log(`Capturas: ${temp}/final-*.png`);
 } finally {
   ws?.close(); chrome.kill(); server.kill();

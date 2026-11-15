@@ -13,7 +13,7 @@ export function drawAccess(renderer, x, y, active, label = 'ENTRAR') {
   }
   ctx.font = '3px "Press Start 2P",monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`E ${label}`, x + w / 2, y + h / 2 + 1);
+  ctx.fillText(`E ${renderer.language === 'en' ? { ENTRAR: 'ENTER', SALIR: 'EXIT' }[label] || label : label}`, x + w / 2, y + h / 2 + 1);
   ctx.restore();
 }
 
@@ -28,7 +28,7 @@ export function drawWorkstation(renderer, module) {
   ctx.fillStyle = '#65dbea'; ctx.fillRect(x + 3, y + h - 4, 7, 1);
   ctx.fillStyle = '#0a1728'; ctx.fillRect(x - 8, y - 12, w + 16, 9);
   ctx.font = '3px "Press Start 2P",monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = '#bcecf7'; ctx.fillText(module.label || name, x + w / 2, y - 6);
+  ctx.fillStyle = '#bcecf7'; ctx.fillText(module.label || module.displayName || name, x + w / 2, y - 6);
   ctx.restore();
 }
 
@@ -58,18 +58,20 @@ export function adaptRechargeSummary(minigame, game, exit) {
     ctx.fillRect(276, 120, 2, 18);
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     ctx.font = '6px "Press Start 2P",monospace';
-    ctx.fillStyle = '#7fe9ea'; ctx.fillText('RECARGA INTEGRAL', 160, 50);
+    ctx.fillStyle = '#7fe9ea'; ctx.fillText(game.language === 'en' ? 'FULL RECHARGE' : 'RECARGA INTEGRAL', 160, 50);
     ctx.font = '4px "Press Start 2P",monospace';
     ctx.fillStyle = '#e1eaff';
     const oxygen = game.oxygen.porcentajeTraje, battery = game.energy.getSnapshot().traje.porcentaje;
-    ctx.fillText(`O2 ${oxygen.toFixed(0)} %   AGUA ${game.water.snapshot().ml.toFixed(0)} mL`, 160, 72);
-    ctx.fillText(`BATERIA ${battery.toFixed(0)} %   RETORNO CO2 LISTO`, 160, 84);
+    ctx.fillText(`O2 ${oxygen.toFixed(0)} %   ${game.language === 'en' ? 'WATER' : 'AGUA'} ${game.water.snapshot().ml.toFixed(0)} mL`, 160, 72);
+    ctx.fillText(`${game.language === 'en' ? 'BATTERY' : 'BATERIA'} ${battery.toFixed(0)} %   ${game.language === 'en' ? 'CO2 RETURN READY' : 'RETORNO CO2 LISTO'}`, 160, 84);
     ctx.fillStyle = oxygen < 99.9 || battery < 99.9 ? '#ffd49a' : '#94e4cb';
-    ctx.fillText(oxygen < 99.9 || battery < 99.9 ? 'Reserva insuficiente: transferencia parcial.' : 'Recursos transferidos. Valvulas cerradas.', 160, 103);
+    ctx.fillText(oxygen < 99.9 || battery < 99.9
+      ? game.language === 'en' ? 'Low reserves: partial transfer.' : 'Reserva insuficiente: transferencia parcial.'
+      : game.language === 'en' ? 'Resources transferred. Valves closed.' : 'Recursos transferidos. Valvulas cerradas.', 160, 103);
     const b = minigame._rectBotonReiniciar();
     ctx.fillStyle = '#24405d'; ctx.fillRect(b.x, b.y, b.w, b.h);
     ctx.strokeStyle = '#8cc9e0'; ctx.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1);
-    ctx.fillStyle = '#c9f4fc'; ctx.fillText('SALIR A LA ESTACION', 160, b.y + 6);
+    ctx.fillStyle = '#c9f4fc'; ctx.fillText(game.language === 'en' ? 'RETURN TO STATION' : 'SALIR A LA ESTACION', 160, b.y + 6);
     ctx.restore();
   };
 }
@@ -87,6 +89,11 @@ export class ImpactFeedback {
     world.finalImpactHook = true;
     const resolve = world._resolveAxisForBody.bind(world);
     world._resolveAxisForBody = (body, axis) => {
+      if (body === scene.player?.body && scene.game?.collisionsEnabled === false) {
+        // Conservar límites del mapa y triggers de interacción, pero atravesar obstáculos.
+        world._clampToWorld(body);
+        return;
+      }
       const position = body.position[axis], velocity = body.velocity[axis];
       resolve(body, axis);
       const correction = body.position[axis] - position;

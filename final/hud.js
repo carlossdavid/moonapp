@@ -1,8 +1,8 @@
 import { LOGICAL_HEIGHT } from '../src/config.js';
 import { batteryLevel } from '../pruebas/Hud_bateria/BatteryHUD.js';
 
-export function drawMissionHUD(renderer, assets, { suit, food, water, oxygen, health }) {
-  const ctx = renderer.context, x = 10, y = LOGICAL_HEIGHT - 50, w = 84, h = 44;
+export function drawMissionHUD(renderer, assets, { suit, food, water, oxygen, health }, language = 'es') {
+  const ctx = renderer.context, x = 10, y = LOGICAL_HEIGHT - 50, w = 110, h = 44;
   const key = (name, value) => `${name}_nivel_${String(batteryLevel(value)).padStart(2, '0')}_t`;
   const rows = [
     ['COMIDA', key('comida', food), food <= 20],
@@ -23,10 +23,10 @@ export function drawMissionHUD(renderer, assets, { suit, food, water, oxygen, he
     if (image) {
       const split = label === 'VIDA' ? Math.round(image.width * .19) : 48;
       ctx.drawImage(image, 0, 0, split, image.height, x + 4, rowY, 7, 7);
-      ctx.drawImage(image, split, 0, image.width - split, image.height, x + 43, rowY, 37, 7);
+      ctx.drawImage(image, split, 0, image.width - split, image.height, x + 62, rowY, 43, 7);
     }
     ctx.fillStyle = warning ? '#ff9d98' : '#e3f0ff';
-    ctx.fillText(label, x + 14, rowY + 2);
+    ctx.fillText(language === 'en' ? { COMIDA: 'FOOD', AGUA: 'WATER', BATERIA: 'BATTERY', OXIGENO: 'OXYGEN', VIDA: 'HEALTH' }[label] : label, x + 14, rowY + 2);
   });
   ctx.restore();
 }

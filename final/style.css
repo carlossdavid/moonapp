@@ -2,9 +2,10 @@
 [hidden] { display: none !important; }
 #game-root { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
 #game { image-rendering: pixelated; }
-#introVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; z-index: 10; }
+#introVideo { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: contain; background: #000; display: none; z-index: 120; }
 #loading { z-index: 100; text-align: center; padding: 30px; }
 #location-label { position: fixed; top: 8px; left: 12px; color: #a3deed; font: 10px monospace; background: #071625b8; padding: 4px; pointer-events: none; }
+#cinematic-timer { position: fixed; top: 8px; right: 10px; z-index: 75; padding: 6px 9px; color: #aeeaf2; font: 8px/1.7 'Press Start 2P', monospace; pointer-events: none; text-align: center; }
 #help-toggle { position: fixed; right: 10px; bottom: 10px; background: #102332; color: #ffcf70; border: 1px solid #ffae32; font: 11px monospace; z-index: 22; }
 #help-panel { position: fixed; right: 10px; bottom: 45px; max-width: 350px; padding: 18px; background: #071625f5; border: 1px solid #ffae32; font: 12px/1.6 monospace; z-index: 24; }
 #activity { position: fixed; inset: 0; z-index: 70; background: #000d; display: flex; justify-content: center; align-items: center; }
@@ -28,6 +29,7 @@
 .visor-alerts { left: 69.7%; top: 20.3%; width: 15.5%; height: 7.2%; }
 .visor-vega { left: 69.7%; top: 35.4%; width: 15.5%; height: 26.6%; }
 #cleaning-task { z-index: 65; }
+#cleaning-task .task-footnotes, #cleaning-task .instructions { display: none !important; }
 #monitor-content { z-index: 60; }
 .console-frame { flex-shrink: 0; }
 body, button, input, select, #activity-intro, #notice, #help-panel, #location-label,
@@ -43,9 +45,10 @@ button, #notice, #help-panel, .activity-shell, #recarga-tools {
 .activity-shell { width: 98vw; height: 96vh; }
 #mission-transition { position: fixed; inset: 0; background: #030818; z-index: 300; opacity: 0; pointer-events: none; }
 #survival { position: fixed; left: 18px; bottom: 14px; max-width: 40vw; color: #ffada8; font-size: 9px; z-index: 25; line-height: 1.9; }
+#mission-objective { position: fixed; right: 14px; bottom: 102px; max-width: min(400px, 70vw); z-index: 25; padding: 10px 14px; color: #b9edf4; font: 9px/1.8 'Press Start 2P',monospace; pointer-events: none; }
 #story, #death { position: fixed; inset: 0; z-index: 120; background: #030818f8; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; padding: 24px; text-align: center; }
 #story > img { max-width: min(420px,70vw); max-height: 45vh; image-rendering: pixelated; object-fit: contain; }
-#story-video { width: min(960px,90vw); max-height: 60vh; }
+#story-video { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; object-fit: contain; background: #000; z-index: 121; }
 #story:has(video:not([hidden])) > img { display: none; }
 #story button, #death button { padding: 16px; color: #ffdf8b; background: #12273c; border: 3px solid #ffbd63; font-size: 11px; line-height: 1.8; }
 #death { color: #ffaca0; font-size: 12px; line-height: 2; }
@@ -55,6 +58,7 @@ button, #notice, #help-panel, .activity-shell, #recarga-tools {
 
 /* Marco propio adaptable: esquina escalonada, acero frío y detalles cian. */
 .pixel-panel, #notice, #survival, #interaction-hint, #help-panel, .activity-shell, #recarga-tools, .task-shell,
+#cinematic-timer,
 #cleaning-task .discovery-message, #cleaning-task .completion-card,
 .visor-toolbar, .visor-alert, #help-toggle, .visor-launcher,
 .activity-shell button, #recarga-tools button, #story button, #death button {
@@ -90,10 +94,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid #70f1f2; outline-
 .task-shell { border-width: 12px; }
 #cleaning-task .discovery-message, #cleaning-task .completion-card { color: #c7e7f7; }
 #mission-transition { background: #07101e; }
+#settings { position: fixed; inset: 0; z-index: 310; background: #030818ec; display: grid; place-items: center; }
+.settings-card { display: grid; gap: 18px; width: min(420px, 92vw); padding: 24px; color: #e5edff; background: #101a30; border: 3px solid #81d5e3; font: 11px/1.7 'Press Start 2P', monospace; }
+.settings-card h1 { font-size: 15px; line-height: 1.6; }
+.settings-card select, .settings-card button { min-height: 42px; background: #12273c; color: #e5edff; border: 2px solid #81d5e3; font: inherit; }
+.setting-checkbox { display: flex; align-items: center; gap: 12px; }
+.language-en .console-frame { background: #07182e; border: 4px solid #68d6e9; box-sizing: border-box; }
+.language-en .console-art { visibility: hidden; }
+.language-en .english-console-label { position: absolute; left: 4%; color: #e0f4ff; font: clamp(7px, .9cqw, 14px) 'Press Start 2P', monospace; }
+.language-en .english-console-label:first-of-type { font-size: clamp(8px, 1.4cqw, 22px); }
+.language-en #close-monitor { background: #9c2832; border: 2px solid #fff; }
+.language-en #close-monitor::after { content: 'X'; color: #fff; }
+.language-en #weather-chart { background: #06182b; border: 1px solid #3289ad; }
+.visor-overlay.language-en .visor-frame { background: #07182e; border: 4px solid #68d6e9; }
+.visor-overlay.language-en .visor-art { visibility: hidden; }
+.visor-english-label { position: absolute; color: #eff8ff; font: clamp(10px, 1.5cqw, 24px) 'Press Start 2P',monospace; }
+.visor-english-title { left: 14.6%; top: 11%; }
+.visor-english-alerts { left: 69.7%; top: 13%; }
+.visor-english-vega { left: 69.7%; top: 29%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
 @media (max-width:700px) {
+  #cinematic-timer { top: 8px; right: 6px; max-width: 50vw; font-size: 6px; }
   #notice { top: 18px; font-size: 9px; }
   #notice-title { font-size: 9px; }
   #vega-message { width: 90vw; right: 5vw; bottom: 100px; }

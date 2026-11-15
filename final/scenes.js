@@ -4,6 +4,8 @@ import { RecargaOxigenoPruebaScene } from '../pruebas/RECARGA OXIGENO/RecargaOxi
 import { BeamCleaning } from '../pruebas/limpieza-panel/beamCleaning.js';
 import { FASE } from '../src/minigames/RecargaOxigeno.js';
 import { drawAccess, drawWorkstation, drawSceneUI, adaptRechargeSummary } from './presentation.js';
+import { translate } from './i18n.js';
+import { localizeRechargeRender } from './recharge-i18n.js';
 
 export const STATIONS = Object.freeze([
   { id: 'principal', name: 'ESTACIÓN LUNAR', image: 'final_station', x: 280, y: 158, width: 230, doorX: -16 },
@@ -34,7 +36,7 @@ export class FinalExterior extends DemoScene {
       const doorX = station.x + station.doorX;
       const doorY = station.y + 12;
       const zone = this._addInteractZone(doorX, doorY, 32, 14, {
-        name: station.name, prompt: 'E para entrar', onConfirm: () => this.enterStation(station),
+        name: station.name, prompt: translate('E para entrar', this.game.language), onConfirm: () => this.enterStation(station),
       });
       this.stationDoors.push({ station, zone });
     }
@@ -46,7 +48,7 @@ export class FinalExterior extends DemoScene {
       const name = `Panel solar ${i + 1}`;
       if (!this.panelModels.has(name)) this.panelModels.set(name, new BeamCleaning());
       const zone = this._addInteractZone(x, y + 13, 34, 14, {
-        name, prompt: `${name}: E para explorar y limpiar`,
+        name, prompt: translate(`${name}: E para explorar y limpiar`, this.game.language),
         onConfirm: () => this.openPanel(zone),
       });
     });
@@ -65,7 +67,9 @@ export class FinalExterior extends DemoScene {
   async enterStation(station) {
     if (this.game.transitioning || this.game.ui.transitionActive) return;
     if (this.solarState.progress.cleanCount < 2) {
-      this.game.ui.notify(`Limpia dos paneles distintos para habilitar las puertas (${this.solarState.progress.cleanCount}/2).`);
+      this.game.ui.notify(this.game.language === 'en'
+        ? `Clean two different panels to unlock the doors (${this.solarState.progress.cleanCount}/2).`
+        : `Limpia dos paneles distintos para habilitar las puertas (${this.solarState.progress.cleanCount}/2).`);
       return;
     }
     let interior = this.game.interiors.get(station.id);
@@ -79,14 +83,17 @@ export class FinalExterior extends DemoScene {
   updateDoorPrompts() {
     const count = this.solarState.progress.cleanCount;
     for (const { station, zone } of this.stationDoors) {
-      zone.prompt = count >= 2 ? `E: entrar a ${station.name.toLowerCase()}`
-        : `Limpia 2 paneles (${count}/2) para entrar`;
+      zone.prompt = count >= 2 ? this.game.language === 'en'
+        ? `E: enter ${translate(station.name, 'en').toLowerCase()}` : `E: entrar a ${station.name.toLowerCase()}`
+        : this.game.language === 'en' ? `Clean 2 panels (${count}/2) to enter` : `Limpia 2 paneles (${count}/2) para entrar`;
     }
   }
 
   openPanel(zone) {
     if (this.solarState.progress.isClean(zone.name)) {
-      this.game.ui.notify(`${zone.name} limpio: ${Math.ceil(this.solarState.progress.remaining(zone.name))} s restantes.`);
+      this.game.ui.notify(this.game.language === 'en'
+        ? `${translate(zone.name, 'en')} clean: ${Math.ceil(this.solarState.progress.remaining(zone.name))} s remaining.`
+        : `${zone.name} limpio: ${Math.ceil(this.solarState.progress.remaining(zone.name))} s restantes.`);
       return;
     }
     this.activeSolarZone = zone;
@@ -98,7 +105,7 @@ export class FinalExterior extends DemoScene {
       onDiscoveryComplete: () => { this.solarState.progress.discovered = true; },
       onNeedMagnet: () => this.revealMagnet(),
       onCompleted: completed => this.consumeMagnet(completed),
-      onFinish: () => queueMicrotask(() => this.game.ui.open('result')),
+      onFinish: () => {},
       onReset: () => !this.solarState.progress.isClean(zone.name),
       onPrepare: () => this.preparePanel(model),
     });
@@ -120,15 +127,18 @@ export class FinalExterior extends DemoScene {
   revealMagnet() {
     if (this.solarState.hasMagnet) return;
     this.solarState.magnetQuest = true;
-    this.game.ui.notify('Busca los imanes de la superficie. Aparece un repuesto cada 60 s de exploración.');
+    this.game.ui.notify(this.game.language === 'en' ? 'Find magnets on the surface. The first spare appears after 20 s; the next ones every 60 s.'
+      : 'Busca los imanes de la superficie. El primer repuesto aparece a los 20 s; los siguientes, cada 60 s.');
   }
   placeMagnet() {
     for (const p of this.game.mission.magnets) {
       if (this.magnetZones.has(p.id)) continue;
       const zone = this._addInteractZone(p.x, p.y, 26, 20, {
-      name: 'Repuesto de electroimán', prompt: 'E: recoger electroimán',
+       name: 'Repuesto de electroimán', prompt: this.game.language === 'en' ? 'E: pick up electromagnet' : 'E: recoger electroimán',
       onConfirm: () => {
-        if (this.solarState.hasMagnet) { this.game.ui.notify('Ya llevas un imán. Úsalo antes de recoger otro.'); return; }
+        if (this.solarState.hasMagnet) { this.game.ui.notify(this.game.language === 'en'
+          ? 'You already carry a magnet. Use it before taking another.'
+          : 'Ya llevas un imán. Úsalo antes de recoger otro.'); return; }
         this.solarState.hasMagnet = true;
         this.task.hasMagnet = true;
         for (const model of this.panelModels.values()) model.beginCleaning(true);
@@ -137,7 +147,8 @@ export class FinalExterior extends DemoScene {
         this.removeEntity(zone);
         this.magnetZones.delete(p.id);
         this.game.mission.magnets = this.game.mission.magnets.filter(item => item.id !== p.id);
-        this.game.ui.notify('Electroimán recogido. Vuelve al panel solar.');
+        this.game.ui.notify(this.game.language === 'en' ? 'Electromagnet collected. Return to the solar panel.'
+          : 'Electroimán recogido. Vuelve al panel solar.');
       },
     });
       this.magnetZones.set(p.id, zone);
@@ -161,7 +172,7 @@ export class FinalExterior extends DemoScene {
       const ctx = renderer.context;
       ctx.save(); ctx.font = '4px "Press Start 2P",monospace'; ctx.textAlign = 'center';
       ctx.fillStyle = this.solarState.progress.cleanCount >= 2 ? '#83e9d1' : '#ffcf70';
-      ctx.fillText(station.name, station.x + station.doorX, zone.y - 12); ctx.restore();
+      ctx.fillText(translate(station.name, this.game.language), station.x + station.doorX, zone.y - 12); ctx.restore();
     }
     for (const { station, zone } of this.stationDoors) {
       drawAccess(renderer, station.x + station.doorX, zone.y, zone.playerInside);
@@ -215,7 +226,7 @@ export class FinalInterior extends InteriorBaseScene {
   _spawnExitZone() {
     this.exitMarker = { x: 372, y: 322 };
     this._addInteractZone(372, 326, 48, 20, {
-      name: 'Salida', prompt: 'E: salir a la superficie',
+      name: 'Salida', prompt: this.game.language === 'en' ? 'E: return to surface' : 'E: salir a la superficie',
       onConfirm: this.opts.onExit,
     });
   }
@@ -226,9 +237,9 @@ export class FinalInterior extends InteriorBaseScene {
       this._addSolidBox(x - 5, y, w + 10, h + 6);
       const access = { x: x + w / 2, y: y + h + 17 };
       const zone = this._addInteractZone(access.x, access.y, 38, 15, {
-          name, prompt: `E: ${name.toLowerCase()}`, onConfirm: action,
+          name, prompt: this.game.language === 'en' ? `E: ${translate(name, 'en').toLowerCase()}` : `E: ${name.toLowerCase()}`, onConfirm: action,
       });
-      this.interiorModules.push({ id, name, label, x, y, w, h, imageKey: key, access, zone });
+      this.interiorModules.push({ id, name, displayName: translate(name, this.game.language), label: translate(label, this.game.language), x, y, w, h, imageKey: key, access, zone });
     };
     if (this.station.id === 'principal') {
       module('recharge', 'RECARGA INTEGRAL', '01 RECARGA', 232, 202, 'mod_oxigeno', () => this.openOxygen());
@@ -284,6 +295,7 @@ export class FinalInterior extends InteriorBaseScene {
       onStatus: mg => updateOxygenControls(mg, this.game),
     });
     scene.isRecarga = true;
+    localizeRechargeRender(scene, this.game.language);
     const update = scene.update.bind(scene);
     scene.update = dt => {
       if (this.game.input.isPressed('Escape')) { back(); return; }
@@ -301,11 +313,14 @@ export class FinalInterior extends InteriorBaseScene {
 function updateOxygenControls(mg, game) {
   if (!mg) return;
   document.getElementById('recarga-status').textContent = mg.fase === FASE.COMPLETADO
-    ? `O₂ ${game.oxygen.porcentajeTraje.toFixed(0)} % · Agua ${game.water.snapshot().ml.toFixed(0)} mL · Batería ${game.energy.getSnapshot().traje.porcentaje.toFixed(0)} %`
+    ? `O₂ ${game.oxygen.porcentajeTraje.toFixed(0)} % · ${game.language === 'en' ? 'Water' : 'Agua'} ${game.water.snapshot().ml.toFixed(0)} mL · ${game.language === 'en' ? 'Battery' : 'Batería'} ${game.energy.getSnapshot().traje.porcentaje.toFixed(0)} %`
+    : game.language === 'en' ? 'O₂ / CO₂ return · Connect and turn. Restore water and battery.'
       : 'O₂ / retorno CO₂ · Conecta y gira. Recupera agua y batería.';
   for (const id of ['o2', 'co2']) {
     const button = document.getElementById(`recarga-${id}`);
-    button.textContent = mg.fase === FASE.VALVULAS ? `Girar ${id.toUpperCase()}` : `Conectar ${id.toUpperCase()}`;
+    button.textContent = `${mg.fase === FASE.VALVULAS
+      ? game.language === 'en' ? 'Turn' : 'Girar'
+      : game.language === 'en' ? 'Connect' : 'Conectar'} ${id.toUpperCase()}`;
     button.disabled = ![FASE.CONECTANDO, FASE.VALVULAS].includes(mg.fase);
   }
 }

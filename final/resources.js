@@ -5,6 +5,7 @@ import { SuitWater } from '../pruebas/Hud_bateria/WaterSystem.js';
 import { SistemaOxigeno } from '../oxygen_system.js';
 import { MissionState } from './mission-state.js';
 import { ImpactFeedback } from './presentation.js';
+import { translate } from './i18n.js';
 
 /** Una sola instancia de cada sistema, independiente de las escenas visitadas. */
 export class IntegratedGame extends Game {
@@ -27,6 +28,9 @@ export class IntegratedGame extends Game {
     this.claimedCrops = new Set();
     this.impacts = new ImpactFeedback();
     this.rechargeCompleted = false;
+    this.language = sessionStorage.getItem('final-language') === 'en' ? 'en' : 'es';
+    this.renderer.language = this.language;
+    this.collisionsEnabled = localStorage.getItem('final-collisions') !== 'false';
     // Adaptador local: también los textos dibujados sobre canvas usan la fuente del juego.
     this.renderer.drawText = (text, x, y, color = '#ffffff') => {
       const ctx = this.renderer.context;
@@ -34,6 +38,44 @@ export class IntegratedGame extends Game {
       ctx.textBaseline = 'top';
       ctx.fillText(text, Math.round(x), Math.round(y));
     };
+  }
+
+  _getMenuButtons() {
+    const buttons = super._getMenuButtons();
+    if (this.language === 'en') {
+      buttons[0].label = 'START GAME';
+      buttons[1].label = 'SETTINGS';
+    }
+    return buttons;
+  }
+
+  _onPointerAction() {
+    if (this.state === 'menu' && !this.ui.settingsOpen && !this.menuWindow) {
+      const settings = this._getMenuButtons().find(button => button.id === 'settings');
+      if (this._isPointInRect(this.mouse.x, this.mouse.y, settings)) {
+        this.ui.openSettings();
+        return;
+      }
+    }
+    if (!this.ui.settingsOpen) super._onPointerAction();
+  }
+
+  beginPlay() {
+    if (this.ui.settingsOpen || this.state !== 'menu') return;
+    if (this.introVideoEl) {
+      this.introVideoEl.src = this.language === 'en'
+        ? 'assets/video/intro.mp4' : 'assets/video/completa_intro.mp4';
+      this.introVideoEl.load();
+    }
+    this.ui.transition(() => super.beginPlay());
+  }
+
+  _onIntroVideoEnded() {
+    if (this.state !== 'video') return;
+    this.ui.transition(() => {
+      super._onIntroVideoEnded();
+      this.mission.start(performance.now());
+    });
   }
 
   async changeScene(scene) {
@@ -53,7 +95,17 @@ export class IntegratedGame extends Game {
   }
 
   update(dt) {
-    this.messages?.tick(dt, this, this.ui.blocked || this.transitioning || this.ui.transitionActive || this.scene?.isRecarga || this.mission.dead);
+    if (this.state === 'menu' && this.input.isPressed('KeyC')) {
+      this.ui.openSettings();
+      this.input._pressed.delete('KeyC');
+    }
+    if (this.ui.settingsOpen) { this.input._down.clear(); this.input.update(); return; }
+    if (this.state === 'playing') {
+      this.mission.checkAlert(performance.now());
+      if (this.mission.alertPending && !this.ui.blocked && !this.transitioning
+        && !this.ui.transitionActive && !this.scene?.isRecarga) this.ui.openStory();
+    }
+    if (this.language !== 'en') this.messages?.tick(dt, this, this.ui.blocked || this.transitioning || this.ui.transitionActive || this.scene?.isRecarga || this.mission.dead);
     if (this.mission.dead) {
       this.input._down.clear();
       this.ui.updateSurvival();
@@ -101,7 +153,6 @@ export class IntegratedGame extends Game {
     this.mission.tick(dt, [this.foodLevel, this.water.snapshot().ml,
       this.energy.energiaTrajeWh, this.oxygen.oxigenoTrajeKg]);
     this.ui.updateSurvival();
-    if (this.mission.alertPending && !this.ui.blocked) this.ui.openStory();
   }
 
   get foodLevel() {
@@ -117,18 +168,30 @@ export class IntegratedGame extends Game {
     this.water.refill(true);
     this.rechargeCompleted = true;
     this.ui.updateSurvival();
-    this.ui.notify('Recarga integral lista: O₂, agua y batería. Retorno CO₂ conectado.', 'SOPORTE VITAL');
+    this.ui.notify(this.language === 'en' ? 'Suit recharge complete: O₂, water and battery. CO₂ return connected.'
+      : 'Recarga integral lista: O₂, agua y batería. Retorno CO₂ conectado.',
+      this.language === 'en' ? 'LIFE SUPPORT' : 'SOPORTE VITAL');
   }
 
   harvest(crop) {
     if (this.claimedCrops.has(crop)) return;
     this.claimedCrops.add(crop);
     this.foodBonus = this.energy.tiempoHoras * (40 / 13.6);
-    this.ui.notify('Insignia obtenida: ración de entrenamiento consumida. Alimentación recuperada.');
+    this.ui.notify(this.language === 'en' ? 'Badge earned: training ration consumed. Food restored.'
+      : 'Insignia obtenida: ración de entrenamiento consumida. Alimentación recuperada.');
   }
 
   render(alpha) {
     super.render(alpha);
+    const timer = document.getElementById('cinematic-timer');
+    const seconds = this.mission.remainingAlertSeconds(performance.now());
+    timer.hidden = this.state !== 'playing' || seconds === null || this.mission.alertShown || this.mission.dead;
+    if (!timer.hidden) {
+      const value = seconds > 0 ? `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+        : this.language === 'en' ? 'PENDING' : 'PENDIENTE';
+      const text = `${this.language === 'en' ? 'SPACE WEATHER' : 'CLIMA ESPACIAL'} · ${value}`;
+      if (timer.textContent !== text) timer.textContent = text;
+    }
     if (this.state !== 'playing' || this.scene?.isRecarga || !this.hudVisible) return;
     const snapshot = this.energy.getSnapshot();
     const water = this.water.snapshot();
@@ -136,8 +199,8 @@ export class IntegratedGame extends Game {
     this.renderer.begin(null);
     drawMissionHUD(this.renderer, this.assets, {
       suit: snapshot.traje, food: this.foodLevel, water, oxygen, health: this.mission.health,
-    });
+    }, this.language);
     this.renderer.end();
-    this.canvas.title = `Batería: ${snapshot.traje.porcentaje.toFixed(1)} % · Agua: ${water.ml.toFixed(1)} mL · O₂: ${oxygen.oxigenoKg.toFixed(3)} kg`;
+    this.canvas.title = `${this.language === 'en' ? 'Battery' : 'Batería'}: ${snapshot.traje.porcentaje.toFixed(1)} % · ${this.language === 'en' ? 'Water' : 'Agua'}: ${water.ml.toFixed(1)} mL · O₂: ${oxygen.oxigenoKg.toFixed(3)} kg`;
   }
 }

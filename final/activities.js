@@ -1,5 +1,6 @@
 import { PanelCleaningTask } from '../pruebas/limpieza-panel/PanelCleaningTask.js';
 import { loadPanelSprites } from '../pruebas/limpieza-panel/spriteAtlas.js';
+import { translate, localizeDocument } from './i18n.js';
 
 const $ = id => document.getElementById(id);
 async function page(path) {
@@ -68,14 +69,15 @@ class Activities {
   }
 
   get blocked() {
-    return this.game?.mission.dead || !!this.kind || this.cleaning?.isOpen || !$('monitor-content').hidden
+    return this.settingsOpen || this.game?.mission.dead || !!this.kind || this.cleaning?.isOpen
+      || !$('farewell').hidden || !$('monitor-content').hidden
       || document.getElementById('visor-overlay')?.hidden === false;
   }
 
   notify(text, title = 'COMUNICACIONES') {
     clearTimeout(this.noticeTimer);
-    $('notice-title').textContent = title;
-    $('notice-text').textContent = text;
+    $('notice-title').textContent = translate(title, this.game?.language);
+    $('notice-text').textContent = translate(text, this.game?.language);
     $('notice').hidden = false;
     $('notice').animate([{ opacity: 0, translate: '0 -6px' }, { opacity: 1, translate: '0 0' }],
       { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240, easing: 'ease-out' });
@@ -134,6 +136,7 @@ class Activities {
         this.foodFrame.className = 'mode-frame';
         this.foodFrame.title = 'Misión de alimentación';
         this.foodFrame.src = 'pruebas/Alimentos/?embed=1';
+        this.foodFrame.addEventListener('load', () => this.styleFrame(this.foodFrame));
         frame.parentElement.append(this.foodFrame);
       }
       this.foodFrame.hidden = false;
@@ -180,22 +183,17 @@ class Activities {
     $('activity-close').focus();
   }
 
-  close() {
+  async close({ skipTransition = false } = {}) {
     if (!this.kind) return;
     if (this.kind === 'story' && !$('story-video').getAttribute('src')) return;
-    this.transition();
-    if (this.kind === 'story') {
-      clearTimeout(this.storyTimer);
-      const video = $('story-video');
-      video.pause(); video.removeAttribute('src'); video.load();
-      $('story').hidden = true;
-      const onClose = this._storyOnClose;
-      this._storyOnClose = null;
-      if (onClose) onClose();
-    } else if (this.kind === 'food') {
+    const closing = this.kind;
+    if (closing === 'story') await this.transition(async () => this.finishStory());
+    else if (!skipTransition) this.transition();
+    if (closing === 'story') return;
+    if (this.kind !== closing) return;
+    if (this.kind === 'food') {
       this.foodFrame.hidden = true;
     } else if (this.kind === 'modes') {
-      // Detener una calibración incompleta, conservando las ya terminadas.
       this.currentFrame.contentDocument?.getElementById('modalClose')?.click();
       this.currentFrame.hidden = true;
     } else {
@@ -206,6 +204,21 @@ class Activities {
     $('activity').hidden = true;
     this.kind = null;
     this.currentFrame = null;
+    this.game?.input.update();
+    this.restoreFocus();
+  }
+
+  finishStory() {
+    if (this.kind === 'story') {
+      const video = $('story-video');
+      video.pause(); video.onended = null; video.onerror = null;
+      video.removeAttribute('src'); video.load();
+      $('story').hidden = true;
+      const onClose = this._storyOnClose;
+      this._storyOnClose = null;
+      this.kind = null;
+      if (onClose) onClose();
+    }
     this.game?.input.update();
     this.restoreFocus();
   }
@@ -226,7 +239,15 @@ class Activities {
       // ventana mientras tanto: guardar el resultado en la estación correcta.
       this.game.stationModes.set(modeStation, data.mode);
       if (this.game.scene.station?.id === modeStation) this.game.scene.applyEnergyMode?.(data.mode);
-      if (this.kind === 'modes') this.notify(`Modo ${data.mode} aplicado a esta estación.`);
+      if (this.kind === 'modes') this.notify(this.game.language === 'en'
+        ? `${({ tortuga: 'Turtle', explorador: 'Explorer', turbo: 'Turbo' })[data.mode]} mode applied to this station.`
+        : `Modo ${data.mode} aplicado a esta estación.`);
+      if (modeStation === 'principal' && data.mode === 'tortuga' && this.game.mission.turtleMission
+        && !this.game.mission.turtleComplete) {
+        this.game.mission.turtleComplete = true;
+        if (this.kind === 'modes') this.close({ skipTransition: true });
+        this.openFarewell();
+      }
     } else if (this.kind === 'electrolysis' && event.source === this.currentFrame?.contentWindow
       && data?.type === 'electrolisis:close') {
       this.lastElectrolysis = data.summary;
@@ -267,6 +288,15 @@ class Activities {
   styleFrame(frame) {
     const doc = frame.contentDocument;
     if (!doc?.head || doc.getElementById('final-pixel-theme')) return;
+    localizeDocument(doc, this.game?.language);
+    if (this.game?.language === 'en' && frame.contentWindow?.ELECTROLISIS?.Renderer) {
+      const renderer = frame.contentWindow.ELECTROLISIS.Renderer.prototype;
+      const original = renderer.drawFloaters;
+      renderer.drawFloaters = function (ctx, game) {
+        for (const floater of game.floaters) floater.text = translate(floater.text, 'en');
+        return original.call(this, ctx, game);
+      };
+    }
     const style = doc.createElement('style');
     style.id = 'final-pixel-theme';
     const font = new URL('assets/fonts/PressStart2P-Regular.ttf', document.baseURI).href;
@@ -276,9 +306,16 @@ class Activities {
 
   updateSurvival() {
     const m = this.game.mission, status = $('survival');
-    const text = m.dead ? 'MISIÓN FALLIDA · SIN RECURSOS' : m.starved > 0
-      ? `¡DAÑO! VIDA ${Math.ceil(m.health)} % · ${Math.max(0, 5 - m.starved).toFixed(1)} s para recuperarte`
-      : 'VIDA 100 %';
+    const objective = $('mission-objective');
+    objective.hidden = !m.turtleMission || m.turtleComplete || m.dead;
+    if (!objective.hidden) objective.textContent = this.game.language === 'en'
+      ? 'FINAL MISSION · Main station → Energy modes → Turtle'
+      : 'MISIÓN FINAL · Estación principal → Modos de energía → Tortuga';
+    const english = this.game.language === 'en';
+    const text = m.dead ? (english ? 'MISSION FAILED · OUT OF RESOURCES' : 'MISIÓN FALLIDA · SIN RECURSOS') : m.starved > 0
+      ? english ? `DAMAGE! HEALTH ${Math.ceil(m.health)} % · ${Math.max(0, 5 - m.starved).toFixed(1)} s to recover`
+        : `¡DAÑO! VIDA ${Math.ceil(m.health)} % · ${Math.max(0, 5 - m.starved).toFixed(1)} s para recuperarte`
+      : english ? 'HEALTH 100 %' : 'VIDA 100 %';
     if ($('survival-text').textContent !== text) $('survival-text').textContent = text;
     status.classList.toggle('danger', m.starved > 0);
     status.hidden = m.starved <= 0;
@@ -309,11 +346,14 @@ class Activities {
     if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return;
     this.game.mission.alertPending = false;
     this.game.mission.alertShown = true;
+    if (this.game.language === 'en') {
+      this.game.mission.visorUnlocked = true;
+      document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
+      this.notify('Space weather warning: press Shift to open the visor.');
+      return;
+    }
     this.openCinematic({
       src: 'assets/video/segunda_escena.mp4',
-      exitText: 'Salir · activar visor',
-      exitTextOnEnd: 'Salir · activar visor',
-      autoCloseOnEnd: true,
       onClose: () => {
         this.game.mission.visorUnlocked = true;
         document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
@@ -322,59 +362,56 @@ class Activities {
     });
   }
 
-  openFarewell(onClose = null) {
+  async openFarewell(onClose = null) {
     this._farewellOnClose = typeof onClose === 'function' ? onClose : null;
-    this.transition();
     const el = $('farewell');
     if (!el) { if (this._farewellOnClose) this._farewellOnClose(); return; }
-    el.hidden = false;
-    const btn = $('farewell-close');
-    if (btn) {
+    await this.transition(() => {
+      el.querySelector('img').src = this.game.language === 'en'
+        ? 'assets/Sprites/Astronauta/Pantallla_demo_ingles.png'
+        : 'assets/Sprites/Astronauta/Pantallla_demo.png';
+      el.hidden = false;
+      const btn = $('farewell-close');
+      btn.textContent = this.game.language === 'en' ? 'Continue' : 'Continuar';
       btn.onclick = () => this.closeFarewell();
       btn.focus();
-    }
+    });
   }
 
-  closeFarewell() {
+  async closeFarewell() {
     const el = $('farewell');
-    if (el) el.hidden = true;
-    const cb = this._farewellOnClose;
-    this._farewellOnClose = null;
-    if (cb) cb();
+    if (!el || el.hidden) return;
+    await this.transition(() => {
+      el.hidden = true;
+      const cb = this._farewellOnClose;
+      this._farewellOnClose = null;
+      if (cb) cb();
+    });
   }
 
-  openCinematic({ src, exitText = 'Salir', exitTextOnEnd = 'Salir', onClose = null, autoStartMs = 2500, showAviso = true, autoCloseOnEnd = false } = {}) {
+  openCinematic({ src, onClose = null } = {}) {
     if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return false;
     this.kind = 'story';
     this._storyOnClose = typeof onClose === 'function' ? onClose : null;
-    this.transition();
-    $('story').hidden = false;
     const video = $('story-video');
-    const start = $('story-start');
     const exit = $('story-exit');
-    const aviso = $('story').querySelector('img');
-    if (aviso) aviso.style.display = showAviso ? '' : 'none';
-    video.hidden = true;
-    start.hidden = false;
-    exit.hidden = !autoCloseOnEnd ? true : false;
-    if (autoCloseOnEnd) exit.hidden = true;
-    exit.textContent = exitText;
-    start.onclick = () => {
-      clearTimeout(this.storyTimer);
-      start.hidden = true;
+    exit.hidden = true;
+    video.muted = false;
+    this.transition(async () => {
+      $('story').hidden = false;
       video.hidden = false;
       video.src = src;
-      exit.hidden = autoCloseOnEnd;
-      if (!autoCloseOnEnd) exit.hidden = false;
-      video.play().catch(() => { start.hidden = false; });
-    };
-    video.onended = () => {
-      if (autoCloseOnEnd) this.close();
-      else exit.textContent = exitTextOnEnd;
-    };
+      try { await video.play(); }
+      catch {
+        // Sin gesto de usuario: reintentar silenciado, sin pedir "iniciar transmisión".
+        video.muted = true;
+        try { await video.play(); }
+        catch { exit.hidden = false; }
+      }
+    });
+    video.onended = () => this.close();
+    video.onerror = () => { exit.hidden = false; };
     exit.onclick = () => this.close();
-    this.storyTimer = setTimeout(() => { if (this.kind === 'story') start.click(); }, autoStartMs);
-    start.focus();
     return true;
   }
 }
