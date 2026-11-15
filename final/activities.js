@@ -313,6 +313,7 @@ class Activities {
       src: 'assets/video/segunda_escena.mp4',
       exitText: 'Salir · activar visor',
       exitTextOnEnd: 'Salir · activar visor',
+      autoCloseOnEnd: true,
       onClose: () => {
         this.game.mission.visorUnlocked = true;
         document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
@@ -321,7 +322,28 @@ class Activities {
     });
   }
 
-  openCinematic({ src, exitText = 'Salir', exitTextOnEnd = 'Salir', onClose = null, autoStartMs = 2500, showAviso = true } = {}) {
+  openFarewell(onClose = null) {
+    this._farewellOnClose = typeof onClose === 'function' ? onClose : null;
+    this.transition();
+    const el = $('farewell');
+    if (!el) { if (this._farewellOnClose) this._farewellOnClose(); return; }
+    el.hidden = false;
+    const btn = $('farewell-close');
+    if (btn) {
+      btn.onclick = () => this.closeFarewell();
+      btn.focus();
+    }
+  }
+
+  closeFarewell() {
+    const el = $('farewell');
+    if (el) el.hidden = true;
+    const cb = this._farewellOnClose;
+    this._farewellOnClose = null;
+    if (cb) cb();
+  }
+
+  openCinematic({ src, exitText = 'Salir', exitTextOnEnd = 'Salir', onClose = null, autoStartMs = 2500, showAviso = true, autoCloseOnEnd = false } = {}) {
     if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return false;
     this.kind = 'story';
     this._storyOnClose = typeof onClose === 'function' ? onClose : null;
@@ -334,17 +356,22 @@ class Activities {
     if (aviso) aviso.style.display = showAviso ? '' : 'none';
     video.hidden = true;
     start.hidden = false;
-    exit.hidden = true;
+    exit.hidden = !autoCloseOnEnd ? true : false;
+    if (autoCloseOnEnd) exit.hidden = true;
     exit.textContent = exitText;
     start.onclick = () => {
       clearTimeout(this.storyTimer);
       start.hidden = true;
       video.hidden = false;
       video.src = src;
-      exit.hidden = false;
+      exit.hidden = autoCloseOnEnd;
+      if (!autoCloseOnEnd) exit.hidden = false;
       video.play().catch(() => { start.hidden = false; });
     };
-    video.onended = () => { exit.textContent = exitTextOnEnd; };
+    video.onended = () => {
+      if (autoCloseOnEnd) this.close();
+      else exit.textContent = exitTextOnEnd;
+    };
     exit.onclick = () => this.close();
     this.storyTimer = setTimeout(() => { if (this.kind === 'story') start.click(); }, autoStartMs);
     start.focus();

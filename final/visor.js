@@ -77,7 +77,11 @@ export function mountVisor(ui) {
         exitText: 'Salir · abrir visor',
         exitTextOnEnd: 'Salir · abrir visor',
         showAviso: false,
-        onClose: () => openVisor(),
+        autoCloseOnEnd: true,
+        onClose: () => {
+          if (typeof ui.openFarewell === 'function') ui.openFarewell(() => openVisor());
+          else openVisor();
+        },
       });
       if (opened) {
         ui.game.mission.radiacionCinematicShown = true;
