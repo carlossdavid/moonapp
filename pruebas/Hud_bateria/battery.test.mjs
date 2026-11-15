@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SistemaEnergia } from '../../src/systems/EnergySystem.js';
-import { batteryLevel, BATTERY_HUD_BOUNDS } from './BatteryHUD.js';
+import { batteryLevel, BATTERY_HUD_BOUNDS, drawBatteryHUD } from './BatteryHUD.js';
 import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
 import { foodPercent, SEGUNDOS_REALES_HASTA_60 } from './FoodSystem.js';
+import { SuitWater, WATER_CAPACITY_ML, WATER_CONSUMPTION_ML_PER_HOUR } from './WaterSystem.js';
+import { existsSync } from 'node:fs';
 
 test('300 segundos reales son 24 horas de juego', () => {
   const energy = new SistemaEnergia();
@@ -89,4 +91,63 @@ test('hambre usa horas de juego en interior y exterior, sin segundo reloj', () =
   assert.ok(Math.abs(foodPercent(energy.getSnapshot().tiempo.transcurridoHoras) - 60) < 1e-9);
   // Reiniciar la partida reinicia también el hambre calculada desde su tiempo.
   assert.equal(foodPercent(createBatterySimulation().getSnapshot().tiempo.transcurridoHoras), 100);
+});
+
+test('agua usa 950 mL y 170 mL/h únicamente durante EVA; pausa en interior', () => {
+  const water = new SuitWater();
+  assert.equal(WATER_CAPACITY_ML, 950);
+  assert.equal(WATER_CONSUMPTION_ML_PER_HOUR, 170);
+  water.update(0.5, true);
+  assert.equal(water.snapshot().ml, 865);
+  water.update(1.5, true);
+  assert.equal(water.snapshot().ml, 610);
+  assert.ok(Math.abs(water.snapshot().percent - 100 * 610 / 950) < 1e-9);
+  water.update(10, false);
+  assert.equal(water.snapshot().ml, 610);
+  assert.equal(water.refill(false), 0);
+  assert.equal(water.snapshot().ml, 610);
+  assert.equal(water.refill(true), 340);
+  assert.equal(water.snapshot().ml, 950);
+});
+
+test('avisos del agua, autonomía y agotamiento respetan los umbrales', () => {
+  const water = new SuitWater(255);
+  assert.equal(water.snapshot().returnMl, 255);
+  assert.equal(water.snapshot().alert, 'Regresa a la estación');
+  assert.equal(water.snapshot().autonomyHours, 1.5);
+  const lowWater = new SuitWater(237.5, { returnMinutes: 10, marginMinutes: 0 });
+  assert.equal(lowWater.snapshot().alert, 'Te queda poca agua');
+  water.update(10, true);
+  assert.equal(water.snapshot().ml, 0);
+  assert.equal(water.snapshot().alert, 'Agua agotada');
+  assert.equal(new SuitWater().snapshot().alert, null);
+});
+
+test('agua sigue el reloj acelerado sin consumirse dos veces ni reiniciar en la base', () => {
+  const energy = createBatterySimulation();
+  const water = new SuitWater();
+  const options = { exterior: true, interior: false, powerW: 144.375, charging: false };
+  let before = energy.tiempoHoras;
+  let result = advanceBatterySimulation(energy, 12.5, options); // 1 h de misión
+  water.update(result.tiempo.transcurridoHoras - before, options.exterior);
+  assert.ok(Math.abs(water.snapshot().ml - 780) < 1e-9);
+  before = energy.tiempoHoras;
+  result = advanceBatterySimulation(energy, 12.5, { ...options, exterior: false, interior: true });
+  water.update(result.tiempo.transcurridoHoras - before, false);
+  assert.ok(Math.abs(water.snapshot().ml - 780) < 1e-9);
+});
+
+test('las 11 imágenes de agua se usan en el mismo HUD compacto', () => {
+  for (let level = 0; level <= 10; level++) {
+    const name = `agua_nivel_${String(level).padStart(2, '0')}_t.png`;
+    assert.ok(existsSync(new URL(`../../assets/Sprites/Pantalla/niveles/agua/${name}`, import.meta.url)));
+  }
+  const keys = [];
+  const context = new Proxy({}, { get: (_, key) => key === 'save' || key === 'restore' || key === 'beginPath'
+    || key === 'rect' || key === 'clip' || key === 'fillRect' || key === 'strokeRect'
+    || key === 'drawImage' || key === 'fillText' ? () => {} : undefined, set: () => true });
+  const renderer = { context };
+  const assets = { get(key) { keys.push(key); return {}; } };
+  drawBatteryHUD(renderer, assets, { porcentaje: 100, alerta: null }, 100, new SuitWater(610).snapshot());
+  assert.ok(keys.includes('agua_nivel_07_t')); // 610/950 ≈ 64,2 %
 });

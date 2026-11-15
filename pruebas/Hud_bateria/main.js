@@ -4,6 +4,7 @@ import { DemoScene } from '../../src/scenes/DemoScene.js';
 import { drawBatteryHUD } from './BatteryHUD.js';
 import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
 import { foodPercent } from './FoodSystem.js';
+import { SuitWater } from './WaterSystem.js';
 
 class BatteryTestGame extends Game {
   constructor(canvas) {
@@ -12,6 +13,7 @@ class BatteryTestGame extends Game {
     this.charging = false;
     this.powerW = 144.375;
     this.energy = createBatterySimulation(() => this.shadowed);
+    this.water = new SuitWater();
   }
 
   update(dt) {
@@ -22,8 +24,10 @@ class BatteryTestGame extends Game {
       if (this.input.isPressed('Digit3')) this.powerW = 233;
       if (this.input.isPressed('KeyC')) this.charging = !this.charging;
       if (this.input.isPressed('KeyX')) this.shadowed = !this.shadowed;
+      if (this.input.isPressed('KeyV')) this.water.refill(this.scene?.isInterior === true);
       if (this.input.isPressed('KeyN')) {
         this.energy = createBatterySimulation(() => this.shadowed);
+        this.water = new SuitWater();
         this.charging = false;
       }
     }
@@ -34,12 +38,14 @@ class BatteryTestGame extends Game {
     this.suitHudOpen = false;
     if (this.state !== 'playing') return;
 
-    advanceBatterySimulation(this.energy, dt, {
+    const previousHours = this.energy.tiempoHoras;
+    const snapshot = advanceBatterySimulation(this.energy, dt, {
       exterior: this.scene?.isExterior === true,
       interior: this.scene?.isInterior === true,
       powerW: this.powerW,
       charging: this.charging,
     });
+    this.water.update(snapshot.tiempo.transcurridoHoras - previousHours, this.scene?.isExterior === true);
   }
 
   render(alpha) {
@@ -47,7 +53,9 @@ class BatteryTestGame extends Game {
     if (this.state !== 'playing') return;
     this.renderer.begin(null);
     const snapshot = this.energy.getSnapshot();
-    drawBatteryHUD(this.renderer, this.assets, snapshot.traje, foodPercent(snapshot.tiempo.transcurridoHoras));
+    const water = this.water.snapshot();
+    drawBatteryHUD(this.renderer, this.assets, snapshot.traje, foodPercent(snapshot.tiempo.transcurridoHoras), water);
+    this.canvas.title = `Agua: ${water.ml.toFixed(1)} / 950 mL (${water.percent.toFixed(1)} %). ${water.alert ?? 'Sin avisos'}`;
     this.renderer.end();
   }
 }
@@ -62,10 +70,11 @@ async function start() {
     await game.init();
     // Estos sprites existen en assets, pero no figuran en el manifiesto global.
     // Cargarlos solo para esta prueba mantiene intacto el juego principal.
-    await Promise.all(Array.from({ length: 11 }, (_, level) => {
-      const key = `comida_nivel_${String(level).padStart(2, '0')}_t`;
-      return game.assets.loadImage(key, `./assets/Sprites/Pantalla/niveles/comida/${key}.png`);
-    }));
+    await Promise.all(['comida', 'agua'].flatMap((resource) =>
+      Array.from({ length: 11 }, (_, level) => {
+        const key = `${resource}_nivel_${String(level).padStart(2, '0')}_t`;
+        return game.assets.loadImage(key, `./assets/Sprites/Pantalla/niveles/${resource}/${key}.png`);
+      })));
     game.start();
     // Prototipo: entrar directamente al juego, sin menú ni vídeo introductorio.
     game.state = 'playing';

@@ -9,15 +9,15 @@ export function batteryLevel(percent) {
   return Math.min(10, Math.max(0, Math.ceil(percent / 10)));
 }
 
-/** Panel compacto de cuatro filas. Agua y oxígeno siguen sin valores simulados. */
-export function drawBatteryHUD(renderer, assets, suit, food) {
+/** Panel compacto de cuatro filas. Solo oxígeno queda sin valor simulado. */
+export function drawBatteryHUD(renderer, assets, suit, food, water) {
   const ctx = renderer.context;
   const { x, y, width: w, height: h } = BATTERY_HUD_BOUNDS;
   const level = batteryLevel(suit.porcentaje);
-  const danger = suit.alerta?.regresaAhora || suit.porcentaje <= 25;
+  const danger = suit.alerta?.regresaAhora || suit.porcentaje <= 25 || water.alert;
   const rows = [
     { label: 'COMIDA', key: `comida_nivel_${String(batteryLevel(food)).padStart(2, '0')}_t`, active: true },
-    { label: 'AGUA', key: 'agua_nivel_00_t', active: false },
+    { label: 'AGUA', key: `agua_nivel_${String(batteryLevel(water.percent)).padStart(2, '0')}_t`, active: true, warning: Boolean(water.alert) },
     { label: 'BATERIA', key: `bateria_nivel_${String(level).padStart(2, '0')}_t`, active: true },
     { label: 'OXIGENO', key: 'oxigeno_nivel_00_t', active: false },
   ];
@@ -44,7 +44,8 @@ export function drawBatteryHUD(renderer, assets, suit, food) {
       ctx.drawImage(sprite, 0, 0, 48, 64, x + 4, rowY, 7, 7);
       ctx.drawImage(sprite, 48, 0, 132, 64, x + 41, rowY, 36, 7);
     }
-    ctx.fillStyle = row.active && danger ? '#ff9b8e' : '#e6f4ff';
+    ctx.fillStyle = row.warning || row.label === 'BATERIA' && (suit.alerta?.regresaAhora || suit.porcentaje <= 25)
+      ? '#ff9b8e' : '#e6f4ff';
     ctx.fillText(row.label, x + 13, rowY + 2);
     ctx.globalAlpha = 1;
   });
