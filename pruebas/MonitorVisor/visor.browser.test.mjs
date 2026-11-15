@@ -130,6 +130,33 @@ try {
     }
     console.log(`${path}: visor, gráficas y alertas sincronizados`);
   }
+  await send('Page.navigate', { url: 'http://127.0.0.1:8765/' });
+  for (let i = 0; i < 140; i++) {
+    if (await evaluate("document.querySelector('#loading')?.classList.contains('hidden')")) break;
+    await wait(100);
+  }
+  await wait(200);
+  const home = await evaluate(`({
+    loaded: document.querySelector('#loading').classList.contains('hidden'),
+    menu: Array.from(document.querySelector('#game').getContext('2d').getImageData(160,60,1,1).data).slice(0,3),
+    noTests: !document.querySelector('.monitor, .visor-launcher, .donki-monitor')
+  })`);
+  assert.ok(home.loaded && home.menu.some(value => value > 20), 'el index principal debe mostrar el menú ilustrado');
+  assert.equal(home.noTests, true, 'el index principal no monta paneles de pruebas');
+  await capture('index-principal-menu');
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await wait(180);
+  // El primer Enter inicia la intro original; el segundo la omite y entra a la base.
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await wait(200);
+  const baseVisible = await evaluate(`document.querySelector('#introVideo').style.display === 'none' &&
+    Array.from(document.querySelector('#game').getContext('2d').getImageData(160,90,1,1).data)
+      .slice(0,3).some(value => value > 15)`);
+  assert.ok(baseVisible, 'la base debe renderizarse después de omitir la intro');
+  await capture('index-principal-base');
+  console.log('index principal: menú ilustrado, base y ninguna interfaz de prueba');
   ws.close();
 } finally {
   browser.kill();
