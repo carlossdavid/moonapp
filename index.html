@@ -47,6 +47,54 @@
       pointer-events: none;
     }
     #loading.hidden { display: none; }
+
+    #energy-minigame-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3, 7, 18, 0.82);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    #energy-minigame-overlay.open { display: flex; }
+    #energy-minigame-shell {
+      position: relative;
+      width: min(1100px, 100%);
+      height: min(760px, 100%);
+      max-width: 100%;
+      max-height: 100%;
+      border: 2px solid #334155;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+      background: #050c14;
+    }
+    #energy-minigame-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #050c14;
+    }
+    #energy-minigame-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: rgba(15, 23, 42, 0.92);
+      color: #f8fafc;
+      font: 20px/1 system-ui, sans-serif;
+      cursor: pointer;
+    }
+    #energy-minigame-close:hover { filter: brightness(1.1); }
   </style>
 </head>
 <body>
@@ -55,6 +103,81 @@
     <video id="introVideo" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#050c14;display:none;z-index:10;"></video>
     <div id="loading" role="status">Cargando base lunar…</div>
   </div>
+
+  <div id="energy-minigame-overlay" aria-hidden="true">
+    <div id="energy-minigame-shell" role="dialog" aria-modal="true" aria-label="Control de energía">
+      <button id="energy-minigame-close" type="button" aria-label="Cerrar panel de energía">✕</button>
+      <iframe id="energy-minigame-frame" title="Panel de energía"></iframe>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const overlay = document.getElementById('energy-minigame-overlay');
+      const frame = document.getElementById('energy-minigame-frame');
+      const closeBtn = document.getElementById('energy-minigame-close');
+      const src = './pruebas/CambioDeModo/ModosDeEstacion/minijuego%20cambiar%20modo.html';
+      const MODE_ASSETS = {
+        tortuga: 'base_modo_tortuga',
+        explorador: 'base_modo_explorador',
+        turbo: 'base_modo_turbo',
+      };
+
+      function closeEnergyMinigame() {
+        overlay.classList.remove('open');
+        overlay.setAttribute('aria-hidden', 'true');
+        frame.src = 'about:blank';
+        window.__energyMinigameOpen = false;
+      }
+
+      function openEnergyMinigame() {
+        if (!overlay.classList.contains('open')) {
+          frame.src = src;
+          overlay.classList.add('open');
+          overlay.setAttribute('aria-hidden', 'false');
+        }
+        window.__energyMinigameOpen = true;
+        closeBtn.focus();
+      }
+
+      function applyEnergyMode(mode) {
+        if (!mode) return;
+        window.__energyMode = mode;
+        const game = window.__moonGame;
+        if (game && typeof game.setEnergyMode === 'function') {
+          game.setEnergyMode(mode);
+        } else if (game) {
+          game.energyMode = mode;
+          if (game.scene && typeof game.scene.applyEnergyMode === 'function') {
+            game.scene.applyEnergyMode(mode);
+          }
+        }
+        window.dispatchEvent(new CustomEvent('energy-mode-changed', { detail: { mode } }));
+      }
+
+      window.openEnergyMinigame = openEnergyMinigame;
+      window.closeEnergyMinigame = closeEnergyMinigame;
+      window.isEnergyMinigameOpen = function () { return overlay.classList.contains('open'); };
+      window.applyEnergyMode = applyEnergyMode;
+      window.__energyModeAssets = MODE_ASSETS;
+
+      closeBtn.addEventListener('click', closeEnergyMinigame);
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeEnergyMinigame();
+      });
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) {
+          e.preventDefault();
+          closeEnergyMinigame();
+        }
+      });
+      window.addEventListener('message', function (e) {
+        const data = e.data || {};
+        if (data.type === 'closeEnergyMinigame') closeEnergyMinigame();
+        if (data.type === 'energyModeChanged' && data.mode) applyEnergyMode(data.mode);
+      });
+    })();
+  </script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

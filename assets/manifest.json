@@ -283,6 +283,18 @@
     {
       "key": "mod_almacenamiento",
       "src": "./assets/Sprites/estructuras_interiores/centroDeAlmacenamiento.png"
+    },
+    {
+      "key": "base_modo_tortuga",
+      "src": "./assets/Sprites/estacion_modos/EL_A.png"
+    },
+    {
+      "key": "base_modo_explorador",
+      "src": "./assets/Sprites/estacion_modos/EL_E.png"
+    },
+    {
+      "key": "base_modo_turbo",
+      "src": "./assets/Sprites/estacion_modos/EL_R.png"
     }
   ]
 }

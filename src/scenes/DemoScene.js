@@ -281,7 +281,7 @@ export class DemoScene extends Scene {
     });
     const ent = new Obstacle({ x, y, image, w, h, sortOffset: 0, body });
     this.addEntity(ent);
-    return { x, y, w, h, footW, footH, scale };
+    return { entity: ent, x, y, w, h, footW, footH, scale };
   }
 
   _addInteractZone(x, y, w, h, cfg) {

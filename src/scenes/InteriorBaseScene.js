@@ -176,7 +176,8 @@ export class InteriorBaseScene extends Scene {
     this.physicsWorld = new PhysicsWorld({ worldWidth: worldW, worldHeight: worldH, cellSize: SPATIAL_CELL_SIZE });
 
     // Prefer provided interior asset (Asset 9) if loaded, else procedural fallback
-    this.backgroundImage = bg || createInteriorBackground(worldW, worldH);
+    this._defaultInteriorBackground = bg || createInteriorBackground(worldW, worldH);
+    this.backgroundImage = this._getInteriorBackgroundForMode(this.game.energyMode) || this._defaultInteriorBackground;
     this.backgroundFit = 'contain';
     this.compassImg = assets.has('compass_ui') ? assets.get('compass_ui') : null;
 
@@ -301,7 +302,8 @@ export class InteriorBaseScene extends Scene {
       'Próximamente podrás gestionar la extracción de CO₂, el suministro de oxígeno y el mantenimiento del traje.', 'mod_oxigeno');
     addModule('energy', 'CONTROL DE ENERGÍA', roomRight - 100, roomTop + 115, 48, 48,
       'CONTROL DE ENERGÍA',
-      'Próximamente podrás gestionar la generación, almacenamiento y distribución de energía de la base lunar.', 'mod_energia');
+      'Gestiona los modos de energía y completa las calibraciones de la base lunar.', 'mod_energia',
+      () => this._abrirPanelEnergia());
     addModule('food', 'CONTROL DE ALIMENTACIÓN', roomLeft + 80, roomTop + 80, 48, 48,
       'CONTROL DE ALIMENTACIÓN',
       'Próximamente podrás administrar los cultivos, la iluminación, la ventilación y las condiciones ambientales.', 'mod_alimentos',
@@ -402,6 +404,39 @@ export class InteriorBaseScene extends Scene {
     this.game.changeScene(escena);
   }
 
+  _getInteriorBackgroundForMode(mode) {
+    const assets = this.game && this.game.assets;
+    if (!assets) return null;
+    const map = {
+      tortuga: 'base_modo_tortuga',
+      explorador: 'base_modo_explorador',
+      turbo: 'base_modo_turbo',
+    };
+    const key = map[mode];
+    if (key && assets.has(key)) return assets.get(key);
+    return assets.has('base_interior') ? assets.get('base_interior') : null;
+  }
+
+  applyEnergyMode(mode) {
+    const bg = this._getInteriorBackgroundForMode(mode) || this._defaultInteriorBackground || this.backgroundImage;
+    if (bg) this.backgroundImage = bg;
+  }
+
+  /**
+   * Abre el panel de control de energía como minijuego en superposición HTML.
+   */
+  _abrirPanelEnergia() {
+    if (typeof window !== 'undefined' && typeof window.openEnergyMinigame === 'function') {
+      window.openEnergyMinigame();
+    } else {
+      this.comingSoonModal = {
+        title: 'CONTROL DE ENERGÍA',
+        description: 'No se pudo abrir el panel de energía.',
+        button: 'CERRAR',
+      };
+    }
+  }
+
   renderGroundEffects(renderer, alpha) {
     if (this.interiorModules) {
       for (const m of this.interiorModules) {
@@ -437,6 +472,20 @@ export class InteriorBaseScene extends Scene {
       if (this.game.input.isPressed('Escape') || this.game.input.isPressed('KeyE') || this.game.input.isPressed('Enter')) {
         this.comingSoonModal = null;
       }
+      if (this.player && this.camera) {
+        const desiredX = this.player.x - this.camera.viewWidth / 2;
+        const desiredY = this.player.y - this.camera.viewHeight / 2;
+        const t = 1 - Math.exp(-CAMERA_LERP * dt);
+        this.camera.x += (desiredX - this.camera.x) * t;
+        this.camera.y += (desiredY - this.camera.y) * t;
+        this.camera._clamp();
+      }
+      return;
+    }
+
+    // Minijuego HTML de energía abierto en superposición
+    if (typeof window !== 'undefined' && typeof window.isEnergyMinigameOpen === 'function' && window.isEnergyMinigameOpen()) {
+      this.promptText = '';
       if (this.player && this.camera) {
         const desiredX = this.player.x - this.camera.viewWidth / 2;
         const desiredY = this.player.y - this.camera.viewHeight / 2;

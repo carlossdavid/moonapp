@@ -123,6 +123,20 @@ export class Game {
     if (scene && typeof scene.init === 'function') {
       await scene.init();
     }
+    if (this.energyMode && this.scene && typeof this.scene.applyEnergyMode === 'function') {
+      this.scene.applyEnergyMode(this.energyMode);
+    }
+  }
+
+  /**
+   * Establece el modo de energía activo y actualiza la escena actual si corresponde.
+   * @param {'tortuga'|'explorador'|'turbo'|string} mode
+   */
+  setEnergyMode(mode) {
+    this.energyMode = mode;
+    if (this.scene && typeof this.scene.applyEnergyMode === 'function') {
+      this.scene.applyEnergyMode(mode);
+    }
   }
 
   /** Start the game loop (shows menu when ready). */

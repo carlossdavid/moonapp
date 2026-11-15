@@ -9,6 +9,7 @@ async function bootstrap() {
   }
 
   const game = new Game(canvas);
+  window.__moonGame = game;
   const loadingEl = document.getElementById('loading');
   try {
     // Nivel 0: iniciar dentro de la base
@@ -23,6 +24,9 @@ async function bootstrap() {
     });
     game.setScene(scene);
     await game.init();
+    if (window.__energyMode && typeof game.setEnergyMode === 'function') {
+      game.setEnergyMode(window.__energyMode);
+    }
     if (loadingEl) loadingEl.textContent = 'Listo';
   } catch (err) {
     console.error(err);
