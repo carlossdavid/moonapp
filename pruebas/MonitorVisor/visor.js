@@ -4,15 +4,21 @@
  */
 const channels = [
   {
-    key: 'solar', color: '#ffc06b', name: 'Actividad solar',
+    key: 'solar',
+    color: '#ffc06b',
+    name: 'Actividad solar',
     description: 'Actividad solar · no mide dosis',
   },
   {
-    key: 'particles', color: '#71f5dc', name: 'Partículas',
+    key: 'particles',
+    color: '#71f5dc',
+    name: 'Partículas',
     description: 'Proxy terrestre · no es sensor del traje',
   },
   {
-    key: 'earth', color: '#9ab8ff', name: 'Campo terrestre',
+    key: 'earth',
+    color: '#9ab8ff',
+    name: 'Campo terrestre',
     description: 'Geomagnetismo terrestre · no dosis lunar',
   },
 ];
@@ -41,12 +47,10 @@ overlay.innerHTML = `
     ${channels.map(({ key, name, description }) => `
       <section class="visor-channel visor-${key}" aria-label="${name}">
         <div class="visor-channel-header"><strong>${name}</strong><span class="visor-value" id="visor-${key}-value">—</span></div>
-        <canvas class="visor-canvas" id="visor-${key}-chart" role="img"
-          aria-label="Serie temporal de ${name.toLowerCase()}, índice simulado de 0 a 100"></canvas>
+        <canvas class="visor-canvas" id="visor-${key}-chart" role="img" aria-label="Serie temporal de ${name.toLowerCase()}, índice simulado de 0 a 100"></canvas>
         <p>${description}</p>
       </section>`).join('')}
-    <div class="visor-alerts" aria-label="Alertas simuladas" role="log" aria-live="polite"
-      aria-relevant="additions"><span class="visor-empty">Sin alertas registradas</span></div>
+    <div class="visor-alerts" aria-label="Alertas simuladas" role="log" aria-live="polite" aria-relevant="additions"><span class="visor-empty">Sin alertas registradas</span></div>
     <div class="visor-vega" aria-label="Mensajes de VEGA" aria-live="polite"></div>
   </div>`;
 document.body.append(launcher, overlay);
@@ -105,32 +109,38 @@ function drawChannel(channel) {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   ctx.clearRect(0, 0, rect.width, rect.height);
-  const left = 24, right = rect.width - 5, top = 4, bottom = rect.height - 5;
-  ctx.font = '9px monospace';
-  ctx.textBaseline = 'middle';
-  for (const value of [0, 50, 100]) {
-    const y = bottom - (bottom - top) * value / 100;
-    ctx.fillStyle = '#a6c6e0';
-    ctx.fillText(String(value), 0, y);
-    ctx.fillStyle = '#2478a0';
-    ctx.fillRect(left, Math.round(y), right - left, 1);
+  ctx.fillStyle = '#102332';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.strokeStyle = '#355063';
+  ctx.lineWidth = 1;
+  for (const level of [0, 25, 50, 75, 100]) {
+    const y = 9 + (height - 18) * (1 - level / 100);
+    ctx.beginPath();
+    ctx.moveTo(27, y);
+    ctx.lineTo(width - 8, y);
+    ctx.stroke();
+    if (level === 0 || level === 50 || level === 100) {
+      ctx.fillStyle = '#91aeb8';
+      ctx.font = '10px Consolas, monospace';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(level), 3, y + 3);
+    }
   }
   if (!series.length) return;
   ctx.beginPath();
   series.forEach((point, index) => {
-    const x = left + index * (right - left) / Math.max(1, series.length - 1);
-    const y = bottom - (bottom - top) * point[channel.key] / 100;
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    const x = 28 + index * (width - 37) / (Math.max(1, series.length - 1));
+    const y = 9 + (height - 18) * (1 - point[channel.key] / 100);
+    if (!index) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.strokeStyle = channel.color;
   ctx.lineWidth = 2;
   ctx.lineJoin = 'bevel';
   ctx.stroke();
   const latest = series.at(-1);
-  const y = bottom - (bottom - top) * latest[channel.key] / 100;
+  const y = 9 + (height - 18) * (1 - latest[channel.key] / 100);
   ctx.fillStyle = channel.color;
-  ctx.fillRect(right - 3, y - 3, 6, 6);
+  ctx.fillRect(width - 8, y - 3, 6, 6);
 }
 
 function drawAll() {

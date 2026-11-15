@@ -2,98 +2,58 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <base href="../../">
-  <title>Prueba | Monitor de clima espacial</title>
+  <title>Prueba | Juego lunar · Consola DONKI</title>
   <link rel="stylesheet" href="pruebas/clima-espacial/style.css">
-  <link rel="stylesheet" href="pruebas/MonitorVisor/visor.css">
+  <link rel="stylesheet" href="pruebas/clima-espacial/consola.css">
 </head>
 <body>
   <div id="game-root">
-    <canvas id="game"></canvas>
+    <canvas id="game" aria-label="Juego lunar"></canvas>
     <div id="loading">Cargando juego…</div>
-    <section class="monitor" aria-label="Monitor de clima espacial simulado">
-      <button id="open-monitor" class="monitor-tab" type="button" aria-controls="monitor-content" aria-expanded="false">
-        <span class="signal" aria-hidden="true"></span> Monitor simulado <span id="tab-alert" class="tab-alert" hidden>¡Alerta!</span>
-      </button>
-      <div id="monitor-content" class="monitor-content" hidden>
-        <header class="monitor-header">
-          <div>
-            <p class="identity">Estación lunar / prueba local</p>
-            <h1>Clima espacial</h1>
-            <p class="disclaimer">Simulación para el juego. Enero 2026 es la referencia fija, no una medición de esta base.</p>
-          </div>
-          <button id="close-monitor" class="icon-button" type="button" aria-label="Cerrar monitor">×</button>
-        </header>
-        <div class="readout">
-          <span>Día <strong id="day">1</strong> · termina en <strong id="clock">10:00</strong></span>
-          <span id="state" class="state">Monitoreando</span>
+    <section id="monitor-content" hidden role="dialog" aria-modal="true" aria-label="Centro de control DONKI">
+      <div class="console-frame">
+        <img class="console-art" src="pruebas/clima-espacial/sprites/Centro de control lunar.png" alt="Centro de control lunar" draggable="false">
+        <button id="close-monitor" aria-label="Cerrar consola" title="Cerrar · Escape"></button>
+        <div class="console-rate rate-flr" id="chance-flr">—</div>
+        <div class="console-rate rate-cme" id="chance-cme">—</div>
+        <div class="console-rate rate-gst" id="chance-gst">—</div>
+        <div class="console-rate rate-chain" id="chance-flr-cme">—</div>
+        <div class="console-rate rate-sep" id="chance-cme-sep">—</div>
+        <canvas id="weather-chart" width="400" height="246" aria-label="Curvas simuladas: actividad solar, partículas y campo terrestre"></canvas>
+        <div class="console-legend">
+          <span>Solar <b id="solar-value">—</b>/100</span>
+          <span>Partículas <b id="particle-value">—</b>/100</span>
+          <span>Campo terrestre <b id="earth-value">—</b>/100</span>
         </div>
-        <section class="source-panel" aria-label="Probabilidades históricas fijas">
-          <div class="source-heading">
-            <h2>Referencia DONKI <span>enero 2026 · 31 días</span></h2>
-          </div>
-          <p id="reference-status" role="status" aria-live="polite">Cargando referencia archivada…</p>
-          <div class="probabilities">
-            <span>FLR M/X <strong id="chance-flr">—</strong></span>
-            <span>CME ≥1000 km/s <strong id="chance-cme">—</strong></span>
-            <span>GST terrestre <strong id="chance-gst">—</strong></span>
-            <span>FLR → CME filtrada <strong id="chance-flr-cme">—</strong></span>
-            <span>CME → SEP <strong id="chance-cme-sep">—</strong></span>
-          </div>
-          <p class="source-footnote">Tasas candidatas de un mes activo, NO de llegada a la Luna. Un sorteo por día de 10 min; no todos los días habrá alerta. SEP solo se sortea tras CME.</p>
-        </section>
-        <div class="graph">
-          <canvas id="weather-chart" role="img" aria-label="Gráfica de índices simulados de actividad solar, partículas y geomagnetismo terrestre"></canvas>
-          <div class="legend">
-            <span><i class="key solar"></i> Actividad solar <b id="solar-value">—</b></span>
-            <span><i class="key particles"></i> Partículas (proxy terrestre) <b id="particle-value">—</b></span>
-            <span><i class="key earth"></i> Campo terrestre <b id="earth-value">—</b></span>
-          </div>
-          <p class="scale">Curvas simuladas (índice 0–100), NO pfu ni mSv. La serie terrestre no representa exposición lunar.</p>
-        </div>
-        <section class="station-panel" aria-label="Evaluación de la estación">
-          <p class="station-location">Estación ficticia cerca de Shackleton: 89,45° S; 222,69° E.</p>
-          <label for="crew-mode">Tripulación</label>
-          <select id="crew-mode">
-            <option value="refugio">Dentro del refugio</option>
-            <option value="eva">En EVA (exterior)</option>
-          </select>
-          <p id="safety-status" class="safety-status" role="status">Protocolo normal: EVA disponible.</p>
-          <button id="return-shelter" class="return-shelter" type="button" hidden>Volver al refugio</button>
-          <div id="risk-report" class="risk-report" data-level="info" role="status" aria-live="polite">
-            <strong id="risk-title">Sin evaluación local</strong>
-            <p id="risk-action">En espera de un evento simulado.</p>
-            <p id="station-reading">Sensor exterior ficticio: sin lectura.</p>
-            <ul id="risk-evidence"></ul>
-          </div>
-        </section>
-        <div class="controls">
-          <button id="pause" type="button">Pausar</button>
-          <button id="advance-day" type="button">Avanzar día (solo prueba)</button>
-          <label for="test-scenario">Caso de prueba</label>
-          <select id="test-scenario">
-            <option value="goes">GOES: señal indirecta</option>
-            <option value="lunar">Instrumento lunar cercano</option>
-            <option value="station">Sensor exterior de la base</option>
-            <option value="cmeAway">CME desviada</option>
-            <option value="gst">GST solo terrestre</option>
-          </select>
-          <button id="test-alert" type="button">Probar alerta</button>
-          <p id="scenario-preview" class="scenario-preview">GOES: señal indirecta. Para ensayar el caso, pulsa «Probar alerta».</p>
-        </div>
-        <section class="log-section" aria-label="Historial de alertas">
-          <h2>Alertas de la misión <span id="alert-count">0</span></h2>
-          <div id="alerts" class="alerts" role="log" aria-live="polite" aria-relevant="additions">
-            <p class="empty">Aún no hay alertas. El monitor sigue tomando muestras simuladas.</p>
-          </div>
-        </section>
-        <p id="model-note" class="model-note">Un día de juego dura 10 minutos reales. Las tasas fijas proceden de un mes histórico; los índices y alertas de la misión son simulados.</p>
+        <div class="console-clock">Día <b id="day">1</b> · <b id="clock">10:00</b><br><span id="state">Monitoreando</span></div>
+      </div>
+      <div class="console-footer">
+        <span>DONKI enero 2026: frecuencias históricas, no probabilidades de impacto lunar. Curvas: índices simulados 0–100, no pfu, Kp ni mSv.</span>
+        <button id="test-alert" type="button">Simular alerta · PRUEBA</button>
       </div>
     </section>
+    <!-- Compatibilidad con el monitor original: una sola instancia y reloj.
+         Sus herramientas y diagnósticos se conservan, no flotan sobre el juego. -->
+    <div hidden>
+      <button id="open-monitor" aria-expanded="false"></button><span id="tab-alert" hidden></span>
+      <p id="reference-status"></p><p id="model-note"></p>
+      <select id="crew-mode"><option value="refugio">Refugio</option><option value="eva">EVA</option></select>
+      <p id="safety-status"></p><button id="return-shelter" hidden></button>
+      <div id="risk-report"><strong id="risk-title"></strong><p id="risk-action"></p><p id="station-reading"></p><ul id="risk-evidence"></ul></div>
+      <button id="pause"></button><button id="advance-day"></button>
+      <select id="test-scenario"><option value="goes">Partículas</option><option value="cmeAway">CME</option><option value="gst">GST</option></select>
+      <p id="scenario-preview"></p><span id="alert-count">0</span><div id="alerts"><p class="empty">Sin alertas</p></div>
+    </div>
   </div>
-  <script type="module" src="pruebas/MonitorVisor/game.js"></script>
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('loading').textContent =
+        'Esta prueba necesita HTTP. Desde moonapp ejecuta python -m http.server 8765 y abre http://localhost:8765/pruebas/clima-espacial/';
+    }
+  </script>
+  <script type="module" src="pruebas/clima-espacial/juego.js"></script>
   <script type="module" src="pruebas/clima-espacial/app.js"></script>
-  <script type="module" src="pruebas/MonitorVisor/visor.js"></script>
 </body>
 </html>

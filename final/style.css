@@ -1,0 +1,32 @@
+@font-face { font-family: 'Press Start 2P'; src: url('../assets/fonts/PressStart2P-Regular.ttf'); }
+[hidden] { display: none !important; }
+#game-root { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+#game { image-rendering: pixelated; }
+#introVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; z-index: 10; }
+#loading { z-index: 100; text-align: center; padding: 30px; }
+#location-label { position: fixed; top: 8px; left: 12px; color: #a3deed; font: 10px monospace; background: #071625b8; padding: 4px; pointer-events: none; }
+#help-toggle { position: fixed; right: 10px; bottom: 10px; background: #102332; color: #ffcf70; border: 1px solid #ffae32; font: 11px monospace; z-index: 22; }
+#help-panel { position: fixed; right: 10px; bottom: 45px; max-width: 350px; padding: 18px; background: #071625f5; border: 1px solid #ffae32; font: 12px/1.6 monospace; z-index: 24; }
+#activity { position: fixed; inset: 0; z-index: 70; background: #000d; display: flex; justify-content: center; align-items: center; }
+.activity-shell { width: min(1100px, 96vw); height: 92vh; display: flex; flex-direction: column; background: #0b172a; border: 2px solid #e5a13b; }
+.activity-shell header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; gap: 10px; }
+.activity-shell h1 { font: 15px 'Press Start 2P', monospace; }
+.activity-shell button, #recarga-tools button { padding: 8px; background: #102332; color: #ffcf70; border: 1px solid #ffae32; font: 12px monospace; }
+#activity-frame { width: 100%; flex: 1; min-height: 0; border: 0; background: #030b1a; }
+.mode-frame { width: 100%; flex: 1; min-height: 0; border: 0; background: #030b1a; }
+#activity-intro { padding: 30px; font: 16px/1.8 monospace; }
+#activity-intro button { margin: 8px; }
+#recarga-tools { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); width: min(720px, 95vw); display: flex; gap: 6px; align-items: center; justify-content: center; z-index: 35; font: 10px monospace; background: #061529e8; }
+#recarga-status { max-width: 220px; }
+#notice { position: fixed; top: 36px; left: 50%; transform: translateX(-50%); max-width: 90vw; background: #061529ee; color: #ffda8d; border: 1px solid #ffae32; padding: 10px; z-index: 90; font: 12px/1.5 monospace; pointer-events: none; }
+.visor-launcher { left: auto; right: 10px; bottom: 38px; font-size: 8px; padding: 7px; }
+.visor-art { image-rendering: pixelated; }
+.visor-channel { left: 14.6%; width: 53.2%; height: 12.2%; background: #00172ff5; }
+.visor-solar { top: 22%; }
+.visor-particles { top: 37.1%; }
+.visor-earth { top: 52.2%; }
+.visor-alerts { left: 69.7%; top: 20.3%; width: 15.5%; height: 7.2%; }
+.visor-vega { left: 69.7%; top: 35.4%; width: 15.5%; height: 26.6%; }
+#cleaning-task { z-index: 65; }
+#monitor-content { z-index: 60; }
+.console-frame { flex-shrink: 0; }
