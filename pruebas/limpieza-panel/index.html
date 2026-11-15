@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../../">
+  <title>Prueba aislada | Limpieza del panel solar</title>
+  <link rel="stylesheet" href="pruebas/limpieza-panel/style.css">
+</head>
+<body>
+  <main id="game-root">
+    <canvas id="game" aria-label="Mapa pixel art de la estación lunar"></canvas>
+    <div id="loading" role="status">Cargando juego…</div>
+    <div class="trial-label">PRUEBA AISLADA · PANEL SOLAR</div>
+    <section id="cleaning-task" role="dialog" aria-modal="true" aria-labelledby="task-title" hidden>
+      <div class="task-shell">
+        <header class="task-header">
+          <div class="task-identity">
+            <span class="task-symbol" aria-hidden="true">✦</span>
+            <div>
+              <p class="eyebrow">Estación Shackleton / mantenimiento</p>
+              <h1 id="task-title">Circuito de limpieza</h1>
+              <p class="subtitle"><span id="panel-name">Panel solar</span> · equipo experimental E-Beam</p>
+            </div>
+          </div>
+          <button id="cancel-task" class="exit-button" type="button" aria-label="Salir de la actividad">Salir <span aria-hidden="true">×</span></button>
+        </header>
+        <div class="stages" aria-label="Pasos de la actividad">
+          <span class="stage stage-connect"><b>01</b><span>Conectar A y B</span></span>
+          <span class="stage stage-ready"><b>02</b><span>Activar el haz</span></span>
+          <span class="stage stage-sweeping"><b>03</b><span>Verificar 24/24</span></span>
+        </div>
+        <div class="workbench">
+          <div class="workbench-top">
+            <span><i class="indicator" aria-hidden="true"></i> Consola de mantenimiento</span>
+            <strong id="progress-display" aria-live="off">0 / 24 zonas</strong>
+          </div>
+          <canvas id="task-canvas" width="640" height="360" tabindex="0" aria-label="Generador a la izquierda, un imán con dos tomas en el centro y el panel a la derecha: arrastra el cable A hasta A y el B hasta B"></canvas>
+          <p class="instructions">Conecta tú mismo los cables: arrastra <b>A → A</b> y <b>B → B</b> en el único imán. Después activa el haz para limpiar las 24 zonas.</p>
+        </div>
+        <div class="task-controls">
+          <details class="connect-controls">
+            <summary>Alternativa sin arrastrar</summary>
+            <div class="connect-buttons" aria-label="Conexión accesible de los cables">
+              <button id="connect-a" type="button">Conectar cable A</button>
+              <button id="connect-b" type="button">Conectar cable B</button>
+            </div>
+          </details>
+          <button id="activate-task" type="button" disabled>Activar haz <span aria-hidden="true">✦</span></button>
+        </div>
+        <div class="task-footer">
+          <p id="task-status" role="status" aria-live="polite">Actividad lista</p>
+          <div class="actions">
+            <button id="reset-task" type="button">Reiniciar</button>
+            <button id="finish-task" type="button" hidden>Finalizar limpieza</button>
+          </div>
+        </div>
+        <div class="task-footnotes">
+          <p class="help">¿No puedes arrastrar? Abre «Alternativa sin arrastrar». <kbd>Esc</kbd> sale sin perder el avance.</p>
+          <p class="disclaimer">Los imanes orientan el haz; la carga repele el polvo. El 100% indica las zonas del juego, no la eficacia de un equipo lunar real.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="pruebas/limpieza-panel/app.js"></script>
+</body>
+</html>

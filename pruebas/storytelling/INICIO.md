@@ -1,5 +1,16 @@
 # Entrenador Lunar — propuesta de inicio
 
+> **Nueva propuesta principal:** [La silla vacía — investigador y relevo
+> fallido](PROLOGO-INVESTIGADOR.md). Es una alternativa nueva: el protagonista
+> ya trabaja en una investigación lunar cuando falla la llegada del segundo
+> equipo.
+>
+> **Otras dos alternativas anteriores:** [El turno que nadie
+> puede vivir por ti — simulador](PROLOGO-SIMULADOR.md) y [La nota para quien
+> viene — relevo real dentro de la ficción](PROLOGO-RELEVO.md).
+> El texto a continuación se conserva como **borrador anterior** de la
+> apertura, no como versión final aprobada.
+
 > **Documento narrativo de prueba.** Describe solamente la apertura de la
 > partida, desde la primera imagen hasta que se habilita la primera jornada.
 > **No fija cuántos días dura la campaña ni escribe sus acontecimientos.**
