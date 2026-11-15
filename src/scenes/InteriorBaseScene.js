@@ -9,8 +9,8 @@ import { PhysicsWorld } from '../physics/PhysicsWorld.js';
 import { PhysicsBody } from '../physics/PhysicsBody.js';
 import { BoxCollider } from '../physics/BoxCollider.js';
 import { Minimap } from '../ui/Minimap.js';
-import { readSuitResources, shouldShowResourceHUD, renderResourceHUD } from '../ui/ResourceHUD.js';
-import { renderInventoryPanel } from '../ui/InventoryPanel.js';
+import { readSuitResources, renderResourceHUD } from '../ui/ResourceHUD.js';
+import { renderComingSoonModal } from '../ui/ComingSoonModal.js';
 import {
   LOGICAL_WIDTH, LOGICAL_HEIGHT, CAMERA_LERP,
   PLAYER_FOOT_WIDTH, PLAYER_FOOT_HEIGHT, SPATIAL_CELL_SIZE, Layer,
@@ -23,24 +23,23 @@ function createInteriorBackground(w, h) {
   if (!ctx) return c;
   ctx.fillStyle = '#1b1f26';
   ctx.fillRect(0, 0, w, h);
-  // circular base floor
-  const cx = w / 2, cy = h / 2, r = Math.min(w, h) * 0.42;
+  // sala rectangular
+  const roomLeft = 20, roomTop = 30, roomRight = w - 20, roomBottom = h - 60;
   ctx.fillStyle = '#6c7687';
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(roomLeft, roomTop, roomRight - roomLeft, roomBottom - roomTop);
   ctx.fillStyle = '#7b8698';
-  ctx.beginPath(); ctx.arc(cx, cy, r * 0.82, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#9aa6b8'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-  // entrance/airlock marker at bottom
+  ctx.fillRect(roomLeft + 6, roomTop + 6, roomRight - roomLeft - 12, roomBottom - roomTop - 12);
+  ctx.strokeStyle = '#9aa6b8'; ctx.lineWidth = 3;
+  ctx.strokeRect(roomLeft, roomTop, roomRight - roomLeft, roomBottom - roomTop);
+  // hallway
+  const cx = w / 2;
+  ctx.fillStyle = '#5f6a79';
+  ctx.fillRect(cx - 25, roomBottom, 50, h - 60 - roomBottom + 48);
+  // entrance marker
   ctx.fillStyle = '#4a5568';
   ctx.fillRect(cx - 28, h - 60, 56, 50);
   ctx.fillStyle = '#93a0b5';
   ctx.fillRect(cx - 18, h - 54, 36, 36);
-  // some interior details
-  ctx.fillStyle = '#5a6475';
-  ctx.fillRect(cx - 70, cy - 40, 40, 24);
-  ctx.fillRect(cx + 30, cy - 40, 40, 24);
-  ctx.fillRect(cx - 20, cy - 70, 40, 20);
   return c;
 }
 
@@ -131,6 +130,8 @@ export class InteriorBaseScene extends Scene {
     this.player = null;
     this.interactables = [];
     this.promptText = '';
+    this.comingSoonModal = null;
+    this.interiorModules = [];
     /** Posición de la salida/airlock en el mundo (para marcador del minimapa). */
     this.exitMarker = null;
     // Minimap (HUD reutilizable, esquina superior derecha, toggle con M)
@@ -178,14 +179,14 @@ export class InteriorBaseScene extends Scene {
     this.backgroundFit = 'contain';
     this.compassImg = assets.has('compass_ui') ? assets.get('compass_ui') : null;
 
-    // Spawn inicial dentro de la base (área central/control), no en la salida
-    const spawnX = this.opts.spawnX ?? (worldW / 2);
-    const spawnY = this.opts.spawnY ?? (worldH * 0.48);
+    // Spawn: conectado al pasillo cerca de (176,285) si cabe, si no fallback
+    const spawnX = this.opts.spawnX ?? Math.min(176, worldW - 40);
+    const spawnY = this.opts.spawnY ?? Math.min(285, worldH - 40);
     this._spawnPlayer(assets, spawnX, spawnY);
     this._spawnExitZone(worldW, worldH);
     this.exitMarker = { x: worldW / 2, y: worldH - 10 };
     this._spawnInteriorCollisions(worldW, worldH);
-    this._spawnInteriorDecor(worldW, worldH);
+    this._spawnInteriorModules(worldW, worldH);
 
     this.camera.setTarget(this.player);
     this.camera.follow(this.player, 1);
@@ -215,58 +216,36 @@ export class InteriorBaseScene extends Scene {
 
   _spawnInteriorCollisions(worldW, worldH) {
     const cx = worldW / 2;
+    const wallT = 10;
+    // Sala rectangular principal
+    const roomLeft = 20;
+    const roomRight = worldW - 20;
+    const roomTop = 30;
+    const roomBottom = worldH - 60; // deja espacio para hallway hacia salida
 
-    const doorGap = 44;
-    const bottomWallY = worldH - 12;
-    const bottomWallH = 12;
+    // Paredes de la sala (rectangular)
+    // arriba
+    this._addSolidBox(roomLeft, roomTop, roomRight - roomLeft, wallT);
+    // izquierda
+    this._addSolidBox(roomLeft, roomTop, wallT, roomBottom - roomTop);
+    // derecha
+    this._addSolidBox(roomRight - wallT, roomTop, wallT, roomBottom - roomTop);
+    // abajo (con abertura para hallway)
+    const doorGap = 50;
+    this._addSolidBox(roomLeft, roomBottom - wallT, (roomRight - roomLeft - doorGap) / 2, wallT);
+    this._addSolidBox(roomRight - (roomRight - roomLeft - doorGap) / 2, roomBottom - wallT, (roomRight - roomLeft - doorGap) / 2, wallT);
 
-    this._addSolidBox(0, bottomWallY, cx - doorGap / 2, bottomWallH);
-    this._addSolidBox(cx + doorGap / 2, bottomWallY, worldW - (cx + doorGap / 2), bottomWallH);
-
-    const hallTop = worldH * 0.56;
-    const hallBottom = bottomWallY;
-    const hallW = 54;
-    const hallH = Math.max(0, hallBottom - hallTop);
-    const hallLeftX = cx - hallW / 2;
-    const hallRightX = cx + hallW / 2;
-    this._addSolidBox(0, hallTop, hallLeftX, hallH);
-    this._addSolidBox(hallRightX, hallTop, worldW - hallRightX, hallH);
-
-    const roomCx = cx;
-    const roomCy = worldH * 0.34;
-    const roomR = Math.min(worldW, worldH) * 0.30;
-    const wallThickness = 14;
-    const segments = 28;
-    const hallHalf = hallW / 2;
-
-    for (let i = 0; i < segments; i++) {
-      const a0 = (i / segments) * Math.PI * 2;
-      const a1 = ((i + 1) / segments) * Math.PI * 2;
-      const am = (a0 + a1) / 2;
-      const ringR = roomR + wallThickness / 2;
-      const bx = roomCx + Math.cos(am) * ringR;
-      const by = roomCy + Math.sin(am) * ringR;
-      const segLen = 2 * ringR * Math.sin(Math.PI / segments) + 6;
-      const bw = Math.max(wallThickness, segLen);
-      const bh = wallThickness;
-      let rx = bx - bw / 2;
-      let ry = by - bh / 2;
-      const isBottomOpening = (by > roomCy + roomR * 0.55) && (Math.abs(bx - roomCx) < hallHalf + 10);
-      if (isBottomOpening) continue;
-      if (by > hallTop - 4 && Math.abs(bx - roomCx) < hallHalf + wallThickness) continue;
-      rx = Math.max(0, rx);
-      ry = Math.max(0, ry);
-      const cw = Math.min(bw, worldW - rx);
-      const ch = Math.min(bh, worldH - ry);
-      if (cw > 2 && ch > 2) this._addSolidBox(rx, ry, cw, ch);
-    }
-
-    const outerTop = 0;
-    const outerBottom = hallTop;
-    this._addSolidBox(0, outerTop, Math.max(0, roomCx - roomR - 2), outerBottom);
-    const rightBlockX = roomCx + roomR + 2;
-    this._addSolidBox(rightBlockX, outerTop, Math.max(0, worldW - rightBlockX), outerBottom);
-    this._addSolidBox(Math.max(0, roomCx - roomR - 2), outerTop, Math.min(worldW, (roomR + 2) * 2), Math.max(0, roomCy - roomR - 2));
+    // Hallway hacia salida (abajo)
+    const hallTopY = roomBottom - wallT;
+    const hallBottomY = worldH - 12;
+    const hallW = doorGap;
+    // paredes laterales del hallway
+    this._addSolidBox(cx - hallW / 2 - wallT, hallTopY, wallT, hallBottomY - hallTopY);
+    this._addSolidBox(cx + hallW / 2, hallTopY, wallT, hallBottomY - hallTopY);
+    // borde inferior de salida (con abertura)
+    const exitGap = 44;
+    this._addSolidBox(0, worldH - 12, cx - exitGap / 2, 12);
+    this._addSolidBox(cx + exitGap / 2, worldH - 12, worldW - (cx + exitGap / 2), 12);
   }
 
   _addInteractZone(x, y, w, h, cfg) {
@@ -284,35 +263,75 @@ export class InteriorBaseScene extends Scene {
     return zone;
   }
 
-  _spawnInteriorDecor(worldW, worldH) {
+  _spawnInteriorModules(worldW, worldH) {
     const cx = worldW / 2;
-    const roomCy = worldH * 0.34;
-    // Consola principal (zona central)
-    this._addInteractZone(cx, roomCy - 6, 34, 18, {
-      name: 'Consola principal',
-      prompt: 'Presiona E para inspeccionar la consola principal',
-      requiresConfirm: false,
-      onConfirm: () => { this.promptText = 'Consola principal: sistema de control (pendiente)'; },
-    });
-    // Estaciones de almacenamiento (varias)
-    this._addInteractZone(cx - 60, roomCy + 10, 28, 16, {
-      name: 'Estación de almacenamiento A',
-      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
-      requiresConfirm: false,
-      onConfirm: () => { this.promptText = 'Almacén A: suministros (pendiente)'; },
-    });
-    this._addInteractZone(cx + 60, roomCy + 10, 28, 16, {
-      name: 'Estación de almacenamiento B',
-      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
-      requiresConfirm: false,
-      onConfirm: () => { this.promptText = 'Almacén B: suministros (pendiente)'; },
-    });
-    this._addInteractZone(cx, roomCy + 40, 30, 16, {
-      name: 'Estación de almacenamiento C',
-      prompt: 'Presiona E para inspeccionar estación de almacenamiento',
-      requiresConfirm: false,
-      onConfirm: () => { this.promptText = 'Almacén C: suministros (pendiente)'; },
-    });
+    const roomLeft = 20, roomTop = 30, roomRight = worldW - 20, roomBottom = worldH - 60;
+    this.interiorModules = [];
+
+    const addModule = (id, name, x, y, w, h, title, desc, imageKey = null) => {
+      const bodySolid = new PhysicsBody({
+        isStatic: true,
+        collider: new BoxCollider({
+          width: w, height: h, offsetX: 0, offsetY: 0,
+          layer: Layer.SOLID, mask: Layer.PLAYER,
+        }),
+      });
+      const solidEnt = new InteractableZone({ x, y, body: bodySolid });
+      solidEnt.prompt = '';
+      solidEnt.playerInside = false;
+      this.addEntity(solidEnt);
+      const gap = 8;
+      const th = 12, tw2 = 12;
+      const onConfirm = () => {
+        this.comingSoonModal = { title, description: desc, button: 'CERRAR' };
+      };
+      // 4 bordes, separados de la colisión del módulo
+      this._addInteractZone(x + w / 2, y - gap, w, th, { name, prompt: 'Presiona E para interactuar', onConfirm });
+      this._addInteractZone(x + w / 2, y + h + gap + th, w, th, { name, prompt: 'Presiona E para interactuar', onConfirm });
+      this._addInteractZone(x - gap, y + h / 2, tw2, h, { name, prompt: 'Presiona E para interactuar', onConfirm });
+      this._addInteractZone(x + w + gap + tw2, y + h / 2, tw2, h, { name, prompt: 'Presiona E para interactuar', onConfirm });
+      this.interiorModules.push({ id, name, x, y, w, h, title, desc, imageKey });
+    };
+
+    // A. Oxígeno (sup izq)
+    addModule('oxygen', 'SISTEMA DE OXÍGENO', roomLeft + 160, roomTop + 30 , 48, 48,
+      'SISTEMA DE OXÍGENO',
+      'Próximamente podrás gestionar la extracción de CO₂, el suministro de oxígeno y el mantenimiento del traje.', 'mod_oxigeno');
+    addModule('energy', 'CONTROL DE ENERGÍA', roomRight - 100, roomTop + 115, 48, 48,
+      'CONTROL DE ENERGÍA',
+      'Próximamente podrás gestionar la generación, almacenamiento y distribución de energía de la base lunar.', 'mod_energia');
+    addModule('food', 'CONTROL DE ALIMENTACIÓN', roomLeft + 80, roomTop + 80, 48, 48,
+      'CONTROL DE ALIMENTACIÓN',
+      'Próximamente podrás administrar los cultivos, la iluminación, la ventilación y las condiciones ambientales.', 'mod_alimentos');
+    addModule('storage', 'ALMACENAMIENTO DE RECURSOS', roomRight - 250, roomTop + 150, 48, 48,
+      'ALMACENAMIENTO',
+      'Próximamente podrás consultar y administrar las reservas de la estación.', 'mod_almacenamiento');
+    // E. Consola: usa imagen compass_ui en (180,53) -> bajada 80px
+    {
+      const name = 'CONSOLA DE CONTROL';
+      const x = 160, y = 53 + 80, w = 40, h = 40;
+      const bodySolid = new PhysicsBody({
+        isStatic: true,
+        collider: new BoxCollider({
+          width: w, height: h, offsetX: 0, offsetY: 0,
+          layer: Layer.SOLID, mask: Layer.PLAYER,
+        }),
+      });
+      const solidEnt = new InteractableZone({ x, y, body: bodySolid });
+      solidEnt.prompt = '';
+      solidEnt.playerInside = false;
+      this.addEntity(solidEnt);
+      const tw = w + 16, th = h + 16;
+      this._addInteractZone(x + w / 2, y + h, tw, 14, {
+        name,
+        prompt: 'Presiona E para interactuar',
+        requiresConfirm: false,
+        onConfirm: () => {
+          this.comingSoonModal = { title: 'CONSOLA CENTRAL', description: 'El centro de control de la estación estará disponible próximamente.', button: 'CERRAR' };
+        },
+      });
+      this.interiorModules.push({ id: 'console', name, x, y, w, h, title: 'CONSOLA CENTRAL', desc: 'El centro de control de la estación estará disponible próximamente.', imageKey: 'compass_ui' });
+    }
   }
 
   _spawnPlayer(assets, x, y) {
@@ -359,6 +378,27 @@ export class InteriorBaseScene extends Scene {
     this.addEntity(zone);
   }
 
+  renderGroundEffects(renderer, alpha) {
+    if (this.interiorModules) {
+      for (const m of this.interiorModules) {
+        if (m.imageKey && this.game.assets && this.game.assets.has(m.imageKey)) {
+          const img = this.game.assets.get(m.imageKey);
+          if (img) renderer.drawImage(img, 0, 0, img.width, img.height, m.x, m.y, m.w, m.h, false);
+        } else {
+          renderer.drawRect(m.x, m.y, m.w, m.h, '#3a4a6a', true);
+          renderer.drawRect(m.x, m.y, m.w, m.h, '#7b5cff', false);
+        }
+        const ctx = renderer.context;
+        ctx.save();
+        ctx.fillStyle = '#f5f0dc';
+        ctx.font = '4px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(m.name.slice(0, 12), m.x + m.w / 2, m.y - 4);
+        ctx.restore();
+      }
+    }
+  }
+
   update(dt) {
     super.update(dt);
     // Toggle minimapa con M
@@ -367,7 +407,23 @@ export class InteriorBaseScene extends Scene {
     }
     for (const z of this.interactables) if (z.tick) z.tick(dt);
 
-    // Interaction handling (E to exit when inside zone)
+    // Modal COMING SOON abierta
+    if (this.comingSoonModal) {
+      this.promptText = '';
+      if (this.game.input.isPressed('Escape') || this.game.input.isPressed('KeyE') || this.game.input.isPressed('Enter')) {
+        this.comingSoonModal = null;
+      }
+      if (this.player && this.camera) {
+        const desiredX = this.player.x - this.camera.viewWidth / 2;
+        const desiredY = this.player.y - this.camera.viewHeight / 2;
+        const t = 1 - Math.exp(-CAMERA_LERP * dt);
+        this.camera.x += (desiredX - this.camera.x) * t;
+        this.camera.y += (desiredY - this.camera.y) * t;
+        this.camera._clamp();
+      }
+      return;
+    }
+    // Interaction handling
     this.promptText = '';
     for (const z of this.interactables) {
       if (z.playerInside) {
@@ -453,6 +509,8 @@ export class InteriorBaseScene extends Scene {
       }
     }
 
-// (Inventario desactivado; HUD traje con T)
+    if (this.comingSoonModal) {
+      renderComingSoonModal(renderer, this.comingSoonModal);
+    }
   }
 }

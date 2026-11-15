@@ -203,6 +203,22 @@
     {
       "key": "bateria_nivel_10_t",
       "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_10_t.png"
+    },
+    {
+      "key": "mod_oxigeno",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeOxigeno.png"
+    },
+    {
+      "key": "mod_energia",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeEnergia.png"
+    },
+    {
+      "key": "mod_alimentos",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeAlimentos.png"
+    },
+    {
+      "key": "mod_almacenamiento",
+      "src": "./assets/Sprites/estructuras_interiores/centroDeAlmacenamiento.png"
     }
   ]
 }

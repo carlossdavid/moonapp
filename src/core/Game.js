@@ -32,12 +32,20 @@ export class Game {
       update: (dt) => this.update(dt),
       render: (alpha) => this.render(alpha),
     });
-
+    this.introVideoEl = document.getElementById('introVideo');
+    if (this.introVideoEl) {
+      this.introVideoEl.src = './assets/video/intro.mp4';
+      this.introVideoEl.addEventListener('ended', () => this._onIntroVideoEnded());
+    }
     window.addEventListener('resize', () => this.renderer.resize());
     canvas.addEventListener('click', (e) => this._onCanvasClick(e));
     canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
     canvas.addEventListener('mouseleave', () => { this.mouse.over = false; });
     canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: true });
+  }
+  _onIntroVideoEnded() {
+    if (this.introVideoEl) this.introVideoEl.style.display = 'none';
+    this.state = 'playing';
   }
 
   /** @param {MouseEvent|Touch} e */
@@ -132,9 +140,17 @@ export class Game {
 
   /** Begin gameplay from menu. */
   beginPlay() {
-    if (this.state === 'playing') return;
+    if (this.state === 'playing' || this.state === 'video') return;
     this.menuWindow = null;
     this.suitHudOpen = false;
+    if (this.introVideoEl && this.introVideoEl.src) {
+      this.state = 'video';
+      this.introVideoEl.style.display = 'block';
+      this.introVideoEl.currentTime = 0;
+      this.introVideoEl.muted = true;
+      this.introVideoEl.play().catch(() => this._onIntroVideoEnded());
+      return;
+    }
     this.state = 'playing';
   }
 
@@ -202,10 +218,17 @@ export class Game {
         if (this.input.isPressed('Enter') || this.input.isPressed('Space')) {
           this.beginPlay();
         }
-        // Quick key to open settings from menu
         if (this.input.isPressed('KeyC')) {
           this.menuWindow = { title: 'CONFIGURACIONES', body: 'pendiente de hacer' };
         }
+      }
+      this.input.update();
+      return;
+    }
+    if (this.state === 'video') {
+      if (this.input.isPressed('Space') || this.input.isPressed('Enter')) {
+        if (this.introVideoEl) { try { this.introVideoEl.pause(); } catch (e) {} }
+        this._onIntroVideoEnded();
       }
       this.input.update();
       return;
@@ -243,6 +266,10 @@ export class Game {
   render(alpha) {
     if (this.state === 'menu') {
       this._renderMenu();
+      return;
+    }
+    if (this.state === 'video') {
+      this.renderer.clear('#000000');
       return;
     }
 
