@@ -205,6 +205,7 @@
       "src": "./assets/Sprites/Pantalla/niveles/bateria/bateria_nivel_10_t.png"
     },
     {
+<<<<<<< HEAD
       "key": "recarga_mochila_base",
       "src": "./assets/Sprites/RecargaOxigeno/mochila_base.png"
     },
@@ -267,6 +268,22 @@
     {
       "key": "recarga_tanque_co2_con_manguera",
       "src": "./assets/Sprites/RecargaOxigeno/tanque_co2_con_manguera.png"
+=======
+      "key": "mod_oxigeno",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeOxigeno.png"
+    },
+    {
+      "key": "mod_energia",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeEnergia.png"
+    },
+    {
+      "key": "mod_alimentos",
+      "src": "./assets/Sprites/estructuras_interiores/estacionDeAlimentos.png"
+    },
+    {
+      "key": "mod_almacenamiento",
+      "src": "./assets/Sprites/estructuras_interiores/centroDeAlmacenamiento.png"
+>>>>>>> 046911a156b408fc6cb8daac44f2440b48e736b9
     }
   ]
 }

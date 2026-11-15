@@ -1,0 +1,145 @@
+:root {
+  color-scheme: dark;
+  --night: #090f21;
+  --plate: #182239;
+  --plate-light: #233757;
+  --line: #8299b5;
+  --dust: #ffc35e;
+  --beam: #6aeaff;
+  --paper: #f1f5ff;
+  --muted: #b8cbe5;
+}
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #070d1b; color: var(--paper); font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+#game-root { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; position: relative; }
+#game { display: block; image-rendering: pixelated; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: #050a11; z-index: 3; }
+#loading.hidden { display: none; }
+.trial-label { position: absolute; top: 12px; left: 12px; color: #c9e8e3; background: #101d2de0; padding: 6px 9px; font: bold 11px monospace; pointer-events: none; }
+#cleaning-task[hidden], #finish-task[hidden], #discover-action[hidden] { display: none; }
+#cleaning-task {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  padding: 12px; overflow: auto; background: rgba(4, 9, 25, .92);
+}
+.task-shell {
+  width: max-content; max-width: 100%; margin: auto;
+  padding: 8px 17px 6px; position: relative;
+  border: 3px solid #aebcd8;
+  background: var(--plate);
+  box-shadow: 0 0 0 5px #080e20, 0 0 0 7px #526382, 0 20px 45px #000c;
+}
+.task-shell::before, .task-shell::after {
+  content: ""; position: absolute; width: 8px; height: 8px; border: 2px solid #b9c6dd;
+  background: #34455f; top: 8px;
+}
+.task-shell::before { left: 8px; }
+.task-shell::after { right: 8px; }
+.task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding: 2px 13px 6px; }
+.task-identity { display: flex; align-items: center; gap: 12px; }
+.task-symbol {
+  display: grid; place-items: center; flex: none;
+  width: 43px; height: 43px; color: var(--beam);
+  border: 2px solid var(--beam); background: #173052;
+  box-shadow: inset 0 0 0 4px #111d39;
+  font: 27px Georgia, serif;
+}
+.eyebrow { margin: 0 0 3px; color: #b9d1f0; font: 700 11px monospace; }
+h1 { margin: 0; color: var(--paper); font-size: clamp(19px, 2.5vw, 26px); line-height: 1.1; letter-spacing: -.025em; }
+.subtitle { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+button {
+  min-height: 35px; padding: 7px 12px; color: var(--paper); cursor: pointer;
+  border: 2px solid #7aafcb; background: #213f64;
+  font: 700 13px "Trebuchet MS", "Segoe UI", sans-serif;
+}
+button:hover:not(:disabled) { background: #346392; }
+button:focus-visible, #task-canvas:focus-visible { outline: 3px solid #ffe19f; outline-offset: 3px; }
+button:disabled { opacity: .53; cursor: default; }
+.exit-button { background: #202d49; border-color: #8299b5; min-height: 30px; padding: 3px 10px; white-space: nowrap; }
+.exit-button span { font-size: 18px; vertical-align: -1px; margin-left: 6px; }
+.stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 2px 6px; }
+.stage {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  min-height: 33px; padding: 3px 10px 3px 4px; border-bottom: 3px solid #526584;
+  color: #b1c3df; font-size: 12px; font-weight: 700;
+}
+.stage:not(:last-child)::after { content: "›"; position: absolute; right: -9px; font-size: 18px; color: #a4b8d5; }
+.stage b {
+  display: grid; place-items: center; flex: none; width: 27px; height: 27px;
+  border: 2px solid #8299b5; color: #d3def4; background: #1c3152;
+  font: 700 11px monospace;
+}
+[data-phase="discover"] .stage-discover, [data-phase="connect"] .stage-connect, [data-phase="ready"] .stage-ready, [data-phase="sweeping"] .stage-sweeping { color: var(--paper); border-bottom-color: var(--dust); }
+[data-phase="discover"] .stage-discover b, [data-phase="connect"] .stage-connect b, [data-phase="ready"] .stage-ready b, [data-phase="sweeping"] .stage-sweeping b { color: var(--night); background: var(--dust); border-color: var(--dust); }
+[data-phase="complete"] .stage { color: var(--paper); border-bottom-color: var(--beam); }
+[data-phase="complete"] .stage b { color: #0b2529; border-color: var(--beam); background: var(--beam); }
+.workbench {
+  padding: 8px; border: 2px solid #798ba9;
+  background: #0d1930;
+  box-shadow: inset 0 0 0 2px #15243e;
+}
+.workbench-top {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  padding: 0 2px 8px; color: #d3def6; font-size: 11px; font-weight: 700;
+}
+.workbench-top strong { color: var(--dust); font: 700 12px monospace; white-space: nowrap; }
+.indicator {
+  display: inline-block; vertical-align: middle; width: 7px; height: 7px;
+  margin-right: 5px; background: var(--dust); border: 1px solid #54442e;
+}
+[data-phase="sweeping"] .indicator, [data-phase="complete"] .indicator { background: var(--beam); }
+#task-canvas { display: block; max-width: 100%; height: auto !important; image-rendering: auto; touch-action: none; outline: none; background: #0b1529; }
+.instructions, .discovery-message { margin: 5px 2px 1px; max-width: 640px; color: #d7e5f5; font-size: 12px; line-height: 1.35; }
+.instructions b { color: var(--dust); }
+.discovery-message { color: #f5dfb1; }
+[data-phase="discover"] .instructions, #discovery-message[hidden] { display: none; }
+[data-phase="discover"] .connect-controls, [data-phase="discover"] #activate-task { display: none; }
+#discover-action { background: #355c73; border-color: #80dceb; }
+.task-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 1px; }
+.connect-controls { align-self: center; }
+.connect-controls summary { display: inline-block; min-height: 35px; padding: 7px 12px; border: 2px solid #7aafcb; background: #213f64; color: var(--paper); cursor: pointer; font-size: 13px; font-weight: 700; }
+.connect-controls summary:hover { background: #346392; }
+.connect-controls summary:focus-visible { outline: 3px solid #ffe19f; outline-offset: 3px; }
+.connect-buttons { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+.connect-controls button:disabled { background: #1d4d60; border-color: #6bd4e0; opacity: .82; }
+#activate-task { background: #73512c; border-color: #efc483; color: #fff2d3; }
+#activate-task:disabled { background: #253249; border-color: #5f728d; color: #aabbd3; }
+#activate-task:not(:disabled):hover { background: #956c3f; }
+#activate-task span { margin-left: 5px; }
+.task-footer {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 7px;
+  align-items: center; min-height: 38px; padding: 5px 8px;
+  border-left: 4px solid var(--dust); background: #20343a;
+}
+[data-phase="complete"] .task-footer { border-left-color: var(--beam); }
+#task-status { max-width: 450px; margin: 0; font-size: 12px; line-height: 1.35; color: #f6e8c7; }
+.actions { display: flex; gap: 8px; }
+.actions button { min-height: 30px; padding: 3px 9px; font-size: 12px; background: #243d61; }
+#finish-task { background: #235f65; border-color: #8cf3e9; }
+.task-footnotes { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; max-width: 640px; }
+.help, .disclaimer { margin: 4px 2px 0; line-height: 1.35; font-size: 11px; }
+.help { color: #bcd7ce; flex: 1; }
+.disclaimer { max-width: 305px; color: #aebfbc; flex: 1; }
+kbd { padding: 1px 3px; border: 1px solid #869b9a; font-family: monospace; }
+@media (max-width: 650px) {
+  #cleaning-task { padding: 8px; }
+  .task-shell { width: 100%; padding: 9px; }
+  .task-header { padding: 5px 9px 9px; gap: 5px; }
+  .task-symbol { width: 34px; height: 34px; font-size: 21px; }
+  .task-identity { gap: 6px; }
+  .eyebrow { font-size: 9px; }
+  .subtitle { font-size: 10px; }
+  .stage { font-size: 9px; gap: 3px; padding-right: 0; }
+  .stage b { width: 21px; height: 23px; }
+  #task-canvas { width: 100% !important; margin-inline: auto; }
+  .task-controls { align-items: stretch; }
+  .connect-controls { flex: 1; }
+  .connect-controls summary { width: 100%; }
+  .connect-buttons button { flex: 1; }
+  #discover-action { width: 100%; }
+  #activate-task { flex: 1; }
+  .task-footnotes { flex-direction: column; gap: 0; }
+  .disclaimer { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+}

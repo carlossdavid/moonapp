@@ -191,6 +191,7 @@ export class DemoScene extends Scene {
     this._lastFootprintY = null;
     /** Ventana de interacción (p.ej. panel solar). */
     this.interactionWindow = null;
+    this.exteriorAccessRect = null;
     // Minimap exterior (esquina superior derecha, toggle con M)
     this.minimap = new Minimap({
       x: LOGICAL_WIDTH - 60 - 6,
@@ -338,18 +339,18 @@ export class DemoScene extends Scene {
       this._addSolidStructure(assets.get(key), rx, ry, C[key]);
     }
 
-    // Puerta estación principal: trigger justo frente a la base
+    // Puerta estación principal: acceso exterior a la base
     if (main) {
       const door = C.struct_base_main.door || C.struct_base_main.interact;
       const doorX = main.x;
       const doorY = main.y + (door.offsetY ?? 6);
+      this.exteriorAccessRect = { x: doorX - door.w / 2, y: doorY - door.h, w: door.w, h: door.h };
       this._addInteractZone(doorX, doorY, door.w, door.h, {
-        name: 'Base principal',
-        prompt: '¿Quieres entrar a la base? (E sí / Esc no)',
-        requiresConfirm: true,
+        name: 'ACCESO A LA BASE',
+        prompt: 'Presiona E para entrar a la base',
+        requiresConfirm: false,
         onConfirm: () => this._enterBase(),
       });
-      // Punto de aparición al volver desde el interior: frente a la puerta
       this._exteriorDoorReturn = { x: doorX, y: doorY + 8 };
     }
 
@@ -518,9 +519,20 @@ export class DemoScene extends Scene {
     for (const fp of this.footprints) {
       const t = Math.max(0, 1 - fp.age / fp.life);
       if (t <= 0) continue;
-      // desvanecido suave (menos "corte")
       const a = (Math.pow(t, 1.4) * 0.22).toFixed(3);
       renderer.drawRect(fp.x - fp.w / 2, fp.y - fp.h / 2, fp.w, fp.h, `rgba(40, 34, 28, ${a})`, true);
+    }
+    if (this.exteriorAccessRect) {
+      const r = this.exteriorAccessRect;
+      renderer.drawRect(r.x, r.y, r.w, r.h, 'rgba(86,201,237,0.35)', true);
+      renderer.drawRect(r.x, r.y, r.w, r.h, '#56C9ED', false);
+      const ctx = renderer.context;
+      ctx.save();
+      ctx.fillStyle = '#eaf6ff';
+      ctx.font = '4px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('ACCESO A LA BASE', r.x + r.w / 2, r.y - 4);
+      ctx.restore();
     }
   }
 
