@@ -8,8 +8,6 @@ const FILES = Object.freeze({
   clean: 'celda_limpia.png',
   dusty: 'celda_sucia.png',
   partial: 'celda_parcial.png',
-  cableA: 'cable_a.png',
-  cableB: 'cable_b.png',
   plugA: 'conector_a.png',
   plugB: 'conector_b.png',
   burst: 'nube_polvo.png',

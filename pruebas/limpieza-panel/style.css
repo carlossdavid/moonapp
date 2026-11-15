@@ -1,3 +1,8 @@
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("../../assets/fonts/PressStart2P-Regular.ttf") format("truetype");
+  font-display: swap;
+}
 :root {
   color-scheme: dark;
   --night: #090f21;
@@ -16,13 +21,15 @@ html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background:
 #loading { position: absolute; inset: 0; display: grid; place-items: center; background: #050a11; z-index: 3; }
 #loading.hidden { display: none; }
 .trial-label { position: absolute; top: 12px; left: 12px; color: #c9e8e3; background: #101d2de0; padding: 6px 9px; font: bold 11px monospace; pointer-events: none; }
-#cleaning-task[hidden], #finish-task[hidden], #discover-action[hidden] { display: none; }
+#cleaning-task[hidden], #finish-task[hidden], #discover-action[hidden], #find-magnet[hidden], #magnet-message[hidden], #completion-card[hidden] { display: none; }
 #cleaning-task {
   position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
   padding: 12px; overflow: auto; background: rgba(4, 9, 25, .92);
+  --task-font: "Press Start 2P", monospace;
+  font-family: var(--task-font);
 }
 .task-shell {
-  width: max-content; max-width: 100%; margin: auto;
+  width: min(704px, 100%); margin: auto;
   padding: 8px 17px 6px; position: relative;
   border: 3px solid #aebcd8;
   background: var(--plate);
@@ -56,7 +63,7 @@ button:focus-visible, #task-canvas:focus-visible { outline: 3px solid #ffe19f; o
 button:disabled { opacity: .53; cursor: default; }
 .exit-button { background: #202d49; border-color: #8299b5; min-height: 30px; padding: 3px 10px; white-space: nowrap; }
 .exit-button span { font-size: 18px; vertical-align: -1px; margin-left: 6px; }
-.stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 2px 6px; }
+.stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; padding: 0 2px 6px; }
 .stage {
   position: relative; display: flex; align-items: center; gap: 8px;
   min-height: 33px; padding: 3px 10px 3px 4px; border-bottom: 3px solid #526584;
@@ -68,8 +75,8 @@ button:disabled { opacity: .53; cursor: default; }
   border: 2px solid #8299b5; color: #d3def4; background: #1c3152;
   font: 700 11px monospace;
 }
-[data-phase="discover"] .stage-discover, [data-phase="connect"] .stage-connect, [data-phase="ready"] .stage-ready, [data-phase="sweeping"] .stage-sweeping { color: var(--paper); border-bottom-color: var(--dust); }
-[data-phase="discover"] .stage-discover b, [data-phase="connect"] .stage-connect b, [data-phase="ready"] .stage-ready b, [data-phase="sweeping"] .stage-sweeping b { color: var(--night); background: var(--dust); border-color: var(--dust); }
+[data-phase="discover"] .stage-discover, [data-phase="needMagnet"] .stage-magnet, [data-phase="connect"] .stage-connect, [data-phase="ready"] .stage-ready, [data-phase="sweeping"] .stage-sweeping { color: var(--paper); border-bottom-color: var(--dust); }
+[data-phase="discover"] .stage-discover b, [data-phase="needMagnet"] .stage-magnet b, [data-phase="connect"] .stage-connect b, [data-phase="ready"] .stage-ready b, [data-phase="sweeping"] .stage-sweeping b { color: var(--night); background: var(--dust); border-color: var(--dust); }
 [data-phase="complete"] .stage { color: var(--paper); border-bottom-color: var(--beam); }
 [data-phase="complete"] .stage b { color: #0b2529; border-color: var(--beam); background: var(--beam); }
 .workbench {
@@ -91,9 +98,12 @@ button:disabled { opacity: .53; cursor: default; }
 .instructions, .discovery-message { margin: 5px 2px 1px; max-width: 640px; color: #d7e5f5; font-size: 12px; line-height: 1.35; }
 .instructions b { color: var(--dust); }
 .discovery-message { color: #f5dfb1; }
-[data-phase="discover"] .instructions, #discovery-message[hidden] { display: none; }
-[data-phase="discover"] .connect-controls, [data-phase="discover"] #activate-task { display: none; }
+[data-phase="discover"] .instructions, [data-phase="needMagnet"] .instructions, [data-phase="complete"] .instructions, #discovery-message[hidden] { display: none; }
+[data-phase="discover"] .connect-controls, [data-phase="discover"] #activate-task, [data-phase="needMagnet"] .connect-controls, [data-phase="needMagnet"] #activate-task, [data-phase="complete"] .task-controls { display: none; }
+[data-phase="discover"] .task-footnotes, [data-phase="needMagnet"] .task-footnotes,
+[data-phase="complete"] .task-footnotes { display: none; }
 #discover-action { background: #355c73; border-color: #80dceb; }
+#find-magnet { background: #71522e; border-color: #e6be7c; }
 .task-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 1px; }
 .connect-controls { align-self: center; }
 .connect-controls summary { display: inline-block; min-height: 35px; padding: 7px 12px; border: 2px solid #7aafcb; background: #213f64; color: var(--paper); cursor: pointer; font-size: 13px; font-weight: 700; }
@@ -120,6 +130,34 @@ button:disabled { opacity: .53; cursor: default; }
 .help { color: #bcd7ce; flex: 1; }
 .disclaimer { max-width: 305px; color: #aebfbc; flex: 1; }
 kbd { padding: 1px 3px; border: 1px solid #869b9a; font-family: monospace; }
+.completion-card {
+  display: flex; align-items: center; gap: 14px; margin-top: 6px; padding: 10px 12px;
+  border: 2px solid #8cf3d0; background: #143c43; color: #e4fff4;
+}
+.completion-card strong { flex: none; color: #fff0a8; font-size: 12px; }
+.completion-card p { margin: 0; font-size: 10px; line-height: 1.5; }
+/* Una sola familia tipográfica para texto, controles e indicadores del cuadro. */
+#cleaning-task button, #cleaning-task summary, #cleaning-task kbd,
+#cleaning-task .eyebrow, #cleaning-task .stage b,
+#cleaning-task .workbench-top strong, #cleaning-task .task-symbol {
+  font-family: var(--task-font);
+}
+#cleaning-task h1 { font-size: 18px; line-height: 1.35; letter-spacing: 0; }
+#cleaning-task .task-symbol { font-size: 17px; }
+#cleaning-task .eyebrow { font-size: 8px; }
+#cleaning-task .subtitle { font-size: 9px; line-height: 1.5; }
+#cleaning-task .stage { font-size: 8px; line-height: 1.5; }
+#cleaning-task .stage b { font-size: 9px; }
+#cleaning-task button, #cleaning-task summary { font-size: 9px; line-height: 1.5; }
+#cleaning-task .instructions, #cleaning-task .discovery-message, #cleaning-task #task-status,
+#cleaning-task .help, #cleaning-task .disclaimer { font-size: 9px; line-height: 1.6; }
+#cleaning-task .workbench-top { font-size: 9px; }
+#cleaning-task .workbench-top strong { font-size: 9px; }
+#cleaning-task .completion-card strong { font-size: 12px; }
+#cleaning-task .completion-card p { font-size: 9px; }
+@media (max-height: 800px) {
+  .task-footnotes { display: none; }
+}
 @media (max-width: 650px) {
   #cleaning-task { padding: 8px; }
   .task-shell { width: 100%; padding: 9px; }
@@ -139,6 +177,10 @@ kbd { padding: 1px 3px; border: 1px solid #869b9a; font-family: monospace; }
   #activate-task { flex: 1; }
   .task-footnotes { flex-direction: column; gap: 0; }
   .disclaimer { max-width: none; }
+  #cleaning-task h1 { font-size: 12px; }
+  #cleaning-task .stage { font-size: 7px; gap: 2px; }
+  #cleaning-task .stage b { width: 19px; font-size: 7px; }
+  .completion-card { flex-direction: column; align-items: flex-start; gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }

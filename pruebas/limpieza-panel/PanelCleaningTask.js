@@ -6,7 +6,7 @@ const near = (point, x, y) => Math.hypot(point.x - x, point.y - y) <= 22;
 
 /** Pantalla aislada: conectar dos cables al mismo imán, activar y observar barrido. */
 export class PanelCleaningTask {
-  constructor({ root, canvas, sprites, onFinish }) {
+  constructor({ root, canvas, sprites, onFinish, onNeedMagnet, onCompleted }) {
     this.root = root;
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -14,6 +14,9 @@ export class PanelCleaningTask {
     this.ctx.imageSmoothingEnabled = false;
     this.sprites = sprites;
     this.onFinish = onFinish;
+    this.onNeedMagnet = onNeedMagnet;
+    this.onCompleted = onCompleted;
+    this.hasMagnet = false;
     this.model = new BeamCleaning();
     this.opened = false;
     this.dragging = null;
@@ -26,6 +29,7 @@ export class PanelCleaningTask {
     this.finishButton = root.querySelector('#finish-task');
     this.activateButton = root.querySelector('#activate-task');
     this.discoverButton = root.querySelector('#discover-action');
+    this.findMagnetButton = root.querySelector('#find-magnet');
     this.discoveryMessage = root.querySelector('#discovery-message');
     this.connectButtons = [
       root.querySelector('#connect-a'),
@@ -93,11 +97,14 @@ export class PanelCleaningTask {
     });
     root.querySelector('#cancel-task').addEventListener('click', () => this.close());
     root.querySelector('#reset-task').addEventListener('click', () => {
+      if (this.onReset?.() === false) return;
       this.model.reset();
+      this.onPrepare?.();
       this.feedback = '';
       this.updateStatus();
     });
     this.discoverButton.addEventListener('click', () => this.advanceDiscovery());
+    this.findMagnetButton.addEventListener('click', () => this.close());
     this.connectButtons.forEach((button, index) => {
       button.addEventListener('click', () => this.connect(index));
     });
@@ -109,6 +116,7 @@ export class PanelCleaningTask {
     });
     this.finishButton.addEventListener('click', () => {
       if (!this.model.complete) return;
+      this.onCompleted?.(this.model);
       this.onFinish(this.model.progress);
       this.close();
     });
@@ -143,8 +151,14 @@ export class PanelCleaningTask {
   advanceDiscovery() {
     if (this.model.phase !== 'discover') return;
     if (this.model.discoveryStep < 2) this.model.observe();
-    else this.model.beginCleaning();
+    else {
+      this.onDiscoveryComplete?.();
+      this.model.beginCleaning(this.hasMagnet);
+      if (this.model.phase === 'needMagnet') this.onNeedMagnet?.();
+    }
     this.updateStatus();
+    if (this.model.phase === 'needMagnet') this.findMagnetButton.focus();
+    else if (this.model.phase === 'connect') this.canvas.focus();
   }
 
   open() {
@@ -158,6 +172,7 @@ export class PanelCleaningTask {
     this.lastFrame = performance.now();
     this.updateStatus();
     const focusTarget = this.model.phase === 'discover' ? this.discoverButton :
+      this.model.phase === 'needMagnet' ? this.findMagnetButton :
       this.model.phase === 'connect' ? this.canvas : (this.model.phase === 'ready'
       ? this.activateButton
       : this.model.complete ? this.finishButton : this.root.querySelector('#cancel-task'));
@@ -183,6 +198,13 @@ export class PanelCleaningTask {
     this.activateButton.disabled = model.phase !== 'ready';
     this.finishButton.hidden = !model.complete;
     this.discoverButton.hidden = model.phase !== 'discover';
+    this.findMagnetButton.hidden = model.phase !== 'needMagnet';
+    const magnetMessage = this.root.querySelector('#magnet-message');
+    magnetMessage.hidden = model.phase !== 'needMagnet';
+    magnetMessage.textContent = model.wornMagnet
+      ? 'VEGA: El electroimán se desgastó al limpiar. Busca otro detrás de una roca al sureste de la base, recógelo con E y vuelve al panel.'
+      : 'VEGA: Para limpiar necesitas un electroimán. Búscalo junto a la base, recógelo con E y vuelve a este panel.';
+    this.root.querySelector('#completion-card').hidden = !model.complete;
     this.discoveryMessage.hidden = model.phase !== 'discover';
     if (model.phase === 'discover') {
       const messages = [
@@ -194,27 +216,36 @@ export class PanelCleaningTask {
       this.discoverButton.textContent = [
         'Mostrar luz del Sol',
         'Cubrir algunas celdas con polvo',
-        'Continuar: conectar A y B',
+        this.hasMagnet ? 'Continuar: conectar A y B' : 'Continuar: buscar imán',
       ][model.discoveryStep];
     }
     const instruction = model.phase === 'discover'
-      ? `Descubre el panel solar · ${this.discoveryMessage.textContent}`
+      ? 'Paso 1/5 · Toca el panel o usa el botón para explorar.'
+      : model.phase === 'needMagnet'
+        ? model.wornMagnet
+          ? 'Paso 2/5 · El imán está gastado. Busca el repuesto detrás de una roca y recógelo con E.'
+          : 'Paso 2/5 · Busca el imán cerca de la base y pulsa E para recogerlo.'
       : model.phase === 'connect'
-      ? `Fase 2/4 · El ejemplo terminó; ahora limpia el panel real. Arrastra A a A y B a B. ${model.connected.filter(Boolean).length}/2 conectados.`
+      ? `Fase 3/5 · Ya tienes el imán. Arrastra A a A y B a B. ${model.connected.filter(Boolean).length}/2 conectados.`
       : model.phase === 'ready'
-        ? 'Fase 3/4 · Circuito listo. Pulsa «Activar haz» para iniciar la limpieza.'
+        ? 'Fase 4/5 · Circuito listo. Pulsa «Activar haz» para iniciar la limpieza.'
         : model.phase === 'sweeping'
-          ? `Fase 4/4 · Barrido automático: ${model.cleanCells}/${COLS * ROWS} zonas limpias (${model.progress}%).`
-          : `Panel totalmente limpio en la simulación: ${COLS * ROWS}/${COLS * ROWS} zonas (100%). Pulsa «Finalizar».`;
+          ? `Fase 5/5 · Barrido automático: ${model.cleanCells}/${COLS * ROWS} zonas limpias (${model.progress}%).`
+          : `¡Felicidades! Limpiaste ${COLS * ROWS}/${COLS * ROWS} zonas. Pulsa «Finalizar» para volver al mapa.`;
     const text = this.feedback && model.phase === 'connect' ? `${this.feedback} ${instruction}` : instruction;
     if (this.status.textContent !== text) this.status.textContent = text;
-    this.root.querySelector('#progress-display').textContent = model.phase === 'discover'
-      ? 'Explora el panel'
-      : `${model.cleanCells} / ${COLS * ROWS} zonas`;
+    this.root.querySelector('#progress-display').textContent =
+      model.phase === 'discover' ? 'Explora el panel'
+        : model.phase === 'needMagnet' ? model.wornMagnet ? 'Imán gastado' : 'Falta el imán'
+          : `${model.cleanCells} / ${COLS * ROWS} zonas`;
     this.root.querySelector('#panel-name').textContent = this.panelName || 'Panel solar';
     this.canvas.setAttribute('aria-label', model.phase === 'discover'
       ? `Panel solar a la derecha: ${this.discoveryMessage.textContent} Toca el panel para avanzar.`
-      : 'Generador a la izquierda, un imán con tomas A y B en el centro: arrastra A hasta A y B hasta B.');
+      : model.phase === 'needMagnet'
+        ? model.wornMagnet
+          ? 'El imán gastado está en el circuito; busca otro detrás de una roca al sureste de la base.'
+          : 'El panel está cubierto de polvo; falta el electroimán. Sal a buscarlo junto a la base.'
+        : 'Generador a la izquierda, un imán con tomas A y B en el centro: arrastra A hasta A y B hasta B.');
     this.root.dataset.phase = model.phase;
   }
 
@@ -224,6 +255,7 @@ export class PanelCleaningTask {
     this.lastFrame = now;
     const before = this.model.cleanCells;
     this.model.tick(dt);
+    if (this.model.complete && !this.model.magnetSpent) this.onCompleted?.(this.model);
     if (before !== this.model.cleanCells) this.updateStatus();
     drawSpriteArt(this.ctx, this.sprites, this.model, this.reduceMotion ? 0 : now, this.dragging, this.pointer);
     requestAnimationFrame(time => this.frame(time));

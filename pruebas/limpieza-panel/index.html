@@ -27,9 +27,10 @@
         </header>
         <div class="stages" aria-label="Pasos de la actividad">
           <span class="stage stage-discover"><b>01</b><span>Descubrir</span></span>
-          <span class="stage stage-connect"><b>02</b><span>Conectar A/B</span></span>
-          <span class="stage stage-ready"><b>03</b><span>Activar haz</span></span>
-          <span class="stage stage-sweeping"><b>04</b><span>Limpiar</span></span>
+          <span class="stage stage-magnet"><b>02</b><span>Buscar imán</span></span>
+          <span class="stage stage-connect"><b>03</b><span>Conectar A/B</span></span>
+          <span class="stage stage-ready"><b>04</b><span>Activar haz</span></span>
+          <span class="stage stage-sweeping"><b>05</b><span>Limpiar</span></span>
         </div>
         <div class="workbench">
           <div class="workbench-top">
@@ -38,10 +39,16 @@
           </div>
           <canvas id="task-canvas" width="640" height="360" tabindex="0" aria-label="Panel solar a la derecha: tócalo para descubrir qué hace"></canvas>
           <p id="discovery-message" class="discovery-message">Toca el panel: descubre cómo usa la luz del Sol.</p>
+          <p id="magnet-message" class="discovery-message" hidden><b>VEGA:</b> Para limpiar necesitas un electroimán. Búscalo junto a la base, recógelo con <kbd>E</kbd> y vuelve a este panel.</p>
           <p class="instructions">Conecta tú mismo los cables: arrastra <b>A → A</b> y <b>B → B</b> en el único imán. Después activa el haz para limpiar las 24 zonas.</p>
+          <div id="completion-card" class="completion-card" hidden>
+            <strong>¡Felicidades!</strong>
+            <p>Limpiaste las 24 zonas. Ahora las celdas pueden recibir más luz y aportar electricidad a la base.</p>
+          </div>
         </div>
         <div class="task-controls">
           <button id="discover-action" type="button">Mostrar luz del Sol</button>
+          <button id="find-magnet" type="button" hidden>Salir a buscar el imán</button>
           <details class="connect-controls">
             <summary>Alternativa sin arrastrar</summary>
             <div class="connect-buttons" aria-label="Conexión accesible de los cables">
@@ -60,7 +67,7 @@
         </div>
         <div class="task-footnotes">
           <p class="help">¿No puedes arrastrar? Abre «Alternativa sin arrastrar». <kbd>Esc</kbd> sale sin perder el avance.</p>
-          <p class="disclaimer">Los imanes orientan el haz; la carga repele el polvo. El 100% indica las zonas del juego, no la eficacia de un equipo lunar real.</p>
+          <p class="disclaimer">El imán orienta el haz; la carga repele el polvo. El 100% indica las zonas del juego, no toda la energía que entrega un panel real.</p>
         </div>
       </div>
     </section>

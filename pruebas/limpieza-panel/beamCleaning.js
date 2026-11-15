@@ -16,8 +16,10 @@ export class BeamCleaning {
   reset() {
     this.connected = [false, false];
     this.dust = Array(COLS * ROWS).fill(true);
-    this.phase = 'discover'; // discover → connect → ready → sweeping → complete
+    this.phase = 'discover'; // discover → needMagnet → connect → ready → sweeping → complete
     this.discoveryStep = 0; // mirar → ver luz/electricidad → comparar con polvo
+    this.wornMagnet = false;
+    this.magnetSpent = false;
     this.elapsedInStep = 0;
     this.cleanCells = 0;
   }
@@ -31,11 +33,27 @@ export class BeamCleaning {
     return true;
   }
 
-  beginCleaning() {
-    if (this.phase !== 'discover' || this.discoveryStep !== 2) return false;
+  beginCleaning(hasMagnet = false) {
+    if (this.phase === 'discover' && this.discoveryStep === 2) {
+      this.phase = hasMagnet ? 'connect' : 'needMagnet';
+      if (hasMagnet) this.wornMagnet = false;
+      return true;
+    }
+    if (this.phase !== 'needMagnet' || !hasMagnet) return false;
     this.phase = 'connect';
+    this.wornMagnet = false;
     return true;
   }
+
+  skipDiscovery(hasMagnet = false, worn = false) {
+    if (this.phase !== 'discover' || this.discoveryStep !== 0) return false;
+    this.discoveryStep = 2; // ya vio la explicación en la primera limpieza
+    this.wornMagnet = !hasMagnet && worn;
+    this.phase = hasMagnet ? 'connect' : 'needMagnet';
+    return true;
+  }
+
+  needReplacement() { return this.skipDiscovery(false, true); }
 
   connect(index) {
     if (index !== 0 && index !== 1) return false;

@@ -10,9 +10,9 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
   };
-  const text = (value, x, y, color = '#eff9ff', size = 16) => {
+  const text = (value, x, y, color = '#eff9ff', size = 11) => {
     ctx.fillStyle = color;
-    ctx.font = `bold ${size}px monospace`;
+    ctx.font = `${size}px "Press Start 2P", monospace`;
     ctx.fillText(value, x, y);
   };
   const cable = (start, end, color, index) => {
@@ -38,40 +38,57 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
   // El área útil queda en el interior del sprite de marco, sin tapar
   // los bordes iluminados ni solapar la franja inferior.
   block('#0d1930', 36, 58, 568, 243);
-  text('GENERADOR', 49, 74, '#c9e5f8', 13);
-  text('IMÁN A / B', 203, 74, '#c9e5f8', 13);
-  text('PANEL SOLAR', 414, 74, '#c9e5f8', 13);
+  text('GENERADOR', 49, 74, '#c9e5f8', 9);
+  text(model.phase === 'needMagnet'
+    ? model.wornMagnet ? 'IMÁN GASTADO' : 'FALTA IMÁN'
+    : 'EQUIPO A / B',
+    199, 74, '#c9e5f8', 9);
+  text('PANEL SOLAR', 414, 74, '#c9e5f8', 9);
 
-  // Sólo UN ejemplar del imán: sus dos tomas ya vienen rotuladas A y B.
+  // El imán no se muestra hasta que el jugador lo recoge en el mapa.
   art('generator', 45, 82, 122, 178);
-  art(model.phase === 'sweeping' || model.complete ? 'magnetOn' : 'magnetOff',
-    194, 98, 130, 151);
-
-  // El cable no aparece conectado hasta que el jugador acierta la toma.
-  PORTS.forEach((port, i) => {
-    const color = i === 0 ? '#40d9fc' : '#f4ae42';
-    if (model.connected[i]) {
-      cable(port.source, port.socket, color, i);
-      art(i === 0 ? 'plugA' : 'plugB', port.socket.x - 16, port.socket.y - 11, 32, 22);
+  if (model.phase === 'needMagnet') {
+    if (model.wornMagnet) {
+      ctx.save();
+      ctx.globalAlpha = .55;
+      art('magnetOff', 194, 98, 130, 151);
+      ctx.restore();
+      block('#0d1a30dd', 202, 150, 118, 28);
+      text('GASTADO', 212, 170, '#ffd790', 11);
     } else {
-      if (dragging !== i) art(i === 0 ? 'cableA' : 'cableB',
-        114, port.source.y - 13, 76, 40);
-      art(i === 0 ? 'plugA' : 'plugB', port.source.x - 16, port.source.y - 11, 32, 22);
+      block('#1f334c', 192, 127, 136, 77);
+      block('#0d1a30', 195, 130, 130, 71);
+      text('FALTA EL', 213, 157, '#ffd790', 10);
+      text('IMÁN', 235, 182, '#ffd790', 10);
     }
-  });
-  if (dragging !== null && pointer) {
-    const start = PORTS[dragging].source;
-    const color = dragging === 0 ? '#40d9fc' : '#f4ae42';
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.bezierCurveTo(start.x + 48, start.y, pointer.x - 48, pointer.y, pointer.x, pointer.y);
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = '#071329';
-    ctx.stroke();
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = color;
-    ctx.stroke();
-    art(dragging === 0 ? 'plugA' : 'plugB', pointer.x - 16, pointer.y - 11, 32, 22);
+  }
+  if (model.phase !== 'discover' && model.phase !== 'needMagnet') {
+    art(model.phase === 'sweeping' || model.complete ? 'magnetOn' : 'magnetOff',
+      194, 98, 130, 151);
+    // Solo borneras y conexiones dibujadas: sin PNG de cables sueltos.
+    PORTS.forEach((port, i) => {
+      const color = i === 0 ? '#40d9fc' : '#f4ae42';
+      if (model.connected[i]) {
+        cable(port.source, port.socket, color, i);
+        art(i === 0 ? 'plugA' : 'plugB', port.socket.x - 16, port.socket.y - 11, 32, 22);
+      } else {
+        art(i === 0 ? 'plugA' : 'plugB', port.source.x - 16, port.source.y - 11, 32, 22);
+      }
+    });
+    if (dragging !== null && pointer) {
+      const start = PORTS[dragging].source;
+      const color = dragging === 0 ? '#40d9fc' : '#f4ae42';
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.bezierCurveTo(start.x + 48, start.y, pointer.x - 48, pointer.y, pointer.x, pointer.y);
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = '#071329';
+      ctx.stroke();
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      art(dragging === 0 ? 'plugA' : 'plugB', pointer.x - 16, pointer.y - 11, 32, 22);
+    }
   }
 
   // Las 24 celdas ahora son casi cuadradas y ocupan el ancho libre del marco.
@@ -107,16 +124,22 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
         ctx.stroke();
       }
       block('#0b1c38e6', PANEL.x + 13, PANEL.y + 119, PANEL.w - 26, 37);
-      text(model.discoveryStep === 1 ? 'LUZ → ELECTRICIDAD' : 'POLVO → MENOS LUZ',
-        PANEL.x + 20, PANEL.y + 143, '#fff0ba', 17);
+      text(model.discoveryStep === 1 ? 'LUZ > ELECTRICIDAD' : 'POLVO > MENOS LUZ',
+        PANEL.x + 20, PANEL.y + 143, '#fff0ba', 11);
     } else {
       block('#0b1c38e6', PANEL.x + 27, PANEL.y + 118, PANEL.w - 54, 37);
-      text('TOCA EL PANEL', PANEL.x + 44, PANEL.y + 143, '#e8f8ff', 17);
+      text('TOCA EL PANEL', PANEL.x + 44, PANEL.y + 143, '#e8f8ff', 11);
     }
     block('#162a47', 38, 261, 564, 37);
     text(model.discoveryStep === 0 ? '¿QUÉ HACE UN PANEL SOLAR?'
-      : model.discoveryStep === 1 ? 'SOL → CELDAS → ELECTRICIDAD → BASE'
-        : 'EL POLVO TAPA PARTE DE LAS CELDAS', 48, 285, '#f6e4b3', 15);
+      : model.discoveryStep === 1 ? 'SOL > CELDAS > ELECTRICIDAD > BASE'
+        : 'POLVO: MENOS LUZ EN LAS CELDAS', 48, 285, '#f6e4b3', 11);
+    return;
+  }
+  if (model.phase === 'needMagnet') {
+    block('#162a47', 38, 261, 564, 37);
+    text(model.wornMagnet ? 'REPUESTO DETRÁS DE UNA ROCA' : 'BUSCA EL IMÁN JUNTO A LA BASE',
+      48, 285, '#f6e4b3', 11);
     return;
   }
   if (model.phase === 'sweeping') {
@@ -135,7 +158,7 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
     }
   }
   block('#162a47', 38, 261, 564, 37);
-  text('ZONAS LIMPIAS', 48, 285, '#cfe5ff', 15);
+  text('ZONAS LIMPIAS', 48, 285, '#cfe5ff', 11);
   block('#7797b1', 214, 269, 312, 22);
   block('#071327', 217, 272, 306, 16);
   const fill = Math.round(294 * model.cleanCells / (COLS * ROWS));
@@ -147,11 +170,11 @@ export function drawSpriteArt(ctx, sprites, model, now, dragging, pointer) {
     art('progressFill', 218, 270, 306, 20);
     ctx.restore();
   }
-  text(`${model.cleanCells}/${COLS * ROWS}`, 541, 285, model.complete ? '#92ffde' : '#ffd08d', 16);
+  text(`${model.cleanCells}/${COLS * ROWS}`, 541, 285, model.complete ? '#92ffde' : '#ffd08d', 11);
   if (model.complete) {
     block('#0b1934', 388, 138, 150, 54);
     art('success', 392, 145, 40, 40);
-    text('COMPLETO', 433, 163, '#e1ffed', 14);
-    text('24 / 24', 434, 181, '#92ffde', 14);
+    text('¡MUY BIEN!', 433, 163, '#e1ffed', 10);
+    text('24 / 24', 434, 181, '#92ffde', 10);
   }
 }
