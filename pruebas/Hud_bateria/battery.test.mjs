@@ -1,0 +1,68 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { SistemaEnergia } from '../../src/systems/EnergySystem.js';
+import { batteryLevel, BATTERY_HUD_BOUNDS } from './BatteryHUD.js';
+import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
+
+test('300 segundos reales son 24 horas de juego', () => {
+  const energy = new SistemaEnergia();
+  for (let i = 0; i < 300 * 60; i++) energy.update(1 / 60);
+  assert.ok(Math.abs(energy.getSnapshot().tiempo.transcurridoHoras - 24) < 1e-8);
+});
+
+test('traje consume 144,375 W por hora de juego (12,5 s reales)', () => {
+  const energy = new SistemaEnergia();
+  energy.updateSuit(12.5, 144.375);
+  assert.ok(Math.abs(energy.getSnapshot().traje.energiaWh - 1010.625) < 1e-8);
+  energy.updateSuit(12.5, 233);
+  assert.ok(Math.abs(energy.getSnapshot().traje.energiaWh - 777.625) < 1e-8);
+});
+
+test('recarga del traje a 0,5 kW con eficiencia 90 %', () => {
+  const energy = new SistemaEnergia({ energiaTrajeInicialWh: 0 });
+  energy.rechargeSuit(12.5);
+  assert.ok(Math.abs(energy.getSnapshot().traje.energiaWh - 450) < 1e-8);
+});
+
+test('nivel visual discreto sin indicar vacío antes de llegar a cero', () => {
+  assert.equal(batteryLevel(0), 0);
+  assert.equal(batteryLevel(0.1), 1);
+  assert.equal(batteryLevel(10), 1);
+  assert.equal(batteryLevel(10.1), 2);
+  assert.equal(batteryLevel(99.9), 10);
+  assert.equal(batteryLevel(100), 10);
+});
+
+test('HUD respeta tamaño y posición de la referencia a 320×180', () => {
+  assert.deepEqual(BATTERY_HUD_BOUNDS, { x: 10, y: 139, width: 80, height: 35 });
+});
+
+test('alerta de regreso refleja margen y no solo porcentaje', () => {
+  const energy = new SistemaEnergia({ energiaTrajeInicialWh: 300 });
+  assert.equal(energy.getSnapshot().traje.alerta.nivel, 'regresa');
+});
+
+test('el traje solo se gasta durante EVA y se recarga dentro de la base', () => {
+  const energy = createBatterySimulation();
+  const interior = { exterior: false, interior: true, powerW: 144.375, charging: false };
+  advanceBatterySimulation(energy, 12.5, interior);
+  assert.equal(energy.energiaTrajeWh, 1155);
+  advanceBatterySimulation(energy, 12.5, { ...interior, exterior: true, interior: false });
+  assert.ok(Math.abs(energy.energiaTrajeWh - 1010.625) < 1e-8);
+  advanceBatterySimulation(energy, 12.5, { ...interior, charging: true });
+  assert.equal(energy.energiaTrajeWh, 1155);
+  const baseAfterFull = energy.energiaBaseKWh;
+  advanceBatterySimulation(energy, 1, { ...interior, charging: true });
+  assert.ok(energy.energiaBaseKWh >= baseAfterFull);
+});
+
+test('perfil diurno y sombra afectan a la generación de la base', () => {
+  let shadow = false;
+  const energy = createBatterySimulation(() => shadow);
+  assert.equal(energy.getSnapshot().tiempo.factorSolar, 1);
+  shadow = true;
+  assert.equal(energy.getSnapshot().tiempo.factorSolar, 0);
+  shadow = false;
+  advanceBatterySimulation(energy, 150, { exterior: false, interior: true, charging: false });
+  assert.equal(energy.getSnapshot().tiempo.factorSolar, 0);
+});
