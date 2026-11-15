@@ -53,8 +53,14 @@ export class IntegratedGame extends Game {
   }
 
   update(dt) {
-    this.messages?.tick(dt, this, this.ui.blocked || this.transitioning || this.ui.transitionActive || this.scene?.isRecarga);
-    if (this.mission.dead) { this.input._down.clear(); this.input.update(); return; }
+    this.messages?.tick(dt, this, this.ui.blocked || this.transitioning || this.ui.transitionActive || this.scene?.isRecarga || this.mission.dead);
+    if (this.mission.dead) {
+      this.input._down.clear();
+      this.ui.updateSurvival();
+      if (this.state === 'playing' && this.scene) this.scene.update(dt);
+      this.input.update();
+      return;
+    }
     if (this.transitioning || this.ui.transitionActive) { this.input._down.clear(); this.input.update(); return; }
     if (this.state === 'playing' && this.ui.blocked) {
       // Un iframe puede recibir keyup: no conservar WASD pulsado al volver.

@@ -59,8 +59,10 @@
       <button id="story-exit" hidden>Salir de la cinemática · activar visor</button>
     </section>
     <section id="death" hidden role="alertdialog" aria-modal="true" aria-label="Misión fallida">
-      <h1>MISIÓN FALLIDA</h1><p>Permaneciste cinco segundos sin un recurso vital.</p>
-      <button id="restart-mission">Reiniciar misión</button>
+      <img id="death-screen-img" src="assets/Sprites/Astronauta/Pantalla_fallo.png" alt="Misión fallida">
+      <button id="restart-mission" type="button" aria-label="Reintentar">
+        <img src="assets/Sprites/Astronauta/boton_reintentar.png" alt="Reintentar">
+      </button>
     </section>
     <div id="mission-transition" aria-hidden="true"></div>
   </main>

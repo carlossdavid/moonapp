@@ -189,9 +189,9 @@ class Activities {
       const video = $('story-video');
       video.pause(); video.removeAttribute('src'); video.load();
       $('story').hidden = true;
-      this.game.mission.visorUnlocked = true;
-      document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
-      this.notify('Visor habilitado. Pulsa Shift.');
+      const onClose = this._storyOnClose;
+      this._storyOnClose = null;
+      if (onClose) onClose();
     } else if (this.kind === 'food') {
       this.foodFrame.hidden = true;
     } else if (this.kind === 'modes') {
@@ -283,8 +283,19 @@ class Activities {
     status.classList.toggle('danger', m.starved > 0);
     status.hidden = m.starved <= 0;
     if (m.dead) {
-      $('death').hidden = false;
-      $('restart-mission').focus();
+      const player = this.game?.scene?.player || this.game?.player;
+      if (player && typeof player.die === 'function') player.die();
+      const sprite = player?.sprite;
+      const anim = sprite?.current;
+      const deathAnimDone = !sprite || anim?.name !== 'dead' || !!anim.finished;
+      if (deathAnimDone) {
+        if ($('death').hidden) {
+          $('death').hidden = false;
+          $('restart-mission').focus();
+        }
+      } else {
+        $('death').hidden = true;
+      }
     }
   }
 
@@ -298,25 +309,45 @@ class Activities {
     if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return;
     this.game.mission.alertPending = false;
     this.game.mission.alertShown = true;
+    this.openCinematic({
+      src: 'assets/video/segunda_escena.mp4',
+      exitText: 'Salir · activar visor',
+      exitTextOnEnd: 'Salir · activar visor',
+      onClose: () => {
+        this.game.mission.visorUnlocked = true;
+        document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
+        this.notify('Aplasta Shift para abrir el panel');
+      },
+    });
+  }
+
+  openCinematic({ src, exitText = 'Salir', exitTextOnEnd = 'Salir', onClose = null, autoStartMs = 2500, showAviso = true } = {}) {
+    if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return false;
     this.kind = 'story';
+    this._storyOnClose = typeof onClose === 'function' ? onClose : null;
     this.transition();
     $('story').hidden = false;
     const video = $('story-video');
     const start = $('story-start');
+    const exit = $('story-exit');
+    const aviso = $('story').querySelector('img');
+    if (aviso) aviso.style.display = showAviso ? '' : 'none';
     video.hidden = true;
     start.hidden = false;
-    $('story-exit').hidden = true;
+    exit.hidden = true;
+    exit.textContent = exitText;
     start.onclick = () => {
       clearTimeout(this.storyTimer);
       start.hidden = true;
       video.hidden = false;
-      video.src = 'assets/video/segunda_escena.mp4';
-      $('story-exit').hidden = false;
+      video.src = src;
+      exit.hidden = false;
       video.play().catch(() => { start.hidden = false; });
     };
-    video.onended = () => { $('story-exit').textContent = 'Salir · activar visor'; };
-    $('story-exit').onclick = () => this.close();
-    this.storyTimer = setTimeout(() => { if (this.kind === 'story') start.click(); }, 2500);
+    video.onended = () => { exit.textContent = exitTextOnEnd; };
+    exit.onclick = () => this.close();
+    this.storyTimer = setTimeout(() => { if (this.kind === 'story') start.click(); }, autoStartMs);
     start.focus();
+    return true;
   }
 }

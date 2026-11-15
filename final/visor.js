@@ -56,17 +56,42 @@ export function mountVisor(ui) {
       });
     }
   }
+  function openVisor() {
+    ui.transition();
+    overlay.hidden = false;
+    launcher.setAttribute('aria-expanded', 'true');
+    previousFocus = document.activeElement;
+    close.focus();
+    draw();
+  }
+
   function toggle(open = overlay.hidden) {
     if (open && !ui.game?.mission.visorUnlocked) {
       ui.notify('Visor bloqueado hasta salir de la segunda cinemática.');
       return;
     }
     if (open && (ui.blocked || ui.game?.scene?.isRecarga || ui.game?.state !== 'playing')) return;
-    ui.transition();
-    overlay.hidden = !open;
-    launcher.setAttribute('aria-expanded', String(open));
-    if (open) { previousFocus = document.activeElement; close.focus(); draw(); }
-    else previousFocus?.focus?.();
+    if (open && ui.game?.mission && !ui.game.mission.radiacionCinematicShown) {
+      const opened = ui.openCinematic({
+        src: 'assets/video/radiacion.mp4',
+        exitText: 'Salir · abrir visor',
+        exitTextOnEnd: 'Salir · abrir visor',
+        showAviso: false,
+        onClose: () => openVisor(),
+      });
+      if (opened) {
+        ui.game.mission.radiacionCinematicShown = true;
+        return;
+      }
+    }
+    if (open) {
+      openVisor();
+    } else {
+      ui.transition();
+      overlay.hidden = true;
+      launcher.setAttribute('aria-expanded', 'false');
+      previousFocus?.focus?.();
+    }
   }
   launcher.addEventListener('click', () => toggle());
   close.addEventListener('click', () => toggle(false));

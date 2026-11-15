@@ -11,6 +11,7 @@ export class MissionState {
     this.alertPending = false;
     this.alertShown = false;
     this.visorUnlocked = false;
+    this.radiacionCinematicShown = false;
   }
   tick(dt, levels) {
     if (this.dead || !Number.isFinite(dt) || dt <= 0) return;

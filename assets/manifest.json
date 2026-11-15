@@ -117,6 +117,34 @@
       "src": "./assets/Sprites/Astronauta/right_3.png"
     },
     {
+      "key": "astro_dead_1",
+      "src": "./assets/Sprites/Astronauta/dead_1.png"
+    },
+    {
+      "key": "astro_dead_2",
+      "src": "./assets/Sprites/Astronauta/dead_2.png"
+    },
+    {
+      "key": "astro_dead_3",
+      "src": "./assets/Sprites/Astronauta/dead_3.png"
+    },
+    {
+      "key": "astro_dead_4",
+      "src": "./assets/Sprites/Astronauta/dead_4.png"
+    },
+    {
+      "key": "astro_dead_5",
+      "src": "./assets/Sprites/Astronauta/dead_5.png"
+    },
+    {
+      "key": "pantalla_fallo",
+      "src": "./assets/Sprites/Astronauta/Pantalla_fallo.png"
+    },
+    {
+      "key": "boton_reintentar",
+      "src": "./assets/Sprites/Astronauta/boton_reintentar.png"
+    },
+    {
       "key": "oxigeno_nivel_00_t",
       "src": "./assets/Sprites/Pantalla/niveles/oxigeno/oxigeno_nivel_00_t.png"
     },

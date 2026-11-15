@@ -17,6 +17,13 @@ const extraImages = {
   final_room_saving: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarGrandeAhorro.png',
   final_room_dark: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarGrandeOscuro.png',
   final_room_small: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarPequeñaOscura.png',
+  astro_dead_1: 'assets/Sprites/Astronauta/dead_1.png',
+  astro_dead_2: 'assets/Sprites/Astronauta/dead_2.png',
+  astro_dead_3: 'assets/Sprites/Astronauta/dead_3.png',
+  astro_dead_4: 'assets/Sprites/Astronauta/dead_4.png',
+  astro_dead_5: 'assets/Sprites/Astronauta/dead_5.png',
+  pantalla_fallo: 'assets/Sprites/Astronauta/Pantalla_fallo.png',
+  boton_reintentar: 'assets/Sprites/Astronauta/boton_reintentar.png',
 };
 
 async function start() {

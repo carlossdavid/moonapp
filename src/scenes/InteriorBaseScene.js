@@ -60,6 +60,8 @@ function createAstronautSheet(assets) {
     ['astro_right_1', 'astro_right_2', 'astro_right_1', 'astro_right_3'],                 // walk-right
     ['astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1', 'astro_stay_up_1'],         // idle-left -> stay_up
     ['astro_left_1', 'astro_left_2', 'astro_left_1', 'astro_left_3'],                     // walk-left
+    ['astro_dead_1', 'astro_dead_2', 'astro_dead_3', 'astro_dead_4'],                     // dead 1-4
+    ['astro_dead_5', 'astro_dead_5', 'astro_dead_5', 'astro_dead_5'],                     // dead 5 (hold)
   ];
   const c = document.createElement('canvas');
   c.width = fw * cols;
@@ -70,10 +72,20 @@ function createAstronautSheet(assets) {
   rowsDef.forEach((keys, r) => {
     keys.forEach((key, col) => {
       const img = assets.get(key);
-      if (img) ctx.drawImage(img, 0, 0, srcW, srcH, col * fw, r * fh, fw, fh);
+      if (img) {
+        const sw = img.width || srcW;
+        const sh = img.height || srcH;
+        // Ajustar al frame preservando proporción (evita deformar sprites con distinto aspect ratio, p.ej. dead 362x362)
+        const scale = Math.min(fw / sw, fh / sh);
+        const dw = sw * scale;
+        const dh = sh * scale;
+        const dx = col * fw + (fw - dw) / 2;
+        const dy = r * fh + (fh - dh); // alinear a pies (abajo)
+        ctx.drawImage(img, 0, 0, sw, sh, dx, dy, dw, dh);
+      }
     });
   });
-  c.dataset.kind = 'astronaut';
+  c.dataset.kind = 'astronaut_v2';
   return c;
 }
 
@@ -90,10 +102,10 @@ function createPlayerSprite(sheetImage) {
   }
   const imgW = /** @type {any} */ (sheetImage).width || 64;
   const imgH = /** @type {any} */ (sheetImage).height || 144;
-  const isAstronaut = sheetImage.dataset?.kind === 'astronaut' || (imgW >= 72 && imgW !== 64);
+  const isAstronaut = (sheetImage.dataset?.kind === 'astronaut' || sheetImage.dataset?.kind === 'astronaut_v2') || (imgW >= 72 && imgW !== 64);
   if (isAstronaut) {
     const cols = 4;
-    const rows = 8;
+    const rows = 10;
     const fw = Math.floor(imgW / cols);
     const fh = Math.floor(imgH / rows);
     const sheet = new SpriteSheet(sheetImage, fw, fh, { columns: cols });
@@ -107,6 +119,11 @@ function createPlayerSprite(sheetImage) {
     def('idle-up', 2, 4); def('walk-up', 3, 8);
     def('idle-right', 4, 4); def('walk-right', 5, 8);
     def('idle-left', 6, 4); def('walk-left', 7, 8);
+    const deadBase = 8 * cols;
+    // dead_1..dead_5, cada frame repetido 2 veces para hacerla más lenta
+    sprite.addAnimation('dead', new Animation({ name: 'dead', frames: [
+      deadBase, deadBase, deadBase + 1, deadBase + 1, deadBase + 2, deadBase + 2, deadBase + 3, deadBase + 3, deadBase + 4, deadBase + 4,
+    ], fps: 6, loop: false }));
     sprite.play('idle-up', true); // facing into base
     return sprite;
   }
@@ -344,7 +361,7 @@ export class InteriorBaseScene extends Scene {
     if (!sheet && assets.has('astro_stay_down_1')) {
       sheet = createAstronautSheet(assets);
       assets.set('player', sheet);
-    } else if (sheet && sheet.dataset?.kind !== 'astronaut' && assets.has('astro_stay_down_1')) {
+    } else if (sheet && sheet.dataset?.kind !== 'astronaut_v2' && assets.has('astro_stay_down_1')) {
       // Rebuild if cached sheet was created with old astronaut format
       sheet = createAstronautSheet(assets);
       assets.set('player', sheet);

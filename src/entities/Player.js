@@ -10,6 +10,18 @@ export class Player extends Entity {
     super(opts);
     /** @type {'down'|'up'|'left'|'right'} */
     this.facing = 'down';
+    this.isDead = false;
+  }
+
+  /** Reproduce la animación de muerte una vez (si existe). */
+  die() {
+    if (this.isDead) return;
+    this.isDead = true;
+    if (this.body && this.body.velocity) {
+      this.body.velocity.x = 0;
+      this.body.velocity.y = 0;
+    }
+    if (this.sprite) this.sprite.play('dead', true);
   }
 
   /**
@@ -18,6 +30,16 @@ export class Player extends Entity {
    * @param {import('../core/Game.js').Game} game
    */
   update(dt, game) {
+    if (this.isDead) {
+      if (this.body && this.body.velocity) {
+        this.body.velocity.x = 0;
+        this.body.velocity.y = 0;
+      }
+      if (this.sprite) this.sprite.play('dead', false);
+      super.update(dt, game);
+      return;
+    }
+
     const input = game.input;
     let ix = 0;
     let iy = 0;
@@ -70,7 +92,7 @@ export class Player extends Entity {
 
   /** @param {boolean} moving */
   _updateAnimation(moving) {
-    if (!this.sprite) return;
+    if (!this.sprite || this.isDead) return;
     let dir = this.facing; // 'down' | 'up' | 'left' | 'right'
     // No side idle: when stopped facing left/right, use back idle (stay_up)
     if (!moving && (dir === 'left' || dir === 'right')) {
