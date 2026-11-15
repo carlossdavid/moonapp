@@ -175,6 +175,11 @@ export class Game {
   }
 
   _onPointerAction() {
+    // Escenas interactivas (módulos/minijuegos) reciben el clic en juego.
+    if (this.state === 'playing' && this.scene && typeof this.scene.handlePointer === 'function') {
+      this.scene.handlePointer(this.mouse.x, this.mouse.y);
+      return;
+    }
     if (this.state !== 'menu') return;
 
     if (this.menuWindow) {

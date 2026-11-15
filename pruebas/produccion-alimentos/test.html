@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <base href="/" />
+  <title>Prueba Producción de alimentos</title>
+  <style>
+    html, body { margin: 0; background: #05070d; color: #dbe6ff; font: 12px monospace; }
+    #wrap { padding: 8px; }
+    canvas { width: 960px; height: 540px; image-rendering: pixelated; display: block; }
+    #out { white-space: pre-wrap; font-size: 12px; line-height: 1.35; }
+    .ok { color: #6fe3a1; } .bad { color: #ff6b6b; } .info { color: #a9b7d8; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="c" width="320" height="180"></canvas>
+    <pre id="out">EJECUTANDO...</pre>
+  </div>
+  <script type="module">
+    import { ProduccionAlimentos } from '../../src/minigames/ProduccionAlimentos.js';
+    import { AssetLoader } from '../../src/graphics/AssetLoader.js';
+    import { cargarSprites, cargarCultivos, ProduccionAlimentosScene } from '../../src/scenes/ProduccionAlimentosScene.js';
+
+    const out = document.getElementById('out');
+    const checks = [];
+    const fail = (msg) => checks.push({ ok: false, msg });
+    const pass = (msg) => checks.push({ ok: true, msg });
+
+    function fakeRenderer(canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      return {
+        canvas,
+        logicalWidth: 320,
+        logicalHeight: 180,
+        begin() {},
+        end() {},
+        get context() { return ctx; },
+        drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh, flipX = false) {
+          const x = Math.round(dx);
+          const y = Math.round(dy);
+          if (!flipX) { ctx.drawImage(image, sx, sy, sw, sh, x, y, dw, dh); return; }
+          ctx.save();
+          ctx.translate(x + dw, y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
+          ctx.restore();
+        },
+      };
+    }
+
+    function contarPixeles(canvas) {
+      const ctx = canvas.getContext('2d');
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opacos = 0;
+      let brillantes = 0;
+      const colores = new Set();
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        if (a > 0) {
+          opacos++;
+          if (a > 200) brillantes++;
+          colores.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
+        }
+      }
+      return { opacos, brillantes, colores: colores.size, total: data.length / 4 };
+    }
+
+    const zonaPorId = (mg, id) => mg._hit.find((z) => z.id === id);
+    const clicEnZona = (mg, id) => {
+      const z = zonaPorId(mg, id);
+      if (!z) { fail(`no existe la zona ${id}`); return false; }
+      mg.pointerClick(z.x + z.w / 2, z.y + z.h / 2);
+      return true;
+    };
+
+    (async () => {
+      try {
+        const canvas = document.getElementById('c');
+        const renderer = fakeRenderer(canvas);
+        const assets = new AssetLoader();
+
+        const [sprites, cultivos] = await Promise.all([cargarSprites(assets), cargarCultivos()]);
+
+        const faltan = Object.entries(sprites).filter(([, v]) => !v).map(([k]) => k);
+        const totalSprites = Object.keys(sprites).length;
+        if (faltan.length === 0) pass(`sprites cargados: ${totalSprites}/${totalSprites}`);
+        else fail(`sprites faltantes (${faltan.length}): ${faltan.join(', ')}`);
+
+        const claves = Object.keys(cultivos);
+        if (claves.length === 6) pass(`cultivos en config: ${claves.join(', ')}`);
+        else fail(`cultivos inesperados: ${claves.join(', ')}`);
+
+        let salio = false;
+        const mg = new ProduccionAlimentos({
+          sprites,
+          cultivos,
+          onExit: () => { salio = true; },
+        });
+
+        // --- render inicial -------------------------------------------------
+        let errorRender = null;
+        try { mg.render(renderer); } catch (e) { errorRender = e; }
+        if (errorRender) fail(`render inicial lanzó: ${errorRender.message}`);
+        else pass('render inicial sin excepciones');
+
+        const zonas = mg._hit.map((z) => z.id);
+        const requeridas = ['aplicar', 'salir', 'cultivo:lechuga', 'inc:temp', 'dec:temp', 'inc:luz:rojo', 'dec:luz:rojo', 'inc:co2'];
+        const faltanZonas = requeridas.filter((r) => !zonas.includes(r));
+        if (faltanZonas.length === 0) pass(`zonas interactivas: ${zonas.length}`);
+        else fail(`zonas faltantes: ${faltanZonas.join(', ')}`);
+
+        const pix = contarPixeles(canvas);
+        if (pix.opacos > 50000) pass(`pixeles pintados: ${pix.opacos}/${pix.total} (${pix.colores} colores)`);
+        else fail(`muy pocos pixeles pintados: ${pix.opacos}`);
+
+        // --- maquetación: textos que deben caber ---------------------------
+        const ctx = canvas.getContext('2d');
+        const mide = (txt, size) => {
+          ctx.save();
+          ctx.font = `${size}px "Press Start 2P", monospace`;
+          const w = ctx.measureText(txt).width;
+          ctx.restore();
+          return w;
+        };
+        const cabe = (txt, size, x, limite) => {
+          const w = mide(txt, size);
+          if (x + w <= limite) pass(`cabe "${txt}" (${(x + w).toFixed(1)} <= ${limite})`);
+          else fail(`NO cabe "${txt}": termina en ${(x + w).toFixed(1)} (límite ${limite})`);
+        };
+        cabe('PRODUCCION DE ALIMENTOS', 5, 10, 148);
+        cabe('TEMPERATURA', 4, 212, 306);
+        cabe('HUMEDAD', 4, 212, 240);
+        cabe('CO2', 4, 212, 240);
+        cabe('~22.8C', 4, 212, 306);
+        cabe('~41%', 4, 212, 240);
+        cabe('~2559', 4, 212, 240);
+        cabe('BLANCO', 4, 212, 252);
+        cabe('100', 4, 240, 252);
+        cabe('TOTAL 100%', 4, 262, 310);
+        cabe('DIA 999/999', 4, 260, 310);
+        cabe('COSECHA +1 TOMATE - O2 +2.4', 4, 30, 192);
+
+        // --- maquetación: zonas dentro del lienzo y sin solaparse ----------
+        const enLienzo = mg._hit.every((z) => z.x >= 0 && z.y >= 0 && z.x + z.w <= 320 && z.y + z.h <= 180);
+        if (enLienzo) pass('todas las zonas interactivas están dentro del lienzo');
+        else fail('hay zonas interactivas fuera del lienzo');
+
+        let solapes = 0;
+        for (let i = 0; i < mg._hit.length; i++) {
+          for (let j = i + 1; j < mg._hit.length; j++) {
+            const a = mg._hit[i];
+            const b = mg._hit[j];
+            const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+            const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+            if (ox > 0 && oy > 0) { solapes++; console.log('solape', a.id, b.id, ox, oy); }
+          }
+        }
+        if (solapes === 0) pass('las zonas interactivas no se solapan');
+        else fail(`hay ${solapes} solapes entre zonas interactivas`);
+
+        // --- auditoría de dibujo: límites y solapes de texto ---------------
+        const auditar = () => {
+          const textos = [];
+          const imgs = [];
+          const origFill = ctx.fillText.bind(ctx);
+          const origDraw = ctx.drawImage.bind(ctx);
+          ctx.fillText = (t, x, y) => {
+            const size = parseFloat(ctx.font) || 4;
+            const w = ctx.measureText(String(t)).width;
+            let left = x;
+            if (ctx.textAlign === 'center') left = x - w / 2;
+            else if (ctx.textAlign === 'right') left = x - w;
+            let top = y;
+            if (ctx.textBaseline === 'middle') top = y - size / 2;
+            else if (ctx.textBaseline === 'bottom' || ctx.textBaseline === 'alphabetic') top = y - size;
+            textos.push({ t: String(t), left, top, right: left + w, bottom: top + size });
+            origFill(t, x, y);
+          };
+          ctx.drawImage = (...a) => {
+            if (a.length >= 9) imgs.push({ dx: a[5], dy: a[6], dw: a[7], dh: a[8] });
+            else imgs.push({ dx: a[1], dy: a[2], dw: a[3], dh: a[4] });
+            origDraw(...a);
+          };
+          mg.render(renderer);
+          ctx.fillText = origFill;
+          ctx.drawImage = origDraw;
+          return { textos, imgs };
+        };
+
+        const { textos, imgs } = auditar();
+        const fueraTexto = textos.filter((t) => t.left < -0.5 || t.top < -0.5 || t.right > 320.5 || t.bottom > 180.5);
+        if (fueraTexto.length === 0) pass(`auditoría: ${textos.length} textos dentro del lienzo`);
+        else fail(`textos fuera del lienzo: ${fueraTexto.map((t) => `"${t.t}"`).join(', ')}`);
+
+        const fueraImg = imgs.filter((i) => i.dx < -0.5 || i.dy < -0.5 || i.dx + i.dw > 320.5 || i.dy + i.dh > 180.5);
+        if (fueraImg.length === 0) pass(`auditoría: ${imgs.length} imágenes dentro del lienzo`);
+        else fail(`imágenes fuera del lienzo: ${fueraImg.map((i) => `(${i.dx},${i.dy},${i.dw}x${i.dh})`).join(', ')}`);
+
+        // Quitar sombras duplicadas (mismo texto desplazado 1px)
+        const unicos = [];
+        for (const t of textos) {
+          if (!unicos.some((u) => u.t === t.t && Math.abs(u.left - t.left) <= 2 && Math.abs(u.top - t.top) <= 2)) unicos.push(t);
+        }
+        const choques = [];
+        for (let i = 0; i < unicos.length; i++) {
+          for (let j = i + 1; j < unicos.length; j++) {
+            const a = unicos[i];
+            const b = unicos[j];
+            const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+            const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+            if (ox > 0.5 && oy > 0.5) choques.push(`"${a.t}" x "${b.t}"`);
+          }
+        }
+        if (choques.length === 0) pass(`auditoría: ningún texto se pisa (${unicos.length} textos únicos)`);
+        else fail(`textos solapados: ${choques.slice(0, 6).join(' | ')}`);
+
+        // --- pantalla de carga de la escena contenedora ---------------------
+        let salidaCarga = false;
+        const escenaCarga = new ProduccionAlimentosScene(
+          { input: { isPressed: (c) => c === 'Escape' } },
+          { onExit: () => { salidaCarga = true; } },
+        );
+        let errCarga = null;
+        try { escenaCarga.render(renderer); } catch (e) { errCarga = e; }
+        if (!errCarga) pass('pantalla de carga renderiza sin errores');
+        else fail(`pantalla de carga lanzó: ${errCarga.message}`);
+        escenaCarga.update(1 / 60);
+        if (salidaCarga) pass('ESC vuelve al interior mientras carga');
+        else fail('ESC no funciona durante la carga');
+
+        // --- simulación: ambiente óptimo -----------------------------------
+        const mg2 = new ProduccionAlimentos({ sprites, cultivos });
+        mg2.selected = 'lechuga';
+        mg2.draft = { temp: 22.75, hum: 41, co2: 2679, luz: { rojo: 75, azul: 18.75, verde: 6.25, blanco: 0 } };
+        const saludInicial = mg2.crops.lechuga.health;
+        for (let i = 0; i < 10; i++) mg2._aplicar();
+        if (mg2.crops.lechuga.health > 90) pass(`ambiente óptimo: salud ${saludInicial} -> ${mg2.crops.lechuga.health.toFixed(1)}`);
+        else fail(`ambiente óptimo no subió la salud: ${saludInicial} -> ${mg2.crops.lechuga.health.toFixed(1)}`);
+        if (mg2.crops.lechuga.progress > 0.85 && mg2.crops.lechuga.progress < 0.95) pass(`crecimiento coherente: ${mg2.crops.lechuga.progress.toFixed(3)} en 30 días`);
+        else fail(`crecimiento fuera de rango: ${mg2.crops.lechuga.progress}`);
+
+        // --- simulación: ambiente malo -------------------------------------
+        const mg3 = new ProduccionAlimentos({ sprites, cultivos });
+        mg3.selected = 'lechuga';
+        mg3.draft = { temp: 40, hum: 10, co2: 1200, luz: { rojo: 0, azul: 0, verde: 0, blanco: 0 } };
+        for (let i = 0; i < 10; i++) mg3._aplicar();
+        if (mg3.crops.lechuga.health < 25) pass(`ambiente malo: salud cae a ${mg3.crops.lechuga.health.toFixed(1)}`);
+        else fail(`ambiente malo no castigó la salud: ${mg3.crops.lechuga.health}`);
+
+        // --- cosecha --------------------------------------------------------
+        const cosechasAntes = mg2.stats.cosechas;
+        mg2.crops.lechuga.progress = 0.99;
+        mg2._aplicar();
+        if (mg2.stats.cosechas === cosechasAntes + 1) pass('la cosecha se registra al completar el ciclo');
+        else fail(`no se registró la cosecha: ${cosechasAntes} -> ${mg2.stats.cosechas}`);
+        if (mg2.msg.tone === 'ok') pass('mensaje de cosecha con tono correcto');
+        else fail(`tono de mensaje inesperado: ${mg2.msg.tone}`);
+
+        // --- datos sin confirmar (tomate) ----------------------------------
+        if (mg2._objetivoTexto('temp', cultivos.tomate) === 'S/D') pass('cultivo sin datos muestra S/D');
+        else fail(`tomate debería mostrar S/D: ${mg2._objetivoTexto('temp', cultivos.tomate)}`);
+
+        // --- la intensidad total de luz importa -----------------------------
+        const evalOptima = mg2._evaluar(mg2.env, cultivos.lechuga);
+        if (evalOptima.error < 0.01) pass(`ambiente óptimo sin error (${evalOptima.error.toFixed(3)})`);
+        else fail(`el ambiente óptimo aún tiene error: ${evalOptima.error.toFixed(3)}`);
+        const envMitad = { ...mg2.env, luz: { rojo: 37.5, azul: 9.375, verde: 3.125, blanco: 0 } };
+        const evalMitad = mg2._evaluar(envMitad, cultivos.lechuga);
+        if (evalMitad.issues.includes('LUZ')) pass('la mitad de intensidad se detecta como LUZ fuera de rango');
+        else fail('la intensidad total de luz no afecta la evaluación');
+        const envSinLuz = { ...mg2.env, luz: { rojo: 0, azul: 0, verde: 0, blanco: 0 } };
+        if (mg2._evaluar(envSinLuz, cultivos.lechuga).error > 0.25) pass('sin luz el error es alto');
+        else fail('sin luz el error no es alto');
+
+        // --- cambiar luz roja ----------------------------------------------
+        const rojoAntes = mg.draft.luz.rojo;
+        clicEnZona(mg, 'inc:luz:rojo');
+        clicEnZona(mg, 'inc:luz:rojo');
+        if (mg.draft.luz.rojo === rojoAntes + 10) pass(`luz roja ${rojoAntes} -> ${mg.draft.luz.rojo}`);
+        else fail(`luz roja no cambió como se esperaba: ${rojoAntes} -> ${mg.draft.luz.rojo}`);
+
+        // --- cambiar temperatura / humedad / co2 ----------------------------
+        const tempAntes = mg.draft.temp;
+        clicEnZona(mg, 'dec:temp');
+        if (mg.draft.temp === tempAntes - 0.5) pass(`temperatura ${tempAntes} -> ${mg.draft.temp}`);
+        else fail(`temperatura no cambió: ${tempAntes} -> ${mg.draft.temp}`);
+
+        const humAntes = mg.draft.hum;
+        clicEnZona(mg, 'inc:hum');
+        if (mg.draft.hum === humAntes + 1) pass(`humedad ${humAntes} -> ${mg.draft.hum}`);
+        else fail(`humedad no cambió: ${humAntes} -> ${mg.draft.hum}`);
+
+        const co2Antes = mg.draft.co2;
+        clicEnZona(mg, 'inc:co2');
+        if (mg.draft.co2 === co2Antes + 50) pass(`CO2 ${co2Antes} -> ${mg.draft.co2}`);
+        else fail(`CO2 no cambió: ${co2Antes} -> ${mg.draft.co2}`);
+
+        // --- aplicar --------------------------------------------------------
+        const diaAntes = mg.day;
+        const progresoAntes = mg.crops.lechuga.progress;
+        clicEnZona(mg, 'aplicar');
+        if (mg.day === diaAntes + 3) pass(`APLICAR avanzó el día ${diaAntes} -> ${mg.day}`);
+        else fail(`APLICAR no avanzó 3 días: ${diaAntes} -> ${mg.day}`);
+        if (mg.crops.lechuga.progress > progresoAntes) pass(`la planta creció: ${progresoAntes.toFixed(3)} -> ${mg.crops.lechuga.progress.toFixed(3)}`);
+        else fail(`la planta no creció: ${progresoAntes} -> ${mg.crops.lechuga.progress}`);
+        if (mg.env.temp === mg.draft.temp && mg.env.hum === mg.draft.hum) pass('APLICAR fijó las variables');
+        else fail('APLICAR no fijó las variables');
+
+        // --- cambiar de cultivo ---------------------------------------------
+        clicEnZona(mg, 'cultivo:tomate');
+        if (mg.selected === 'tomate') pass('clic en tarjeta cambia de cultivo');
+        else fail(`no cambió de cultivo: ${mg.selected}`);
+
+        // --- render tras interactuar / cosecha ------------------------------
+        for (let i = 0; i < 40; i++) mg._aplicar();
+        let errorRender2 = null;
+        try { mg.render(renderer); } catch (e) { errorRender2 = e; }
+        if (errorRender2) fail(`render tras 40 aplicaciones lanzó: ${errorRender2.message}`);
+        else pass(`render tras 40 aplicaciones OK (día ${mg.day}, salud ${Math.round(mg.crops.tomate.health)})`);
+
+        const nan = JSON.stringify({ env: mg.env, crops: mg.crops }).match(/NaN|Infinity/);
+        if (!nan) pass('sin NaN/Infinity en el estado');
+        else fail('estado con NaN/Infinity');
+
+        // --- salir -----------------------------------------------------------
+        clicEnZona(mg, 'salir');
+        if (salio) pass('onExit se disparó al pulsar salir');
+        else fail('onExit no se disparó');
+
+        // --- segundo render final para captura ------------------------------
+        mg.pointerClick(1, 1); // soltar hover de salir
+        mg.render(renderer);
+      } catch (e) {
+        fail(`EXCEPCIÓN: ${e && e.stack ? e.stack : e}`);
+      }
+
+      const okCount = checks.filter((c) => c.ok).length;
+      const badCount = checks.length - okCount;
+      const resumen = `${badCount === 0 ? 'PASS' : 'FAIL'} ${okCount}/${checks.length}`;
+      document.title = resumen;
+      out.innerHTML = `<b class="${badCount === 0 ? 'ok' : 'bad'}">${resumen}</b>\n` +
+        checks.map((c) => `<span class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '[OK]' : '[X ]'} ${c.msg}</span>`).join('\n');
+      window.__RESULT__ = { resumen, checks };
+    })();
+  </script>
+</body>
+</html>

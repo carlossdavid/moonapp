@@ -1,4 +1,5 @@
 import { Scene } from './Scene.js';
+import { ProduccionAlimentosScene } from './ProduccionAlimentosScene.js';
 import { Camera } from '../graphics/Camera.js';
 import { SpriteSheet } from '../graphics/SpriteSheet.js';
 import { Animation } from '../graphics/Animation.js';
@@ -268,7 +269,7 @@ export class InteriorBaseScene extends Scene {
     const roomLeft = 20, roomTop = 30, roomRight = worldW - 20, roomBottom = worldH - 60;
     this.interiorModules = [];
 
-    const addModule = (id, name, x, y, w, h, title, desc, imageKey = null) => {
+    const addModule = (id, name, x, y, w, h, title, desc, imageKey = null, onOpen = null) => {
       const bodySolid = new PhysicsBody({
         isStatic: true,
         collider: new BoxCollider({
@@ -283,6 +284,7 @@ export class InteriorBaseScene extends Scene {
       const gap = 8;
       const th = 12, tw2 = 12;
       const onConfirm = () => {
+        if (onOpen) { onOpen(); return; }
         this.comingSoonModal = { title, description: desc, button: 'CERRAR' };
       };
       // 4 bordes, separados de la colisión del módulo
@@ -302,7 +304,8 @@ export class InteriorBaseScene extends Scene {
       'Próximamente podrás gestionar la generación, almacenamiento y distribución de energía de la base lunar.', 'mod_energia');
     addModule('food', 'CONTROL DE ALIMENTACIÓN', roomLeft + 80, roomTop + 80, 48, 48,
       'CONTROL DE ALIMENTACIÓN',
-      'Próximamente podrás administrar los cultivos, la iluminación, la ventilación y las condiciones ambientales.', 'mod_alimentos');
+      'Próximamente podrás administrar los cultivos, la iluminación, la ventilación y las condiciones ambientales.', 'mod_alimentos',
+      () => this._abrirProduccionAlimentos());
     addModule('storage', 'ALMACENAMIENTO DE RECURSOS', roomRight - 250, roomTop + 150, 48, 48,
       'ALMACENAMIENTO',
       'Próximamente podrás consultar y administrar las reservas de la estación.', 'mod_almacenamiento');
@@ -376,6 +379,27 @@ export class InteriorBaseScene extends Scene {
     });
     this.interactables.push(zone);
     this.addEntity(zone);
+  }
+
+  /**
+   * Abre el módulo de producción de alimentos a pantalla completa.
+   * Al salir se reconstruye el interior en la posición actual del jugador.
+   */
+  _abrirProduccionAlimentos() {
+    const px = this.player ? this.player.x : undefined;
+    const py = this.player ? this.player.y : undefined;
+
+    const volverAlInterior = () => {
+      const interior = new InteriorBaseScene(this.game, {
+        ...this.opts,
+        spawnX: px,
+        spawnY: py,
+      });
+      this.game.changeScene(interior);
+    };
+
+    const escena = new ProduccionAlimentosScene(this.game, { onExit: volverAlInterior });
+    this.game.changeScene(escena);
   }
 
   renderGroundEffects(renderer, alpha) {
