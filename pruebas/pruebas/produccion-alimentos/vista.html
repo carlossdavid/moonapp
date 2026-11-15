@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <base href="/" />
+  <title>Vista previa · Producción de alimentos</title>
+  <style>
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      background: #05070d; color: #a9b7d8;
+      font-family: monospace;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px;
+    }
+    canvas { image-rendering: pixelated; display: block; box-shadow: 0 0 40px rgba(60,120,180,0.15); }
+    #ayuda { font-size: 12px; text-align: center; line-height: 1.5; }
+    #ayuda b { color: #eaf6ff; }
+    body.captura #ayuda { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="320" height="180"></canvas>
+  <div id="ayuda">
+    <b>CLIC</b> en cultivos y botones +/- · <b>ENTER/ESPACIO</b> aplicar · <b>ESC</b> salir · <b>FLECHAS/W-S</b> o <b>1-6</b> cultivo
+  </div>
+  <script type="module">
+    import { ProduccionAlimentos } from '../../src/minigames/ProduccionAlimentos.js';
+    import { AssetLoader } from '../../src/graphics/AssetLoader.js';
+    import { cargarSprites, cargarCultivos } from '../../src/scenes/ProduccionAlimentosScene.js';
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('captura') === '1') document.body.classList.add('captura');
+    const aplicar = Number(params.get('aplicar') || 0);
+    const cultivo = params.get('cultivo');
+
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const renderer = {
+      canvas,
+      logicalWidth: 320,
+      logicalHeight: 180,
+      get context() { return ctx; },
+      drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh, flipX = false) {
+        const x = Math.round(dx);
+        const y = Math.round(dy);
+        if (!flipX) { ctx.drawImage(image, sx, sy, sw, sh, x, y, dw, dh); return; }
+        ctx.save();
+        ctx.translate(x + dw, y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
+        ctx.restore();
+      },
+    };
+
+    function ajustarEscala() {
+      const s = Math.max(1, Math.min(
+        Math.floor(window.innerWidth / 320),
+        Math.floor((window.innerHeight - 60) / 180),
+      ));
+      canvas.style.width = `${320 * s}px`;
+      canvas.style.height = `${180 * s}px`;
+    }
+    window.addEventListener('resize', ajustarEscala);
+    ajustarEscala();
+
+    const [sprites, cultivos] = await Promise.all([
+      cargarSprites(new AssetLoader()),
+      cargarCultivos(),
+    ]);
+
+    const mg = new ProduccionAlimentos({
+      sprites,
+      cultivos,
+      onExit: () => {
+        mg.reset();
+        mg.msg = { texto: 'VISTA PREVIA: EL JUEGO VOLVERIA AL INTERIOR', tone: 'info', t: 4 };
+      },
+    });
+
+    if (cultivo && mg.crops[cultivo]) mg.selected = cultivo;
+    for (let i = 0; i < aplicar; i++) mg._aplicar();
+    mg.render(renderer);
+
+    const aLogico = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (320 / rect.width),
+        y: (e.clientY - rect.top) * (180 / rect.height),
+      };
+    };
+
+    canvas.addEventListener('pointermove', (e) => {
+      const p = aLogico(e);
+      mg.setPointer(p.x, p.y);
+    });
+    canvas.addEventListener('pointerleave', () => mg.setPointer(-999, -999));
+    canvas.addEventListener('click', (e) => {
+      const p = aLogico(e);
+      mg.pointerClick(p.x, p.y);
+      mg.render(renderer);
+    });
+
+    const teclas = new Set();
+    window.addEventListener('keydown', (e) => {
+      teclas.add(e.code);
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+    });
+    window.addEventListener('keyup', (e) => teclas.delete(e.code));
+
+    const entrada = {
+      isPressed: (code) => teclas.has(code),
+      isDown: (code) => teclas.has(code),
+    };
+
+    if (aplicar > 0) {
+      // Modo captura: un único frame con el estado pedido.
+      mg.render(renderer);
+    } else {
+      let previo = performance.now();
+      const bucle = (ahora) => {
+        const dt = Math.min(0.05, (ahora - previo) / 1000);
+        previo = ahora;
+        mg.update(dt, { input: entrada });
+        mg.render(renderer);
+        requestAnimationFrame(bucle);
+      };
+      requestAnimationFrame(bucle);
+    }
+  </script>
+</body>
+</html>

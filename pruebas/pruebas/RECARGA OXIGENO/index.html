@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../../">
+  <title>Prueba | Minijuego Recarga de Oxígeno</title>
+  <style>
+    @font-face {
+      font-family: 'Press Start 2P';
+      src: url('./assets/fonts/PressStart2P-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #070e20;
+      color: #eaf6ff;
+      font-family: 'Press Start 2P', monospace;
+    }
+    #game-root {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #070e20;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+      background: #10151d;
+      box-shadow: 0 0 0 3px #91afd0, 0 0 0 7px #14243d, 0 18px 50px #000a;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #070e20;
+      font-size: 10px;
+      line-height: 1.8;
+      text-align: center;
+      pointer-events: none;
+    }
+    #loading.hidden { display: none; }
+    .trial-label {
+      position: absolute; top: 12px; left: 12px;
+      padding: 8px 10px; border: 1px solid #649dbc;
+      background: #132742; color: #b9e9ff; font-size: 8px;
+      pointer-events: none;
+    }
+    .mobile-assist { display: none; }
+    @media (max-width: 650px) {
+      #game-root { flex-direction: column; }
+      canvas { width: calc(100vw - 16px) !important; height: auto !important; }
+      .trial-label { font-size: 6px; }
+      .mobile-assist {
+        display: block; box-sizing: border-box;
+        width: min(374px, calc(100vw - 16px)); margin-top: 18px;
+        padding: 12px; border: 2px solid #649dbc; background: #132742;
+        box-shadow: 0 0 0 3px #081327; font-size: 8px; line-height: 1.7;
+      }
+      .mobile-assist h2 { margin: 0 0 8px; font-size: 10px; color: #8be6ff; }
+      .mobile-assist p { margin: 0 0 10px; }
+      .mobile-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .mobile-assist button {
+        min-height: 42px; padding: 6px; border: 2px solid #79b5d6;
+        background: #244b6b; color: #eff8ff;
+        font: 8px/1.4 'Press Start 2P', monospace;
+      }
+      .mobile-assist button:disabled { opacity: .45; }
+      .mobile-assist button:focus-visible { outline: 3px solid #ffd789; outline-offset: 2px; }
+      .mobile-assist .hint { margin: 10px 0 0; color: #bed3e1; font-size: 7px; }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game"></canvas>
+    <div class="trial-label">PRUEBA AISLADA · RECARGA DE OXÍGENO</div>
+    <section class="mobile-assist" aria-label="Controles táctiles alternativos">
+      <h2>Recarga de oxígeno</h2>
+      <p id="mobile-status" role="status" aria-live="polite">Conecta O2 al puerto azul y CO2 al verde.</p>
+      <div class="mobile-buttons">
+        <button id="mobile-o2" type="button">Conectar O2</button>
+        <button id="mobile-co2" type="button">Conectar CO2</button>
+      </div>
+      <p class="hint">También puedes arrastrar las mangueras y girar las válvulas en la imagen.</p>
+    </section>
+    <div id="loading">Cargando prueba de recarga de oxígeno…</div>
+
+  </div>
+  <script type="module" src="pruebas/RECARGA OXIGENO/prueba.js"></script>
+</body>
+</html>

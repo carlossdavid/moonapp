@@ -312,7 +312,7 @@ class Activities {
       video.hidden = false;
       video.src = 'assets/video/segunda_escena.mp4';
       $('story-exit').hidden = false;
-      video.play().catch(() => { video.controls = true; start.hidden = false; });
+      video.play().catch(() => { start.hidden = false; });
     };
     video.onended = () => { $('story-exit').textContent = 'Salir · activar visor'; };
     $('story-exit').onclick = () => this.close();

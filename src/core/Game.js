@@ -19,6 +19,10 @@ export class Game {
     this.scene = null;
     this.player = null;
     this.debug = false;
+    /** Multiplicador de velocidad de simulación (debug: adelantar tiempo). */
+    this.timeScale = 1;
+    /** Vista de mapa completo en debug (tecla Z). */
+    this.debugFullMap = false;
     /** @type {'loading'|'menu'|'playing'} */
     this.state = 'loading';
     this.mouse = { x: 0, y: 0, over: false };
@@ -31,6 +35,7 @@ export class Game {
       fixedDt: FIXED_DT,
       update: (dt) => this.update(dt),
       render: (alpha) => this.render(alpha),
+      getTimeScale: () => this.timeScale || 1,
     });
     this.introVideoEl = document.getElementById('introVideo');
     if (this.introVideoEl) {
@@ -255,6 +260,16 @@ export class Game {
 
     if (this.input.isPressed(DEBUG_TOGGLE_KEY)) {
       this.debug = !this.debug;
+      if (!this.debug) {
+        this.timeScale = 1; // reset al salir de debug
+        this.debugFullMap = false;
+      }
+    }
+    if (this.debug && this.input.isPressed('KeyY')) {
+      this.timeScale = this.timeScale === 1 ? 8 : 1;
+    }
+    if (this.debug && this.input.isPressed('KeyZ')) {
+      this.debugFullMap = !this.debugFullMap;
     }
     if (this.input.isPressed('KeyT')) {
       this.suitHudOpen = !this.suitHudOpen;

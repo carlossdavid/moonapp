@@ -15,7 +15,7 @@
 <body>
   <main id="game-root">
     <canvas id="game" aria-label="Juego lunar integrado"></canvas>
-    <video id="introVideo" muted playsinline style="display:none"></video>
+    <video id="introVideo" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none;z-index:10;"></video>
     <div id="loading" role="status">Cargando sistema integrado…</div>
     <div id="location-label"></div>
     <button id="help-toggle" type="button" aria-controls="help-panel" aria-expanded="false">Controles</button>
@@ -55,7 +55,7 @@
     <section id="story" hidden role="dialog" aria-modal="true" aria-label="Aviso de limpieza">
       <img src="pruebas/limpieza-panel/ImagenesLimpiezaPaneles/aviso.png" alt="Alerta: revisar la limpieza de los paneles solares">
       <button id="story-start">Ver transmisión</button>
-      <video id="story-video" playsinline controls hidden></video>
+      <video id="story-video" autoplay playsinline hidden style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:20;"></video>
       <button id="story-exit" hidden>Salir de la cinemática · activar visor</button>
     </section>
     <section id="death" hidden role="alertdialog" aria-modal="true" aria-label="Misión fallida">

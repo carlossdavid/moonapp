@@ -568,12 +568,15 @@ export class InteriorBaseScene extends Scene {
       const px = this.player ? this.player.x.toFixed(1) : '-';
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
+      const ts = this.game.timeScale || 1;
+      const mapMode = this.game.debugFullMap ? 'ON' : 'OFF';
       const lines = [
         'Interior de la base | WASD: mover | E: salir | M: mapa | T: traje (ox/bat) | R: recargar',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,
         `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
+        `Tiempo: x${ts} (Y: adelantar) | Mapa completo: ${mapMode} (Z)`,
       ];
       let ly = (this.promptText ? 18 : 8) + topOffset;
       for (const line of lines) {

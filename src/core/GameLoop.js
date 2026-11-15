@@ -3,12 +3,13 @@ import { MAX_FIXED_STEPS_PER_FRAME } from '../config.js';
 /** Fixed timestep update loop with render interpolation. */
 export class GameLoop {
   /**
-   * @param {{ update: (dt:number)=>void, render: (alpha:number)=>void, fixedDt: number }} opts
+   * @param {{ update: (dt:number)=>void, render: (alpha:number)=>void, fixedDt: number, getTimeScale?: ()=>number }} opts
    */
-  constructor({ update, render, fixedDt }) {
+  constructor({ update, render, fixedDt, getTimeScale }) {
     this._update = update;
     this._render = render;
     this._fixedDt = fixedDt;
+    this._getTimeScale = typeof getTimeScale === 'function' ? getTimeScale : () => 1;
     this._accumulator = 0;
     this._lastTime = 0;
     this._rafId = 0;
@@ -41,15 +42,17 @@ export class GameLoop {
     if (frameTime < 0) frameTime = 0;
     if (frameTime > 0.25) frameTime = 0.25;
 
-    this._accumulator += frameTime;
+    const timeScale = Math.max(1, this._getTimeScale() || 1);
+    this._accumulator += frameTime * timeScale;
     let steps = 0;
-    while (this._accumulator >= this._fixedDt && steps < MAX_FIXED_STEPS_PER_FRAME) {
+    const maxSteps = MAX_FIXED_STEPS_PER_FRAME * timeScale;
+    while (this._accumulator >= this._fixedDt && steps < maxSteps) {
       this._update(this._fixedDt);
       this._accumulator -= this._fixedDt;
       steps += 1;
     }
     // Prevent accumulator buildup if we hit step cap
-    if (steps === MAX_FIXED_STEPS_PER_FRAME) {
+    if (steps === maxSteps && this._accumulator >= this._fixedDt) {
       this._accumulator = 0;
     }
 

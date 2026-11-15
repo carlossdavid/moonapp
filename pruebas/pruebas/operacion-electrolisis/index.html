@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="OPERACIÓN ELECTRÓLISIS: minijuego educativo de puntería con cañones rojo y azul, átomos de O₂ y H₂, dentro de la estación lunar.">
+  <title>OPERACIÓN ELECTRÓLISIS · minijuego</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+  <!-- Pantalla de carga -->
+  <div id="loading" class="screen loading-screen">
+    <div class="loading-panel panel">
+      <p class="eyebrow">Planta de recursos · inicializando</p>
+      <h2>OPERACIÓN ELECTRÓLISIS</h2>
+      <div class="load-track" role="progressbar" aria-label="Carga de recursos">
+        <span id="loading-fill"></span>
+      </div>
+      <p id="loading-text">Cargando cámara de reacción… 0%</p>
+      <p id="loading-error" class="loading-error" role="alert" hidden></p>
+    </div>
+  </div>
+
+  <!-- Aplicación -->
+  <div class="app" id="app">
+
+    <header class="topbar panel">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">H₂O</span>
+        <div class="brand-text">
+          <p class="eyebrow">Estación lunar · planta de recursos</p>
+          <h1>OPERACIÓN ELECTRÓLISIS</h1>
+        </div>
+      </div>
+
+      <div class="stat-bay" id="time-bay">
+        <span class="stat-label">TIEMPO</span>
+        <strong class="stat-value" id="hud-time">00:25</strong>
+        <div class="mini-track"><span id="time-fill"></span></div>
+      </div>
+
+      <div class="stat-bay stat-hits">
+        <span class="stat-label">ACIERTOS</span>
+        <strong class="stat-value" id="hud-hits">0</strong>
+      </div>
+
+      <div class="stat-bay stat-fails">
+        <span class="stat-label">FALLOS</span>
+        <strong class="stat-value" id="hud-fails">0</strong>
+      </div>
+
+      <div class="stat-bay stat-precision">
+        <span class="stat-label">PRECISIÓN</span>
+        <strong class="stat-value" id="hud-precision">0%</strong>
+        <span class="stat-sub"><b id="hud-shots">0</b> disparos</span>
+      </div>
+
+      <button id="embed-exit" class="embed-exit is-hidden" type="button">← VOLVER</button>
+    </header>
+
+    <main class="playfield">
+      <aside class="gauge gauge-energy panel" aria-label="Energía generada">
+        <div class="gauge-head">
+          <span class="led led-cyan" aria-hidden="true"></span>
+          <h2>ENERGÍA</h2>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="energy-fill"></div>
+          <div class="gauge-ticks" aria-hidden="true"></div>
+        </div>
+        <div class="gauge-foot">
+          <strong id="energy-value">0 Wh</strong>
+          <span>generada</span>
+        </div>
+      </aside>
+
+      <section class="chamber panel" aria-label="Cámara de reacción">
+        <div class="chamber-head">
+          <span class="led led-cyan" aria-hidden="true"></span>
+          <span class="chamber-title">CÁMARA DE REACCIÓN</span>
+          <span class="chamber-code">H₂O → H₂ + O₂</span>
+        </div>
+
+        <div class="arena-wrap" id="arena-wrap" data-color="red">
+          <canvas id="arena" width="880" height="600" tabindex="0"
+            aria-label="Cámara de reacción: mueve el puntero o el dedo para apuntar y toca para disparar."></canvas>
+          <div class="color-banner" id="color-banner" aria-hidden="true"></div>
+          <div class="arena-scanlines" aria-hidden="true"></div>
+          <span class="corner corner-tl" aria-hidden="true"></span>
+          <span class="corner corner-tr" aria-hidden="true"></span>
+          <span class="corner corner-bl" aria-hidden="true"></span>
+          <span class="corner corner-br" aria-hidden="true"></span>
+        </div>
+
+        <p class="chamber-foot">Haz clic, toca o pulsa <b>ESPACIO</b> para disparar. Flechas ← → para apuntar.</p>
+      </section>
+
+      <aside class="gauge gauge-water panel" aria-label="Agua perdida">
+        <div class="gauge-head">
+          <span class="led led-orange" aria-hidden="true"></span>
+          <h2>AGUA</h2>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="water-fill"></div>
+          <div class="gauge-ticks" aria-hidden="true"></div>
+        </div>
+        <div class="gauge-foot">
+          <strong id="water-value">0 %</strong>
+          <span>perdida</span>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="console panel">
+      <div class="cannon-module">
+        <div class="mini-screen">
+          <canvas id="cannon-mini" width="300" height="300" aria-label="Vista del cañón activo"></canvas>
+        </div>
+        <div class="cannon-labels">
+          <h2 id="cannon-name" data-color="red">CAÑÓN ROJO</h2>
+          <p id="cannon-target" data-color="red">OBJETIVO O₂ ROJO</p>
+        </div>
+      </div>
+
+      <div class="fire-module">
+        <button id="fire-button" class="fire-button" type="button" data-color="red">
+          <span class="fire-icon" aria-hidden="true"></span>
+          <span class="fire-text">DISPARAR</span>
+          <span class="fire-key">ESPACIO</span>
+        </button>
+        <p class="fire-hint">Clic o toque dentro de la cámara.</p>
+      </div>
+
+      <div class="legend-module">
+        <div class="legend-row">
+          <span class="led led-red" aria-hidden="true"></span>
+          <span class="crop crop-o2" aria-hidden="true"></span>
+          <p><b>CAÑÓN ROJO → O₂</b><span>Solo átomos rojos</span></p>
+        </div>
+        <div class="legend-row">
+          <span class="led led-blue" aria-hidden="true"></span>
+          <span class="crop crop-h2" aria-hidden="true"></span>
+          <p><b>CAÑÓN AZUL → H₂</b><span>Solo átomos azules</span></p>
+        </div>
+        <button id="mute-button" class="mute" type="button" aria-pressed="false">SONIDO ON</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Pantalla de inicio -->
+  <div id="start-screen" class="screen is-hidden">
+    <div class="screen-panel panel">
+      <p class="eyebrow">Minijuego · 25 segundos</p>
+      <h1 class="screen-title">OPERACIÓN<br><span>ELECTRÓLISIS</span></h1>
+      <p class="lead">La cámara libera átomos de oxígeno (rojos) e hidrógeno (azules). El cañón alterna de color: destruye cada átomo con el cañón correcto antes de que acabe el turno.</p>
+
+      <div class="rules">
+        <article class="rule rule-red">
+          <img src="../../assets/Sprites/electrolisis/03_canon_rojo.png" alt="Cañón rojo" class="rule-cannon">
+          <div class="rule-copy">
+            <h2>CAÑÓN ROJO</h2>
+            <p>Derriba átomos de <b>O₂ rojo</b>.</p>
+          </div>
+          <span class="crop crop-o2 crop-big" aria-hidden="true"></span>
+        </article>
+        <article class="rule rule-blue">
+          <img src="../../assets/Sprites/electrolisis/04_canon_azul.png" alt="Cañón azul" class="rule-cannon">
+          <div class="rule-copy">
+            <h2>CAÑÓN AZUL</h2>
+            <p>Derriba átomos de <b>H₂ azul</b>.</p>
+          </div>
+          <span class="crop crop-h2 crop-big" aria-hidden="true"></span>
+        </article>
+      </div>
+
+      <ul class="quick-list">
+        <li><b>Cambio automático</b> de color cada 4 segundos.</li>
+        <li>Un impacto correcto suma un acierto; el color equivocado o un disparo vacío suma un fallo.</li>
+        <li>La energía y el agua perdida son indicadores educativos simulados.</li>
+      </ul>
+
+      <button id="start-button" class="cta" type="button">INICIAR OPERACIÓN</button>
+      <p class="fineprint">Consejo: apunta a los átomos que coincidan con el color del cañón. El cañón se recolorea solo.</p>
+    </div>
+  </div>
+
+  <!-- Pantalla final -->
+  <div id="end-screen" class="screen is-hidden">
+    <div class="screen-panel panel end-panel">
+      <p class="eyebrow">Informe de turno</p>
+      <h1 class="screen-title screen-title-small">OPERACIÓN COMPLETADA</h1>
+      <p id="end-rank" class="rank">OPERADOR EN PRÁCTICAS</p>
+      <div id="end-stars" class="stars" data-stars="0" aria-label="Valoración con estrellas">☆☆☆</div>
+
+      <div class="end-grid">
+        <div class="end-stat"><span>Aciertos</span><strong id="end-hits">0</strong></div>
+        <div class="end-stat"><span>Fallos</span><strong id="end-fails">0</strong></div>
+        <div class="end-stat"><span>Precisión</span><strong id="end-precision">0 %</strong></div>
+        <div class="end-stat"><span>Energía</span><strong id="end-energy">0 Wh</strong></div>
+        <div class="end-stat"><span>Agua perdida</span><strong id="end-water">0 %</strong></div>
+      </div>
+
+      <p class="end-detail" id="end-detail"></p>
+      <p class="best-record" id="best-record"></p>
+
+      <details class="formula">
+        <summary>Cómo se calculan los indicadores</summary>
+        <p><b>Precisión</b> = aciertos ÷ disparos × 100.</p>
+        <p><b>Energía simulada</b> = aciertos × 12 Wh × (0.5 + 0.5 × precisión/100).</p>
+        <p><b>Agua perdida simulada</b> = 6 + fallos × 2.6 + (100 − precisión) × 0.22, limitada a 100 %.</p>
+        <p>Son valores de juego con fin educativo; no miden un electrolizador real.</p>
+      </details>
+
+      <button id="restart-button" class="cta" type="button">REPETIR OPERACIÓN</button>
+      <button id="return-button" class="cta cta-secondary is-hidden" type="button">VOLVER A LA ESTACIÓN</button>
+    </div>
+  </div>
+
+  <p id="status-line" class="sr-only" role="status" aria-live="polite"></p>
+
+  <script src="js/scoring.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

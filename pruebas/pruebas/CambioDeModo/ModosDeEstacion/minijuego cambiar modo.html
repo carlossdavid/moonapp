@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Energía — Nave Aurora</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <h1 class="sr-only">Panel de Gestión de Energía Espacial — Nave Aurora</h1>
+
+    <section class="console" aria-label="Consola de energía">
+      <img class="console-frame" src="assets/ui_energia/marco_consola.png" alt="" aria-hidden="true">
+      <div class="console-inner">
+        <header class="topbar">
+          <div class="ship">
+            <div class="ship-name">NAVE AURORA</div>
+            <div class="ship-sub">Panel de energía</div>
+          </div>
+          <div class="status" id="statusText" aria-live="polite">Elige un modo para calibrar</div>
+        </header>
+
+        <section class="modes" aria-label="Modos de energía">
+          <button class="mode-btn" data-mode="tortuga" id="btn-tortuga">
+            <span class="mode-icon-wrap">
+              <img src="assets/ui_energia/icono_modo_tortuga.png" alt="">
+              <img class="lock" src="assets/ui_energia/candado_descalibrado.png" alt="Sin calibrar">
+            </span>
+            <span class="mode-label">Modo Tortuga</span>
+            <span class="mode-hint">Secuencia de seguridad</span>
+          </button>
+          <button class="mode-btn" data-mode="explorador" id="btn-explorador">
+            <span class="mode-icon-wrap">
+              <img src="assets/ui_energia/icono_modo_explorador.png" alt="">
+              <img class="lock" src="assets/ui_energia/candado_descalibrado.png" alt="Sin calibrar">
+            </span>
+            <span class="mode-label">Modo Explorador</span>
+            <span class="mode-hint">Sintonizar frecuencia</span>
+          </button>
+          <button class="mode-btn" data-mode="turbo" id="btn-turbo">
+            <span class="mode-icon-wrap">
+              <img src="assets/ui_energia/icono_modo_turbo.png" alt="">
+              <img class="lock" src="assets/ui_energia/candado_descalibrado.png" alt="Sin calibrar">
+            </span>
+            <span class="mode-label">Modo Turbo</span>
+            <span class="mode-hint">Tuberías de luz</span>
+          </button>
+        </section>
+
+        <section class="energy" aria-label="Distribución de energía">
+          <div class="energy-title">Energía: <span id="energyTotal">10</span> bloques</div>
+          <div class="bars">
+            <div class="bar-row">
+              <span class="bar-name escudo">Escudo</span>
+              <div class="blocks" id="bar-escudo"></div>
+              <span class="bar-val" id="val-escudo">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-name motor">Motor</span>
+              <div class="blocks" id="bar-motor"></div>
+              <span class="bar-val" id="val-motor">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-name radar">Radar</span>
+              <div class="blocks" id="bar-radar"></div>
+              <span class="bar-val" id="val-radar">0</span>
+            </div>
+          </div>
+          <div class="energy-actions">
+            <button id="btn-recalibrar" class="btn-secondary" type="button">Descalibrar sistemas</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-head">
+          <h2 id="modalTitle">Calibración</h2>
+          <button id="modalClose" class="btn-close" type="button" aria-label="Cerrar">✕</button>
+        </div>
+        <p class="modal-desc" id="modalDesc"></p>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-foot" id="modalFoot"></div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const modal = document.getElementById('modal');
+      if (modal && modal.classList.contains('open')) {
+        document.getElementById('modalClose')?.click();
+      } else if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'closeEnergyMinigame' }, '*');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -600,12 +600,15 @@ export class DemoScene extends Scene {
       const px = this.player ? this.player.x.toFixed(1) : '-';
       const py = this.player ? this.player.y.toFixed(1) : '-';
       const drawn = this._lastDrawnCount ?? 0;
+      const ts = this.game.timeScale || 1;
+      const mapMode = this.game.debugFullMap ? 'ON' : 'OFF';
       const lines = [
         'WASD/flechas: mover | E: interactuar | M: mapa | T: traje (ox/bat) | R: recargar',
         `FPS: ${fps}`,
         `Player: (${px}, ${py})`,
         `Dibujados: ${drawn}`,
         `Bodies: ${this.physicsWorld ? this.physicsWorld.bodies.length : 0}`,
+        `Tiempo: x${ts} (Y: adelantar) | Mapa completo: ${mapMode} (Z)`,
       ];
       let ly = 8 + topOffset;
       if (this.inspectTimer > 0 && this.inspectMsg) ly = 18 + topOffset;

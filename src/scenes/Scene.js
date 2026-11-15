@@ -54,7 +54,22 @@ export class Scene {
    * @param {number} alpha
    */
   render(renderer, alpha) {
-    renderer.begin(this.camera);
+    const fullMap = !!(this.game.debug && this.game.debugFullMap && this.camera);
+    const worldW = this.tileMap ? this.tileMap.worldWidth : (this.camera ? this.camera.worldWidth : renderer.logicalWidth);
+    const worldH = this.tileMap ? this.tileMap.worldHeight : (this.camera ? this.camera.worldHeight : renderer.logicalHeight);
+    renderer.begin(fullMap ? null : this.camera);
+    if (fullMap) {
+      const ctx = renderer.context;
+      const s = Math.min(renderer.logicalWidth / (worldW || 1), renderer.logicalHeight / (worldH || 1));
+      const ox = (renderer.logicalWidth - worldW * s) / 2;
+      const oy = (renderer.logicalHeight - worldH * s) / 2;
+      ctx.translate(ox, oy);
+      ctx.scale(s, s);
+    }
+    const tileCamera = fullMap
+      ? { viewRect: { x: 0, y: 0, w: worldW, h: worldH } }
+      : this.camera;
+
     if (this.backgroundImage) {
       const w = this.tileMap ? this.tileMap.worldWidth : (this.camera ? this.camera.worldWidth : 0);
       const h = this.tileMap ? this.tileMap.worldHeight : (this.camera ? this.camera.worldHeight : 0);
@@ -75,9 +90,9 @@ export class Scene {
         dy = (h - dh) / 2;
       }
       renderer.drawImage(this.backgroundImage, 0, 0, iw, ih, dx, dy, dw, dh, false);
-    } else if (this.tileMap && this.camera) {
+    } else if (this.tileMap && tileCamera) {
       // Ground layer(s) below entities (assume layer 0 is ground)
-      this.tileMap.render(renderer, this.camera, [0]);
+      this.tileMap.render(renderer, tileCamera, [0]);
     }
     this.renderGroundEffects(renderer, alpha);
 
@@ -85,7 +100,7 @@ export class Scene {
     let drawn = 0;
     for (const e of this.entities) {
       if (!e.active) continue;
-      if (this.camera) {
+      if (!fullMap && this.camera) {
         const vr = this.camera.viewRect;
         if (e.x < vr.x - 64 || e.x > vr.right + 64 || e.y < vr.y - 64 || e.y > vr.bottom + 64) {
           continue;

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>Entropía Cero · Sistema integrado</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="pruebas/clima-espacial/style.css">
+  <link rel="stylesheet" href="pruebas/clima-espacial/consola.css">
+  <link rel="stylesheet" href="pruebas/limpieza-panel/style.css">
+  <link rel="stylesheet" href="pruebas/MonitorVisor/visor.css">
+  <link rel="stylesheet" href="final/style.css">
+</head>
+<body>
+  <main id="game-root">
+    <canvas id="game" aria-label="Juego lunar integrado"></canvas>
+    <video id="introVideo" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none;z-index:10;"></video>
+    <div id="loading" role="status">Cargando sistema integrado…</div>
+    <div id="location-label"></div>
+    <button id="help-toggle" type="button" aria-controls="help-panel" aria-expanded="false">Controles</button>
+    <aside id="help-panel" hidden>
+      <b>Sistema integrado</b>
+      <p>WASD / flechas: mover · E: interactuar · M: minimapa · Shift: visor.</p>
+      <p>Interior: C cargador de batería · O recarga de oxígeno · V rellenar agua.</p>
+      <p>1/2/3: esfuerzo normal/alto/pico · T: mostrar/ocultar HUD.</p>
+      <p>Herramientas de prueba: X simula sombra solar · N reinicia recursos.</p>
+      <p>Paneles solares a la izquierda. Limpia dos distintos para habilitar las puertas.</p>
+      <p>Producción de alimentos no está integrada en esta versión.</p>
+    </aside>
+    <section id="activity" hidden role="dialog" aria-modal="true" aria-labelledby="activity-heading">
+      <div class="activity-shell">
+        <header><h1 id="activity-heading"></h1><button id="activity-close" type="button">Volver · Esc</button></header>
+        <div id="activity-intro" hidden></div>
+        <iframe id="activity-frame" title="Actividad lunar" hidden></iframe>
+      </div>
+    </section>
+    <div id="recarga-tools" hidden>
+      <span id="recarga-status"></span>
+      <button id="recarga-o2">Conectar O₂</button>
+      <button id="recarga-co2">Conectar CO₂</button>
+      <button id="recarga-exit">Volver a la estación</button>
+    </div>
+    <div id="notice" role="status" hidden></div>
+  </main>
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('loading').textContent =
+        'Abre esta versión con HTTP: desde moonapp ejecuta python -m http.server 8765 y visita http://localhost:8765/final/';
+    }
+  </script>
+  <script type="module" src="final/main.js"></script>
+</body>
+</html>

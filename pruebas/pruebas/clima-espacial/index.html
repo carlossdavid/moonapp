@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../../">
+  <title>Prueba | Juego lunar · Consola DONKI</title>
+  <link rel="stylesheet" href="pruebas/clima-espacial/style.css">
+  <link rel="stylesheet" href="pruebas/clima-espacial/consola.css">
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game" aria-label="Juego lunar"></canvas>
+    <div id="loading">Cargando juego…</div>
+    <section id="monitor-content" hidden role="dialog" aria-modal="true" aria-label="Centro de control DONKI">
+      <div class="console-frame">
+        <img class="console-art" src="pruebas/clima-espacial/sprites/Centro de control lunar.png" alt="Centro de control lunar" draggable="false">
+        <button id="close-monitor" aria-label="Cerrar consola" title="Cerrar · Escape"></button>
+        <div class="console-rate rate-flr" id="chance-flr">—</div>
+        <div class="console-rate rate-cme" id="chance-cme">—</div>
+        <div class="console-rate rate-gst" id="chance-gst">—</div>
+        <div class="console-rate rate-chain" id="chance-flr-cme">—</div>
+        <div class="console-rate rate-sep" id="chance-cme-sep">—</div>
+        <canvas id="weather-chart" width="400" height="246" aria-label="Curvas simuladas: actividad solar, partículas y campo terrestre"></canvas>
+        <div class="console-legend">
+          <span>Solar <b id="solar-value">—</b>/100</span>
+          <span>Partículas <b id="particle-value">—</b>/100</span>
+          <span>Campo terrestre <b id="earth-value">—</b>/100</span>
+        </div>
+        <div class="console-clock">Día <b id="day">1</b> · <b id="clock">10:00</b><br><span id="state">Monitoreando</span></div>
+      </div>
+      <div class="console-footer">
+        <span>DONKI enero 2026: frecuencias históricas, no probabilidades de impacto lunar. Curvas: índices simulados 0–100, no pfu, Kp ni mSv.</span>
+        <button id="test-alert" type="button">Simular alerta · PRUEBA</button>
+      </div>
+    </section>
+    <!-- Compatibilidad con el monitor original: una sola instancia y reloj.
+         Sus herramientas y diagnósticos se conservan, no flotan sobre el juego. -->
+    <div hidden>
+      <button id="open-monitor" aria-expanded="false"></button><span id="tab-alert" hidden></span>
+      <p id="reference-status"></p><p id="model-note"></p>
+      <select id="crew-mode"><option value="refugio">Refugio</option><option value="eva">EVA</option></select>
+      <p id="safety-status"></p><button id="return-shelter" hidden></button>
+      <div id="risk-report"><strong id="risk-title"></strong><p id="risk-action"></p><p id="station-reading"></p><ul id="risk-evidence"></ul></div>
+      <button id="pause"></button><button id="advance-day"></button>
+      <select id="test-scenario"><option value="goes">Partículas</option><option value="cmeAway">CME</option><option value="gst">GST</option></select>
+      <p id="scenario-preview"></p><span id="alert-count">0</span><div id="alerts"><p class="empty">Sin alertas</p></div>
+    </div>
+  </div>
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('loading').textContent =
+        'Esta prueba necesita HTTP. Desde moonapp ejecuta python -m http.server 8765 y abre http://localhost:8765/pruebas/clima-espacial/';
+    }
+  </script>
+  <script type="module" src="pruebas/clima-espacial/juego.js"></script>
+  <script type="module" src="pruebas/clima-espacial/app.js"></script>
+</body>
+</html>
