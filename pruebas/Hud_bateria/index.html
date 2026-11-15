@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Game/AssetLoader resuelven ./assets desde la raíz del repositorio. -->
   <base href="../../">
-  <title>Prueba · HUD batería del traje</title>
+  <title>Prueba · Barras del traje (O2, comida, agua, energía)</title>
   <style>
     @font-face { font-family: 'Press Start 2P'; src: url('./assets/fonts/PressStart2P-Regular.ttf'); }
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -13,10 +13,25 @@
     canvas { display: block; image-rendering: pixelated; }
     #loading { position: absolute; inset: 0; display: grid; place-items: center; background: #000; }
     #loading.hidden { display: none; }
+    .trial-label {
+      position: absolute; top: 10px; left: 10px;
+      padding: 6px 8px; border: 1px solid #4d7195; background: rgba(10, 22, 38, 0.85);
+      color: #bfe2ff; font: 8px/1.6 'Press Start 2P', monospace; pointer-events: none;
+    }
+    .hint {
+      position: absolute; right: 10px; bottom: 8px; max-width: 60vw;
+      color: #8fb6cf; font: 7px/1.6 'Press Start 2P', monospace;
+      text-align: right; pointer-events: none;
+    }
   </style>
 </head>
 <body>
-  <div id="game-root"><canvas id="game" aria-label="Juego lunar con HUD de batería"></canvas><div id="loading">Cargando juego…</div></div>
+  <div id="game-root">
+    <canvas id="game" aria-label="Juego lunar con barras de O2, comida, agua y energía"></canvas>
+    <div class="trial-label">PRUEBA AISLADA · BARRAS DEL TRAJE</div>
+    <div class="hint">T consumir O2 · R recargar · 1/2/3 consumo · C cargador · X sombra · N reiniciar</div>
+    <div id="loading">Cargando juego…</div>
+  </div>
   <script type="module" src="./pruebas/Hud_bateria/main.js"></script>
 </body>
 </html>
