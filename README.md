@@ -72,10 +72,13 @@ src/
 
 ## Probar alertas DONKI localmente
 
-Desde esta carpeta inicia `python -m http.server 8765` y abre
-http://localhost:8765/. No abras `index.html` mediante `file://`: los módulos
-JavaScript y los JSON necesitan un servidor HTTP. Abre **Clima espacial · NASA
-DONKI** y pulsa **Probar alerta archivada** para ver el aviso de prueba.
+Desde esta carpeta inicia `python -m http.server 8765`. No abras HTML mediante
+`file://`: los módulos JavaScript y los JSON necesitan un servidor HTTP.
+El `index.html` principal muestra **solo el juego base**, sin paneles de prueba.
+Para probar el simulador y visor, abre
+http://localhost:8765/pruebas/MonitorVisor/ . El panel experimental
+`src/events/liveEventPanel.js` conserva el código de consulta DONKI, pero ya
+no se monta en el index principal.
 
 `src/events/donkiLive.js` consulta la API pública de CCMC para FLR, CME, SEP y
 GST sin clave. `src/events/liveEventPanel.js` actualiza el panel cada cinco

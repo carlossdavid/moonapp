@@ -200,6 +200,9 @@ function refreshMonitor(now) {
   $('clock').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
   lastGraph = now;
   if (!content.hidden) drawChart();
+  document.dispatchEvent(new CustomEvent('lunar:simulated-weather-reading', {
+    detail: { ...values, day: simulator.day, remaining: simulator.secondsRemaining }
+  }));
 }
 
 function animate(now) {
