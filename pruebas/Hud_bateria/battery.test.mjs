@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { SistemaEnergia } from '../../src/systems/EnergySystem.js';
 import { batteryLevel, BATTERY_HUD_BOUNDS } from './BatteryHUD.js';
 import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
+import { foodPercent, SEGUNDOS_REALES_HASTA_60 } from './FoodSystem.js';
 
 test('300 segundos reales son 24 horas de juego', () => {
   const energy = new SistemaEnergia();
@@ -65,4 +66,27 @@ test('perfil diurno y sombra afectan a la generación de la base', () => {
   shadow = false;
   advanceBatterySimulation(energy, 150, { exterior: false, interior: true, charging: false });
   assert.equal(energy.getSnapshot().tiempo.factorSolar, 0);
+});
+
+test('hambre llega a 60 % solo tras 170 segundos reales y no sale de 0..100', () => {
+  const hoursTo60 = SEGUNDOS_REALES_HASTA_60 * 24 / 300;
+  assert.equal(SEGUNDOS_REALES_HASTA_60, 170);
+  assert.equal(foodPercent(0), 100);
+  assert.ok(Math.abs(foodPercent(hoursTo60 / 2) - 80) < 1e-9);
+  assert.ok(foodPercent(6) > 60);
+  assert.ok(Math.abs(foodPercent(hoursTo60) - 60) < 1e-9);
+  assert.equal(foodPercent(hoursTo60 * 2.5), 0);
+  assert.equal(foodPercent(-1), 100);
+});
+
+test('hambre usa horas de juego en interior y exterior, sin segundo reloj', () => {
+  const energy = createBatterySimulation();
+  const interior = { exterior: false, interior: true, powerW: 144.375, charging: false };
+  // 85 segundos reales = mitad del intervalo hasta el 60 %.
+  advanceBatterySimulation(energy, 85, interior);
+  assert.ok(Math.abs(foodPercent(energy.getSnapshot().tiempo.transcurridoHoras) - 80) < 1e-9);
+  advanceBatterySimulation(energy, 85, { ...interior, exterior: true, interior: false });
+  assert.ok(Math.abs(foodPercent(energy.getSnapshot().tiempo.transcurridoHoras) - 60) < 1e-9);
+  // Reiniciar la partida reinicia también el hambre calculada desde su tiempo.
+  assert.equal(foodPercent(createBatterySimulation().getSnapshot().tiempo.transcurridoHoras), 100);
 });

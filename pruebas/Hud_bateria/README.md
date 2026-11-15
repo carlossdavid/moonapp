@@ -12,8 +12,10 @@ el sistema, sin reemplazar sus fórmulas ni crear un segundo contador de baterí
 
 El panel reproduce la posición y escala de `REFERENCIA DE POSICIÓN Y BARRA.jpeg`:
 80 × 35 píxeles lógicos a 10 px de la izquierda y 6 px del borde inferior.
-Comida, agua y oxígeno aparecen atenuados y vacíos, pues este prototipo no
-dispone de valores reales para esos recursos; solo la batería cambia de nivel.
+Comida y batería cambian de nivel; agua y oxígeno permanecen atenuados porque
+este prototipo no dispone de valores reales para esos recursos.
+Los 11 PNG `assets/Sprites/Pantalla/niveles/comida/comida_nivel_XX_t.png`
+se cargan desde esta prueba (no están en el manifiesto global).
 Todo se recorta dentro del cuadro. Se eliminó el panel lateral de pruebas; el
 marco del HUD se vuelve rojo cuando corresponde regresar o la batería baja
 al 25 %.
@@ -21,6 +23,12 @@ al 25 %.
 - 300 segundos reales equivalen a 24 horas del juego; `update(dt)` y
   `updateSuit(dt, W)` realizan la conversión dentro del sistema, sin multiplicar
   el tiempo otra vez en este prototipo.
+- El hambre parte de 100 % y baja gradualmente hasta 60 % en 170 segundos
+  reales (2 min 50 s, equivalentes a 13,6 horas de juego). No se altera la
+  escala global de 300 s por día. Se calcula desde el tiempo transcurrido del
+  `SistemaEnergia`, tanto dentro como fuera de la base. Como todavía no existe
+  una acción de comer, sigue bajando al mismo ritmo hasta 0 %; `N` reinicia
+  ambos indicadores.
 - En el exterior el traje consume 144,375 W (normal), 180 W (alto) o 233 W
   (pico). En el interior no consume; con el cargador conectado se llama a
   `rechargeSuit(dt)` (0,5 kW y 90 % de eficiencia).

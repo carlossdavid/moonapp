@@ -3,6 +3,7 @@ import { InteriorBaseScene } from '../../src/scenes/InteriorBaseScene.js';
 import { DemoScene } from '../../src/scenes/DemoScene.js';
 import { drawBatteryHUD } from './BatteryHUD.js';
 import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
+import { foodPercent } from './FoodSystem.js';
 
 class BatteryTestGame extends Game {
   constructor(canvas) {
@@ -45,7 +46,8 @@ class BatteryTestGame extends Game {
     super.render(alpha);
     if (this.state !== 'playing') return;
     this.renderer.begin(null);
-    drawBatteryHUD(this.renderer, this.assets, this.energy.getSnapshot().traje);
+    const snapshot = this.energy.getSnapshot();
+    drawBatteryHUD(this.renderer, this.assets, snapshot.traje, foodPercent(snapshot.tiempo.transcurridoHoras));
     this.renderer.end();
   }
 }
@@ -58,6 +60,12 @@ async function start() {
       onExit: async () => game.changeScene(new DemoScene(game, { spawnX: 292, spawnY: 210 })),
     }));
     await game.init();
+    // Estos sprites existen en assets, pero no figuran en el manifiesto global.
+    // Cargarlos solo para esta prueba mantiene intacto el juego principal.
+    await Promise.all(Array.from({ length: 11 }, (_, level) => {
+      const key = `comida_nivel_${String(level).padStart(2, '0')}_t`;
+      return game.assets.loadImage(key, `./assets/Sprites/Pantalla/niveles/comida/${key}.png`);
+    }));
     game.start();
     // Prototipo: entrar directamente al juego, sin menú ni vídeo introductorio.
     game.state = 'playing';
