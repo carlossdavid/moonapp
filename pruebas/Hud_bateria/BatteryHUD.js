@@ -9,17 +9,17 @@ export function batteryLevel(percent) {
   return Math.min(10, Math.max(0, Math.ceil(percent / 10)));
 }
 
-/** Panel compacto de cuatro filas. Solo oxígeno queda sin valor simulado. */
-export function drawBatteryHUD(renderer, assets, suit, food, water) {
+/** Panel compacto de cuatro filas, con valores de los sistemas de cada recurso. */
+export function drawBatteryHUD(renderer, assets, suit, food, water, oxygen) {
   const ctx = renderer.context;
   const { x, y, width: w, height: h } = BATTERY_HUD_BOUNDS;
   const level = batteryLevel(suit.porcentaje);
-  const danger = suit.alerta?.regresaAhora || suit.porcentaje <= 25 || water.alert;
+  const danger = suit.alerta?.regresaAhora || suit.porcentaje <= 25 || water.alert || oxygen.alerta;
   const rows = [
     { label: 'COMIDA', key: `comida_nivel_${String(batteryLevel(food)).padStart(2, '0')}_t`, active: true },
     { label: 'AGUA', key: `agua_nivel_${String(batteryLevel(water.percent)).padStart(2, '0')}_t`, active: true, warning: Boolean(water.alert) },
     { label: 'BATERIA', key: `bateria_nivel_${String(level).padStart(2, '0')}_t`, active: true },
-    { label: 'OXIGENO', key: 'oxigeno_nivel_00_t', active: false },
+    { label: 'OXIGENO', key: `oxigeno_nivel_${String(batteryLevel(oxygen.porcentaje)).padStart(2, '0')}_t`, active: true, warning: Boolean(oxygen.alerta) },
   ];
 
   ctx.save();

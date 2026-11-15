@@ -12,8 +12,8 @@ el sistema, sin reemplazar sus fórmulas ni crear un segundo contador de baterí
 
 El panel reproduce la posición y escala de `REFERENCIA DE POSICIÓN Y BARRA.jpeg`:
 80 × 35 píxeles lógicos a 10 px de la izquierda y 6 px del borde inferior.
-Comida, agua y batería cambian de nivel; oxígeno permanece atenuado porque
-este prototipo no dispone de un valor real para ese recurso.
+Las cuatro barras cambian de nivel; la de oxígeno lee directamente
+`SistemaOxigeno` de `../../oxygen_system.js`, no el JSON inventado de demo.
 Los 11 PNG por recurso de `assets/Sprites/Pantalla/niveles/{comida,agua}/`
 se cargan desde esta prueba (no están en el manifiesto global).
 Todo se recorta dentro del cuadro. Se eliminó el panel lateral de pruebas; el
@@ -38,6 +38,14 @@ al 25 %.
   discretiza la imagen entre 00 y 10. Al pasar el ratón sobre el juego se puede
   consultar el volumen exacto y el aviso. Parámetros según
   `consumo_agua_traje_entrenador_lunar.md`.
+- Oxígeno: el traje parte de 1,2 kg y gasta 0,15 kg por hora de juego solo
+  durante EVA (100 segundos reales para agotar una mochila completa). En la
+  base no gasta del traje; `O` conecta/desconecta la recarga desde el tanque
+  de la estación (0,2 kg/h, 95 % de eficiencia), sin recargar si está lleno.
+  La electrólisis solo funciona cuando la estación de oxígeno de
+  `EnergySystem` está activa y suministrada. Se respetan los avisos de reserva
+  y margen de regreso de `oxygen_system.js`. El cuadro conserva su tamaño y
+  marca en rojo la fila de oxígeno cuando hay un aviso.
 - En el exterior el traje consume 144,375 W (normal), 180 W (alto) o 233 W
   (pico). En el interior no consume; con el cargador conectado se llama a
   `rechargeSuit(dt)` (0,5 kW y 90 % de eficiencia).
@@ -50,8 +58,9 @@ al 25 %.
   están desactivados solo en esta prueba para evitar doble consumo/recarga.
 
 Controles de la prueba (sin barras laterales): `1` actividad normal, `2` alta,
-`3` pico; `C` conectar/desconectar cargador (recarga solo dentro); `V` rellenar
-agua en la base; `X` activar o desactivar sombra solar; `N` reiniciar los
+`3` pico; `C` conectar/desconectar cargador de batería; `O` conectar/desconectar
+recarga de oxígeno (ambas solo funcionan dentro); `V` rellenar agua en la base;
+`X` activar o desactivar sombra solar; `N` reiniciar los
 recursos. Movimiento: WASD/flechas, `E` interactuar.
 
 Nota: la recarga del traje utiliza la API del módulo, que prioriza el excedente

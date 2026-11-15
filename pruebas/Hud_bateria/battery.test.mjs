@@ -6,6 +6,7 @@ import { createBatterySimulation, advanceBatterySimulation } from './BatterySimu
 import { foodPercent, SEGUNDOS_REALES_HASTA_60 } from './FoodSystem.js';
 import { SuitWater, WATER_CAPACITY_ML, WATER_CONSUMPTION_ML_PER_HOUR } from './WaterSystem.js';
 import { existsSync } from 'node:fs';
+import { SistemaOxigeno } from '../../oxygen_system.js';
 
 test('300 segundos reales son 24 horas de juego', () => {
   const energy = new SistemaEnergia();
@@ -137,10 +138,12 @@ test('agua sigue el reloj acelerado sin consumirse dos veces ni reiniciar en la 
   assert.ok(Math.abs(water.snapshot().ml - 780) < 1e-9);
 });
 
-test('las 11 imágenes de agua se usan en el mismo HUD compacto', () => {
-  for (let level = 0; level <= 10; level++) {
-    const name = `agua_nivel_${String(level).padStart(2, '0')}_t.png`;
-    assert.ok(existsSync(new URL(`../../assets/Sprites/Pantalla/niveles/agua/${name}`, import.meta.url)));
+test('las 11 imágenes de agua y oxígeno se usan en el mismo HUD compacto', () => {
+  for (const resource of ['agua', 'oxigeno']) {
+    for (let level = 0; level <= 10; level++) {
+      const name = `${resource}_nivel_${String(level).padStart(2, '0')}_t.png`;
+      assert.ok(existsSync(new URL(`../../assets/Sprites/Pantalla/niveles/${resource}/${name}`, import.meta.url)));
+    }
   }
   const keys = [];
   const context = new Proxy({}, { get: (_, key) => key === 'save' || key === 'restore' || key === 'beginPath'
@@ -148,6 +151,33 @@ test('las 11 imágenes de agua se usan en el mismo HUD compacto', () => {
     || key === 'drawImage' || key === 'fillText' ? () => {} : undefined, set: () => true });
   const renderer = { context };
   const assets = { get(key) { keys.push(key); return {}; } };
-  drawBatteryHUD(renderer, assets, { porcentaje: 100, alerta: null }, 100, new SuitWater(610).snapshot());
+  const oxygen = new SistemaOxigeno({ oxigenoTrajeInicialKg: 0.72 }).getSnapshot().traje;
+  drawBatteryHUD(renderer, assets, { porcentaje: 100, alerta: null }, 100, new SuitWater(610).snapshot(), oxygen);
   assert.ok(keys.includes('agua_nivel_07_t')); // 610/950 ≈ 64,2 %
+  assert.ok(keys.includes('oxigeno_nivel_06_t')); // 0,72/1,2 = 60 %
+});
+
+test('oxígeno del traje consume 0,15 kg por hora de juego solo en EVA', () => {
+  const oxygen = new SistemaOxigeno();
+  oxygen.update(12.5);
+  assert.equal(oxygen.getSnapshot().traje.oxigenoKg, 1.2);
+  oxygen.updateSuit(12.5);
+  assert.ok(Math.abs(oxygen.getSnapshot().traje.oxigenoKg - 1.05) < 1e-9);
+  assert.ok(Math.abs(oxygen.getSnapshot().tiempo.transcurridoHoras - 1) < 1e-9);
+  oxygen.updateSuit(87.5);
+  assert.equal(oxygen.getSnapshot().traje.oxigenoKg, 0);
+});
+
+test('oxígeno de base: electrólisis activa, alerta de regreso y recarga del traje', () => {
+  const oxygen = new SistemaOxigeno({ oxigenoBaseInicialKg: 10, oxigenoTrajeInicialKg: 0.34 });
+  assert.equal(oxygen.getSnapshot().traje.alerta.nivel, 'regresa'); // 0,15×1,5+0,12 = 0,345 kg
+  oxygen.activarElectrolisis(false);
+  oxygen.update(12.5);
+  assert.ok(Math.abs(oxygen.getSnapshot().base.oxigenoKg - 9.7) < 1e-9);
+  oxygen.activarElectrolisis(true);
+  oxygen.update(12.5);
+  assert.ok(Math.abs(oxygen.getSnapshot().base.oxigenoKg - 10.2) < 1e-9);
+  oxygen.rechargeSuit(12.5);
+  assert.ok(Math.abs(oxygen.getSnapshot().traje.oxigenoKg - 0.53) < 1e-9); // 0,2×0,95
+  assert.ok(Math.abs(oxygen.getSnapshot().base.oxigenoKg - 10) < 1e-9);
 });

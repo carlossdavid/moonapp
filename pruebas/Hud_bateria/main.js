@@ -5,6 +5,7 @@ import { drawBatteryHUD } from './BatteryHUD.js';
 import { createBatterySimulation, advanceBatterySimulation } from './BatterySimulation.js';
 import { foodPercent } from './FoodSystem.js';
 import { SuitWater } from './WaterSystem.js';
+import { SistemaOxigeno } from '../../oxygen_system.js';
 
 class BatteryTestGame extends Game {
   constructor(canvas) {
@@ -14,6 +15,8 @@ class BatteryTestGame extends Game {
     this.powerW = 144.375;
     this.energy = createBatterySimulation(() => this.shadowed);
     this.water = new SuitWater();
+    this.oxygen = new SistemaOxigeno();
+    this.oxygenCharging = false;
   }
 
   update(dt) {
@@ -23,12 +26,15 @@ class BatteryTestGame extends Game {
       if (this.input.isPressed('Digit2')) this.powerW = 180;
       if (this.input.isPressed('Digit3')) this.powerW = 233;
       if (this.input.isPressed('KeyC')) this.charging = !this.charging;
+      if (this.input.isPressed('KeyO')) this.oxygenCharging = !this.oxygenCharging;
       if (this.input.isPressed('KeyX')) this.shadowed = !this.shadowed;
       if (this.input.isPressed('KeyV')) this.water.refill(this.scene?.isInterior === true);
       if (this.input.isPressed('KeyN')) {
         this.energy = createBatterySimulation(() => this.shadowed);
         this.water = new SuitWater();
+        this.oxygen = new SistemaOxigeno();
         this.charging = false;
+        this.oxygenCharging = false;
       }
     }
     // Desactivar exclusivamente el drenaje ficticio de Game.suitStatus (T/R).
@@ -46,6 +52,16 @@ class BatteryTestGame extends Game {
       charging: this.charging,
     });
     this.water.update(snapshot.tiempo.transcurridoHoras - previousHours, this.scene?.isExterior === true);
+    const oxygenStation = snapshot.estaciones.find((station) => station.id === 'oxigeno');
+    this.oxygen.activarElectrolisis(snapshot.base.modo === 'normal'
+      && oxygenStation?.activa === true && !oxygenStation.pausada);
+    this.oxygen.update(dt);
+    if (this.scene?.isExterior === true) {
+      this.oxygen.updateSuit(dt);
+    } else if (this.scene?.isInterior === true && this.oxygenCharging
+      && this.oxygen.oxigenoTrajeKg < this.oxygen.config.capacidadTrajeKg - 1e-9) {
+      this.oxygen.rechargeSuit(dt);
+    }
   }
 
   render(alpha) {
@@ -54,8 +70,10 @@ class BatteryTestGame extends Game {
     this.renderer.begin(null);
     const snapshot = this.energy.getSnapshot();
     const water = this.water.snapshot();
-    drawBatteryHUD(this.renderer, this.assets, snapshot.traje, foodPercent(snapshot.tiempo.transcurridoHoras), water);
-    this.canvas.title = `Agua: ${water.ml.toFixed(1)} / 950 mL (${water.percent.toFixed(1)} %). ${water.alert ?? 'Sin avisos'}`;
+    const oxygen = this.oxygen.getSnapshot().traje;
+    drawBatteryHUD(this.renderer, this.assets, snapshot.traje, foodPercent(snapshot.tiempo.transcurridoHoras), water, oxygen);
+    this.canvas.title = `Agua: ${water.ml.toFixed(1)} / 950 mL (${water.percent.toFixed(1)} %). ${water.alert ?? 'Sin avisos'}\n`
+      + `Oxígeno: ${oxygen.oxigenoKg.toFixed(3)} / ${oxygen.capacidadKg} kg (${oxygen.porcentajeTexto}). ${oxygen.alerta?.texto ?? 'Sin avisos'}`;
     this.renderer.end();
   }
 }
