@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CONTROL DE ENERGÍA · OPERACIÓN ELECTRÓLISIS</title>
+  <!-- Copia de moonapp/index.html. La base permite reutilizar src/ y assets/
+       originales sin mover ni duplicar el juego. -->
+  <base href="../../" />
+  <link rel="icon" href="data:," />
+  <!-- Estilos originales del juego (copiados de index.html). -->
+  <style>
+    @font-face {
+      font-family: 'Press Start 2P';
+      src: url('./assets/fonts/PressStart2P-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+    }
+    #game-root {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+      background: #000;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      font-size: 16px;
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+    #loading.hidden { display: none; }
+  </style>
+  <!-- Capa de la actividad (explicación + minijuego embebido). -->
+  <link rel="stylesheet" href="pruebas/integracion-electrolisis/style.css" />
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game" aria-label="Estación lunar: interior de la base"></canvas>
+    <video id="introVideo" autoplay muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none;z-index:10;"></video>
+    <div id="loading">Cargando...</div>
+    <div class="trial-label">COPIA DE PRUEBA · CONTROL DE ENERGÍA</div>
+
+    <!-- Actividad: explicación antes de jugar y minijuego embebido. -->
+    <section id="activity-overlay" class="modal-layer" role="dialog" aria-modal="true" aria-labelledby="activity-title" hidden>
+      <div class="activity-card">
+        <header class="activity-header">
+          <span class="led" aria-hidden="true"></span>
+          <div class="activity-heading">
+            <p class="eyebrow">Estación lunar / CONTROL DE ENERGÍA</p>
+            <h1 id="activity-title">OPERACIÓN ELECTRÓLISIS</h1>
+          </div>
+          <button id="close-activity" class="icon-button" type="button" aria-label="Cerrar la actividad">×</button>
+        </header>
+
+        <div class="activity-intro" id="activity-intro">
+          <p class="lead">
+            La electrolisis usa corriente eléctrica para separar el agua en
+            <b class="h2">hidrógeno (H₂)</b> y <b class="o2">oxígeno (O₂)</b>.
+            En la cámara de reacción los átomos flotan y el cañón cambia de color cada pocos segundos.
+          </p>
+
+          <div class="color-rules">
+            <article class="color-rule color-rule-red">
+              <span class="swatch swatch-red" aria-hidden="true"></span>
+              <div>
+                <h2>CAÑÓN ROJO → O₂</h2>
+                <p>Derriba solo los átomos de oxígeno, que son <b>rojos</b>.</p>
+              </div>
+            </article>
+            <article class="color-rule color-rule-blue">
+              <span class="swatch swatch-blue" aria-hidden="true"></span>
+              <div>
+                <h2>CAÑÓN AZUL → H₂</h2>
+                <p>Derriba solo los átomos de hidrógeno, que son <b>azules</b>.</p>
+              </div>
+            </article>
+          </div>
+
+          <ul class="quick-list">
+            <li>Un impacto correcto suma un acierto y genera energía simulada.</li>
+            <li>El color equivocado o un disparo vacío cuenta como fallo y aumenta el agua perdida simulada.</li>
+            <li>La ronda dura 25 segundos y puedes usar ratón, dedo o <kbd>ESPACIO</kbd>.</li>
+          </ul>
+
+          <p class="disclaimer">Energía y agua son indicadores educativos del juego; no representan un electrolizador real.</p>
+
+          <div class="activity-actions">
+            <button id="start-test" class="primary" type="button">INICIAR PRUEBA</button>
+            <button id="cancel-activity" class="secondary" type="button">CANCELAR</button>
+          </div>
+        </div>
+
+        <iframe id="electrolisis-frame" title="OPERACIÓN ELECTRÓLISIS" src="about:blank" allow="autoplay" hidden></iframe>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <!-- Arranque original adaptado dentro de pruebas/ (no se modifica src/main.js). -->
+  <script type="module" src="pruebas/integracion-electrolisis/app.js"></script>
+  <!-- Panel de clima espacial del juego original. -->
+  <script type="module" src="./src/events/liveEventPanel.js"></script>
+</body>
+</html>
