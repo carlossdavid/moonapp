@@ -1,0 +1,272 @@
+{
+  "_nota": "Valores tomados de tus tablas. null = sin dato confirmado (definir con tu equipo). Luz en % por color. Ambiente: [min,max]. Dias: [min,max] hasta cosecha. agua_ml_dia no estaba en tus tablas: queda null.",
+  "cultivos": {
+    "lechuga": {
+      "luz": {
+        "rojo": 75,
+        "azul": 18.75,
+        "verde": 6.25,
+        "blanco": 0
+      },
+      "temperatura_C": [
+        22.2,
+        23.3
+      ],
+      "humedad_pct": [
+        38.3,
+        43.9
+      ],
+      "co2_ppm": [
+        2559,
+        2799
+      ],
+      "dias_cosecha": [
+        33,
+        33
+      ],
+      "cosecha": "hojas",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/lechuga/nativo",
+        "icono": "cultivos/iconos/nativo/icono_lechuga.png",
+        "frames": [
+          "lechuga_etapa0_semilla_{a|b}.png",
+          "lechuga_etapa1_brote_{a|b}.png",
+          "lechuga_etapa2_joven_{a|b}.png",
+          "lechuga_etapa3_creciendo_{a|b}.png",
+          "lechuga_etapa4_madura_{a|b}.png",
+          "lechuga_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/lechuga/nativo",
+        "hidroponico_frames": [
+          "lechuga_hidro_etapa0_semilla_{a|b}.png",
+          "lechuga_hidro_etapa1_brote_{a|b}.png",
+          "lechuga_hidro_etapa2_joven_{a|b}.png",
+          "lechuga_hidro_etapa3_creciendo_{a|b}.png",
+          "lechuga_hidro_etapa4_madura_{a|b}.png",
+          "lechuga_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    },
+    "mizuna": {
+      "luz": {
+        "rojo": 81.8,
+        "azul": 9.1,
+        "verde": 9.1,
+        "blanco": 0
+      },
+      "temperatura_C": [
+        22.2,
+        23.4
+      ],
+      "humedad_pct": [
+        70.4,
+        91.9
+      ],
+      "co2_ppm": [
+        2009,
+        3011
+      ],
+      "dias_cosecha": [
+        35,
+        58
+      ],
+      "cosecha": "hojas",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/mizuna/nativo",
+        "icono": "cultivos/iconos/nativo/icono_mizuna.png",
+        "frames": [
+          "mizuna_etapa0_semilla_{a|b}.png",
+          "mizuna_etapa1_brote_{a|b}.png",
+          "mizuna_etapa2_joven_{a|b}.png",
+          "mizuna_etapa3_creciendo_{a|b}.png",
+          "mizuna_etapa4_madura_{a|b}.png",
+          "mizuna_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/mizuna/nativo",
+        "hidroponico_frames": [
+          "mizuna_hidro_etapa0_semilla_{a|b}.png",
+          "mizuna_hidro_etapa1_brote_{a|b}.png",
+          "mizuna_hidro_etapa2_joven_{a|b}.png",
+          "mizuna_hidro_etapa3_creciendo_{a|b}.png",
+          "mizuna_hidro_etapa4_madura_{a|b}.png",
+          "mizuna_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    },
+    "tomate": {
+      "luz": {
+        "rojo": 90,
+        "azul": 10,
+        "verde": 0,
+        "blanco": 0
+      },
+      "temperatura_C": null,
+      "humedad_pct": null,
+      "co2_ppm": null,
+      "dias_cosecha": [
+        83,
+        104
+      ],
+      "cosecha": "frutos",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/tomate/nativo",
+        "icono": "cultivos/iconos/nativo/icono_tomate.png",
+        "frames": [
+          "tomate_etapa0_semilla_{a|b}.png",
+          "tomate_etapa1_brote_{a|b}.png",
+          "tomate_etapa2_joven_{a|b}.png",
+          "tomate_etapa3_creciendo_{a|b}.png",
+          "tomate_etapa4_madura_{a|b}.png",
+          "tomate_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/tomate/nativo",
+        "hidroponico_frames": [
+          "tomate_hidro_etapa0_semilla_{a|b}.png",
+          "tomate_hidro_etapa1_brote_{a|b}.png",
+          "tomate_hidro_etapa2_joven_{a|b}.png",
+          "tomate_hidro_etapa3_creciendo_{a|b}.png",
+          "tomate_hidro_etapa4_madura_{a|b}.png",
+          "tomate_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    },
+    "chile": {
+      "luz": {
+        "rojo": 27,
+        "azul": 40,
+        "verde": 33,
+        "blanco": 0
+      },
+      "temperatura_C": [
+        23,
+        23
+      ],
+      "humedad_pct": [
+        50,
+        50
+      ],
+      "co2_ppm": [
+        550,
+        550
+      ],
+      "dias_cosecha": [
+        109,
+        137
+      ],
+      "cosecha": "frutos",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/chile/nativo",
+        "icono": "cultivos/iconos/nativo/icono_chile.png",
+        "frames": [
+          "chile_etapa0_semilla_{a|b}.png",
+          "chile_etapa1_brote_{a|b}.png",
+          "chile_etapa2_joven_{a|b}.png",
+          "chile_etapa3_creciendo_{a|b}.png",
+          "chile_etapa4_madura_{a|b}.png",
+          "chile_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/chile/nativo",
+        "hidroponico_frames": [
+          "chile_hidro_etapa0_semilla_{a|b}.png",
+          "chile_hidro_etapa1_brote_{a|b}.png",
+          "chile_hidro_etapa2_joven_{a|b}.png",
+          "chile_hidro_etapa3_creciendo_{a|b}.png",
+          "chile_hidro_etapa4_madura_{a|b}.png",
+          "chile_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    },
+    "papa": {
+      "luz": {
+        "rojo": 0,
+        "azul": 0,
+        "verde": 0,
+        "blanco": 100
+      },
+      "temperatura_C": null,
+      "humedad_pct": null,
+      "co2_ppm": null,
+      "dias_cosecha": [
+        90,
+        105
+      ],
+      "cosecha": "tuberculos",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/papa/nativo",
+        "icono": "cultivos/iconos/nativo/icono_papa.png",
+        "frames": [
+          "papa_etapa0_semilla_{a|b}.png",
+          "papa_etapa1_brote_{a|b}.png",
+          "papa_etapa2_joven_{a|b}.png",
+          "papa_etapa3_creciendo_{a|b}.png",
+          "papa_etapa4_madura_{a|b}.png",
+          "papa_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/papa/nativo",
+        "hidroponico_frames": [
+          "papa_hidro_etapa0_semilla_{a|b}.png",
+          "papa_hidro_etapa1_brote_{a|b}.png",
+          "papa_hidro_etapa2_joven_{a|b}.png",
+          "papa_hidro_etapa3_creciendo_{a|b}.png",
+          "papa_hidro_etapa4_madura_{a|b}.png",
+          "papa_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    },
+    "trigo": {
+      "luz": {
+        "rojo": 50,
+        "azul": 0,
+        "verde": 0,
+        "blanco": 50
+      },
+      "temperatura_C": null,
+      "humedad_pct": null,
+      "co2_ppm": null,
+      "dias_cosecha": [
+        64,
+        86
+      ],
+      "cosecha": "grano",
+      "agua_ml_dia": null,
+      "sprites": {
+        "carpeta": "cultivos/trigo/nativo",
+        "icono": "cultivos/iconos/nativo/icono_trigo.png",
+        "frames": [
+          "trigo_etapa0_semilla_{a|b}.png",
+          "trigo_etapa1_brote_{a|b}.png",
+          "trigo_etapa2_joven_{a|b}.png",
+          "trigo_etapa3_creciendo_{a|b}.png",
+          "trigo_etapa4_madura_{a|b}.png",
+          "trigo_etapa5_lista_cosecha_{a|b}.png"
+        ],
+        "hidroponico_carpeta": "hidroponico/trigo/nativo",
+        "hidroponico_frames": [
+          "trigo_hidro_etapa0_semilla_{a|b}.png",
+          "trigo_hidro_etapa1_brote_{a|b}.png",
+          "trigo_hidro_etapa2_joven_{a|b}.png",
+          "trigo_hidro_etapa3_creciendo_{a|b}.png",
+          "trigo_hidro_etapa4_madura_{a|b}.png",
+          "trigo_hidro_etapa5_lista_cosecha_{a|b}.png"
+        ]
+      }
+    }
+  },
+  "barra": {
+    "segmentos": 10,
+    "pct_por_segmento": 10,
+    "alto_px": 12,
+    "ancho_px": 8
+  },
+  "reglas": {
+    "etapa_planta": "etapa = min(5, floor(5 * dia_actual / dias_cosecha[1])); alternar frames a/b cada ~0.3 s para el movimiento",
+    "carita": "diferencia = (|rojo-optimo|+|azul-optimo|+|verde-optimo|+|blanco-optimo|)/2 ; <=10 muy_feliz, <=20 feliz, <=35 normal, <=50 preocupado, >50 triste",
+    "dias_del_juego": "mostrar 'Dia X de N' con la barra amarilla (segmento_dias_lleno) y la bandera_meta al final",
+    "hidroponia": "Usar siempre los frames de 'hidroponico' (sin tierra). Los de 'cultivos/<cultivo>' (con tierra) sirven solo para la pantalla comparativa Tierra vs Luna con icono_tierra / icono_sin_tierra / icono_hidroponia."
+  }
+}

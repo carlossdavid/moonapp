@@ -60,7 +60,7 @@ try {
   };
   const screenshot = async name => {
     // Esperar a que la nueva escena se haya renderizado tras una transición.
-    await delay(250);
+    await delay(750);
     const response = await call('Page.captureScreenshot', { format: 'png' });
     writeFileSync(`${temp}/final-${name}.png`, Buffer.from(response.result.data, 'base64'));
   };
@@ -79,6 +79,9 @@ try {
   await until(() => evaluate("g.state==='playing'"), 'introducción');
   console.log('PASS menú, introducción y partida');
   assert.equal(await evaluate("g.scene.isExterior"), true);
+  assert.equal(await evaluate("Array.from({length:11},(_,i)=>g.assets.has('final_life_'+i)).every(Boolean)"), true);
+  assert.equal(await evaluate("!!g.scene.physicsWorld.finalImpactHook"), true);
+  assert.equal(await evaluate("document.getElementById('health-bar')"), null, 'vida usa sprites, no progress HTML');
   assert.deepEqual(await evaluate("g.scene.stationDoors.map(item=>item.station.id)"), ['principal', 'verde', 'amarilla']);
   assert.equal(await evaluate("g.scene.interactables.filter(z=>/^Panel solar/.test(z.name)).length"), 4);
   await screenshot('exterior');
@@ -106,7 +109,7 @@ try {
   assert.equal(await evaluate("ui.cleaning.isOpen && ui.cleaning.model.phase==='discover'"), true);
   await evaluate("ui.cleaning.advanceDiscovery();ui.cleaning.advanceDiscovery();ui.cleaning.advanceDiscovery()");
   assert.equal(await evaluate("solar.magnetQuest"), true);
-  await evaluate("ui.cleaning.close();g.scene.magnetZone.onConfirm()");
+  await evaluate("ui.cleaning.close();g.scene.magnetZones.values().next().value.onConfirm()");
   assert.equal(await evaluate("solar.hasMagnet"), true);
   await evaluate("g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 1'));ui.cleaning.connect(0);ui.cleaning.connect(1);ui.cleaning.model.activate()");
   assert.equal(await evaluate("ui.cleaning.model.phase"), 'sweeping');
@@ -116,25 +119,29 @@ try {
   await evaluate("ui.cleaning.onCompleted(ui.cleaning.model);ui.cleaning.onFinish(100);ui.cleaning.close()");
   assert.equal(await evaluate("solar.progress.cleanCount"), 1);
   assert.equal(await evaluate("solar.hasMagnet"), false);
-  await evaluate("g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 2'));ui.cleaning.close();g.scene.magnetZone.onConfirm();g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 2'));ui.cleaning.connect(0);ui.cleaning.connect(1);ui.cleaning.model.activate();for(let i=0;i<1000&&!ui.cleaning.model.complete;i++)ui.cleaning.model.tick(.1);ui.cleaning.onCompleted(ui.cleaning.model);ui.cleaning.close()");
+  await evaluate("ui.close();g.mission.tick(60,[100]);g.scene.placeMagnet();g.scene.magnetZones.values().next().value.onConfirm();g.scene.openPanel(g.scene.interactables.find(z=>z.name==='Panel solar 2'));ui.cleaning.connect(0);ui.cleaning.connect(1);ui.cleaning.model.activate();for(let i=0;i<1000&&!ui.cleaning.model.complete;i++)ui.cleaning.model.tick(.1);ui.cleaning.onCompleted(ui.cleaning.model);ui.cleaning.close()");
   assert.equal(await evaluate("solar.progress.cleanCount"), 2);
   console.log('PASS limpieza real: descubrimiento, búsqueda, conexiones, barrido, repuesto y persistencia');
   for (const stationId of ['principal', 'verde', 'amarilla']) {
     await evaluate(`(()=>{const z=g.scene.stationDoors.find(item=>item.station.id==='${stationId}').zone;g.scene.player.x=z.x;g.scene.player.y=z.y;})()`);
-    await delay(250);
+    await delay(750);
     await key('KeyE', 'e');
     await until(() => evaluate("g.scene.isInterior && !g.transitioning"), 'entrada ' + stationId);
     assert.equal(await evaluate("g.scene.station.id"), stationId);
-    assert.equal(await evaluate("g.scene.interiorModules.some(m=>m.id==='food')"), false);
-    assert.equal(await evaluate("g.scene.backgroundImage===g.assets.get(g.scene.station.id==='principal'?'final_room_main':'final_room_clear')"), true);
+    assert.deepEqual(await evaluate("g.scene.interiorModules.map(m=>m.id)"), {
+      principal: ['recharge', 'console', 'modes'], verde: ['food'], amarilla: ['electrolysis'],
+    }[stationId]);
+    assert.equal(await evaluate("g.scene.interiorModules.every(m=>m.access.x===m.zone.x&&m.access.y===m.zone.y)"), true);
+    if (stationId === 'principal') assert.equal(await evaluate("new Set(g.scene.interiorModules.map(m=>m.y)).size"), 1);
+    assert.equal(await evaluate("g.scene.backgroundImage===g.assets.get(g.scene.station.id==='principal'?'final_room_main':'final_room_small')"), true);
     await screenshot(stationId);
     await evaluate("(()=>{const z=g.scene.interactables.find(z=>z.name==='Salida');g.scene.player.x=z.x;g.scene.player.y=z.y;})()");
     await delay(250);
     await key('KeyE', 'e');
     await until(() => evaluate("g.scene.isExterior && !g.transitioning"), 'salida ' + stationId);
   }
-  console.log('PASS tres puertas, interiores iniciales, salida y ausencia de producción de alimentos');
-  await evaluate("g.scene.enterStation(g.scene.stationDoors[1].station)");
+  console.log('PASS tres puertas, módulos especializados e interiores diferentes');
+  await evaluate("g.scene.enterStation(g.scene.stationDoors[0].station)");
   await until(() => evaluate("g.scene.isInterior && !g.transitioning"));
   await evaluate("(()=>{const z=g.scene.interactables.find(z=>z.name==='CONSOLA DE CONTROL');g.scene.player.x=z.x;g.scene.player.y=z.y;})()");
   await delay(200);
@@ -152,6 +159,17 @@ try {
   assert.equal(await evaluate("document.getElementById('visor-particles-value').textContent"), particles + '/100');
   await key('Escape', 'Escape');
   await key('ShiftLeft', 'Shift');
+  assert.equal(await evaluate("document.getElementById('visor-overlay').hidden"), true);
+  await evaluate("g.mission.tick(180,[100]);ui.openStory()");
+  assert.equal(await evaluate("ui.kind"), 'story');
+  assert.equal(await evaluate("g.mission.visorUnlocked"), false);
+  await screenshot('aviso');
+  await evaluate("document.getElementById('story-start').click()");
+  await until(() => evaluate("document.getElementById('story-video').readyState>=2"), 'segunda cinemática');
+  await screenshot('segunda-cinematica');
+  await evaluate("document.getElementById('story-exit').click()");
+  assert.equal(await evaluate("g.mission.visorUnlocked"), true);
+  await key('ShiftLeft', 'Shift');
   assert.equal(await evaluate("document.getElementById('visor-overlay').hidden"), false);
   assert.equal(await evaluate("document.querySelector('.visor-art').naturalWidth>0"), true);
   await screenshot('visor');
@@ -165,14 +183,14 @@ try {
   // No aceptar mensajes desde otras ventanas, incluso con el mismo origen.
   await evaluate("window.postMessage({type:'energyModeChanged',mode:'turbo'},location.origin)");
   await delay(100);
-  assert.equal(await evaluate("g.stationModes.has('verde')"), false);
+  assert.equal(await evaluate("g.stationModes.has('principal')"), false);
   // Resolver la calibración original con una secuencia determinista, sin
   // reemplazar su callback ni inventar un evento de éxito.
   await evaluate("(()=>{const w=ui.currentFrame.contentWindow;const random=w.Math.random;w.Math.random=()=>0;w.document.getElementById('btn-tortuga').click();w.Math.random=random;})()");
   await until(() => evaluate("!ui.currentFrame.contentDocument.querySelector('.seq-btn').disabled"), 'secuencia de calibración');
   await evaluate("for(let i=0;i<4;i++)ui.currentFrame.contentDocument.querySelector('[data-name=\"escudo\"]').click()");
-  await until(() => evaluate("g.stationModes.get('verde')==='tortuga'"), 'modo calibrado');
-  assert.equal(await evaluate("g.stationModes.get('verde')"), 'tortuga');
+  await until(() => evaluate("g.stationModes.get('principal')==='tortuga'"), 'modo calibrado');
+  assert.equal(await evaluate("g.stationModes.get('principal')"), 'tortuga');
   assert.equal(await evaluate("g.scene.backgroundImage===g.assets.get('final_room_saving')"), true);
   await screenshot('modos');
   await evaluate("ui.close();ui.open('electrolysis',g.scene.station.id);document.querySelector('#activity-intro button').click()");
@@ -182,7 +200,8 @@ try {
   await evaluate("ui.close()");
   console.log('PASS modos por estación y actividad de electrólisis');
 
-  await evaluate("g.scene.openOxygen()");
+  await delay(650);
+  await evaluate("g.oxygen.oxigenoTrajeKg=.1;g.energy.energiaTrajeWh=100;g.water.ml=10;g.scene.interiorModules.find(m=>m.id==='recharge').zone.onConfirm()");
   await until(() => evaluate("g.scene.isRecarga && !!g.scene.minigame && !g.transitioning"), 'recarga');
   assert.equal(await evaluate("document.getElementById('recarga-tools').hidden"), false);
   await screenshot('oxigeno');
@@ -191,12 +210,78 @@ try {
   console.log('Fase oxígeno:', await evaluate("g.scene.minigame.fase"));
   await evaluate("g.scene.minigame.girarValvula('o2');g.scene.minigame.girarValvula('o2');g.scene.minigame.girarValvula('co2');g.scene.minigame.girarValvula('co2')");
   await delay(500);
-  assert.equal(await evaluate("g.oxygenCharging"), true);
+  assert.ok(await evaluate("g.oxygen.porcentajeTraje>99.9"));
+  assert.ok(await evaluate("g.energy.getSnapshot().traje.porcentaje>99.9"));
+  assert.equal(await evaluate("g.water.snapshot().ml"), 950);
+  assert.equal(await evaluate("ui.kind"), null, 'sin selector de recursos');
+  await screenshot('recarga-integral-lista');
   await key('Escape', 'Escape');
   await until(() => evaluate("g.scene.isInterior && !g.transitioning"), 'volver de recarga');
   assert.equal(await evaluate("document.getElementById('recarga-tools').hidden"), true);
   assert.equal(await evaluate("g.scene.backgroundImage===g.assets.get('final_room_saving')"), true);
   console.log('PASS recarga con sprites, conexión al sistema O₂, cierre y modo persistente');
+
+  await evaluate("ui.open('food')");
+  await until(() => evaluate("!!ui.foodFrame.contentDocument?.getElementById('mission-start') && ui.foodFrame.contentDocument.getElementById('loading').hidden"), 'alimentos');
+  await screenshot('alimentos-modulo');
+  assert.equal(await evaluate("ui.foodFrame.contentDocument.documentElement.scrollHeight<=ui.foodFrame.contentWindow.innerHeight"), true);
+  await evaluate("ui.foodFrame.contentDocument.getElementById('mission-start').click()");
+  await screenshot('alimentos-cultivo');
+  await evaluate("ui.close();ui.open('food')");
+  assert.equal(await evaluate("ui.foodFrame.contentDocument.getElementById('mission-card').dataset.phase"), 'ajustar');
+  await evaluate("g.foodBonus=-50;window.postMessage({type:'alimentos:harvest',crop:'mizuna'},location.origin)");
+  await delay(100);
+  assert.equal(await evaluate("g.claimedCrops.size"), 0, 'rechaza fuente ajena');
+  await evaluate(`(()=>{
+    const d=ui.foodFrame.contentDocument;
+    for(let round=0;round<3;round++){
+      for(const [channel,value] of Object.entries({rojo:81.8,azul:9.1,verde:9.1,blanco:0})){
+        const input=d.getElementById('number-'+channel);input.value=value;
+        input.dispatchEvent(new ui.foodFrame.contentWindow.Event('input'));
+      }
+      d.getElementById('apply').click();d.getElementById('mission-next').click();
+    }
+    d.querySelector('#mission-question input[value=iss]').click();
+    d.getElementById('mission-next').click();
+  })()`);
+  await until(() => evaluate("g.claimedCrops.has('mizuna')"), 'cosecha conectada');
+  assert.ok(await evaluate("g.foodLevel>99.9"));
+  await screenshot('alimentos-insignia');
+  await evaluate("g.foodBonus-=10;ui.foodFrame.contentDocument.getElementById('mission-next').click()");
+  assert.ok(await evaluate("g.foodLevel<91"), 'sin premios repetidos');
+  await evaluate("ui.close()");
+  await delay(700);
+  const collision = await evaluate(`(()=>{
+    g.stop();
+    const player=g.scene.player, body=player.body;
+    player.x=192-body.collider.offsetX+.1;player.y=280;
+    body.velocity.x=-60;body.velocity.y=0;
+    const previous=g.impacts.count,health=g.mission.health;
+    g.scene.physicsWorld.step(1/60);g.render(1);
+    return {events:g.impacts.count-previous,particles:g.impacts.particles.length,
+      velocity:body.velocity.x,healthUnchanged:g.mission.health===health};
+  })()`);
+  assert.equal(collision.events, 1, 'impacto real contra pared');
+  assert.equal(collision.particles, 7);
+  assert.ok(collision.velocity > 0, 'retroceso alejándose de la pared');
+  assert.equal(collision.healthUnchanged, true);
+  await screenshot('impacto');
+  await evaluate("document.getElementById('motion-toggle').click()");
+  assert.equal(await evaluate("g.impacts.motion"), false);
+  await evaluate("g.messages.dismiss();g.messages.tick(0,g,false);ui.notify('Terminal disponible','COMUNICACIONES')");
+  assert.ok((await evaluate("getComputedStyle(document.getElementById('notice')).borderImageSource")).includes('pixel-panel.svg'));
+  await screenshot('aviso-pixel');
+  const pausedTime = await evaluate("g.mission.elapsed");
+  await evaluate("ui.transition();g.update(4)");
+  assert.equal(await evaluate("g.mission.elapsed"), pausedTime, 'transición pausa la cuenta');
+  await delay(700);
+  await evaluate("g.stop();g.oxygen.oxigenoTrajeKg=0;for(let i=0;i<299;i++)g.update(1/60)");
+  assert.equal(await evaluate("g.mission.dead"), false);
+  await evaluate("g.update(1/60)");
+  assert.equal(await evaluate("g.mission.dead"), true);
+  await screenshot('muerte');
+  console.log('PASS recarga integral, vida con sprites, puestos alineados, impactos reales y avisos pixelados');
+  console.log('PASS Alimentos fijo y persistente, muerte a cinco segundos');
 
   assert.deepEqual(errors, [], 'sin errores de JavaScript');
   assert.deepEqual(network, [], 'sin archivos HTTP ausentes');

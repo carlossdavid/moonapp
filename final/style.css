@@ -30,3 +30,71 @@
 #cleaning-task { z-index: 65; }
 #monitor-content { z-index: 60; }
 .console-frame { flex-shrink: 0; }
+body, button, input, select, #activity-intro, #notice, #help-panel, #location-label,
+#recarga-tools, #help-toggle, .activity-shell button, #recarga-tools button,
+.visor-overlay *, #monitor-content *, #cleaning-task * {
+  font-family: 'Press Start 2P', monospace !important;
+}
+button, #notice, #help-panel, .activity-shell, #recarga-tools {
+  border-radius: 0 !important; border-width: 3px; box-shadow: 4px 4px 0 #020713;
+}
+#activity-intro { font-size: 12px; line-height: 2; }
+#notice, #help-panel { font-size: 10px; line-height: 2; }
+.activity-shell { width: 98vw; height: 96vh; }
+#mission-transition { position: fixed; inset: 0; background: #030818; z-index: 300; opacity: 0; pointer-events: none; }
+#survival { position: fixed; left: 18px; bottom: 14px; max-width: 40vw; color: #ffada8; font-size: 9px; z-index: 25; line-height: 1.9; }
+#story, #death { position: fixed; inset: 0; z-index: 120; background: #030818f8; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; padding: 24px; text-align: center; }
+#story > img { max-width: min(420px,70vw); max-height: 45vh; image-rendering: pixelated; object-fit: contain; }
+#story-video { width: min(960px,90vw); max-height: 60vh; }
+#story:has(video:not([hidden])) > img { display: none; }
+#story button, #death button { padding: 16px; color: #ffdf8b; background: #12273c; border: 3px solid #ffbd63; font-size: 11px; line-height: 1.8; }
+#death { color: #ffaca0; font-size: 12px; line-height: 2; }
+
+/* Marco propio adaptable: esquina escalonada, acero frío y detalles cian. */
+.pixel-panel, #notice, #survival, #interaction-hint, #help-panel, .activity-shell, #recarga-tools, .task-shell,
+#cleaning-task .discovery-message, #cleaning-task .completion-card,
+.visor-toolbar, .visor-alert, #help-toggle, .visor-launcher,
+.activity-shell button, #recarga-tools button, #story button, #death button {
+  border: 12px solid transparent;
+  border-image: url('pixel-panel.svg') 16 fill stretch;
+  border-radius: 0 !important;
+  background: #101a30;
+  box-shadow: 0 6px 0 #03091688;
+  color: #dceafb;
+  image-rendering: pixelated;
+}
+#notice { top: 30px; width: min(640px, 86vw); max-width: none; padding: 7px 14px; display: flex; gap: 16px; align-items: center; font-size: 11px; line-height: 1.8; }
+#notice-title { color: #5ee5ef; font-size: 11px; font-weight: normal; display: block; margin-bottom: 7px; }
+#notice-text { margin: 0; color: #e5edff; }
+.notice-icon { flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center; color: #55eff9; border: 3px solid #55d3eb; border-radius: 0; font-size: 17px; }
+.activity-shell { border-width: 12px; background: #091326; }
+.activity-shell header { min-height: 52px; background: #14213a; border-bottom: 2px solid #354f74; }
+.activity-shell h1 { font-size: clamp(9px,1.4vw,15px); line-height: 1.6; color: #a4ebf1; }
+.activity-shell button, #recarga-tools button, #help-toggle, .visor-launcher, #story button, #death button { border-width: 8px; color: #b8eff4; font-size: 10px; }
+button:focus-visible, input:focus-visible { outline: 2px solid #70f1f2; outline-offset: 4px; }
+#help-panel { color: #d1e3f7; bottom: 64px; max-width: min(410px,90vw); padding: 14px; font-size: 9px; line-height: 2; }
+#help-toggle { bottom: 12px; }
+.visor-launcher { bottom: 56px; }
+#location-label { color: #9fe9ed; border-left: 3px solid #65c8e6; padding: 8px 12px; font-size: 9px; background: #0a172bdd; }
+#recarga-tools { bottom: 14px; width: min(940px,96vw); padding: 6px; font-size: 9px; line-height: 1.8; }
+#recarga-status { max-width: 350px; color: #b6d7ed; }
+#interaction-hint { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); max-width: 58vw; padding: 5px 12px; color: #b9edf4; font-size: 10px; line-height: 1.8; z-index: 26; pointer-events: none; text-align: center; }
+#vega-message { position: fixed; right: 24px; bottom: 104px; width: min(780px,58vw); z-index: 28; pointer-events: none; filter: drop-shadow(0 5px 0 #02081599); }
+#vega-message img { display: block; width: 100%; height: auto; max-height: 225px; object-fit: contain; object-position: right bottom; image-rendering: pixelated; }
+#vega-message button { position: absolute; right: 8px; top: 4px; pointer-events: auto; background: #11233b; border: 2px solid #98beda; color: #d5f6ff; font: 15px 'Press Start 2P',monospace; padding: 5px; box-shadow: 2px 2px #020713; }
+.motion-setting { display: flex; align-items: center; gap: 10px; color: #85d8e5; }
+.motion-setting input { width: 18px; height: 18px; accent-color: #6de7e9; }
+.task-shell { border-width: 12px; }
+#cleaning-task .discovery-message, #cleaning-task .completion-card { color: #c7e7f7; }
+#mission-transition { background: #07101e; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
+@media (max-width:700px) {
+  #notice { top: 18px; font-size: 9px; }
+  #notice-title { font-size: 9px; }
+  #vega-message { width: 90vw; right: 5vw; bottom: 100px; }
+  #interaction-hint { max-width: 78vw; bottom: 20px; font-size: 8px; }
+  #recarga-tools { flex-wrap: wrap; }
+  #survival { max-width: 80vw; bottom: 70px; }
+}

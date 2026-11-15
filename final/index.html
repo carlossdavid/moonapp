@@ -22,15 +22,17 @@
     <aside id="help-panel" hidden>
       <b>Sistema integrado</b>
       <p>WASD / flechas: mover · E: interactuar · M: minimapa · Shift: visor.</p>
-      <p>Interior: C cargador de batería · O recarga de oxígeno · V rellenar agua.</p>
+      <p>Base grande: recarga de O₂, batería y agua · DONKI · modos.</p>
       <p>1/2/3: esfuerzo normal/alto/pico · T: mostrar/ocultar HUD.</p>
-      <p>Herramientas de prueba: X simula sombra solar · N reinicia recursos.</p>
+      <p>Casa verde: alimentación. Casa amarilla: electrólisis.</p>
       <p>Paneles solares a la izquierda. Limpia dos distintos para habilitar las puertas.</p>
-      <p>Producción de alimentos no está integrada en esta versión.</p>
+      <p>Imanes cada 60 s. A los 180 s llega el aviso y la cinemática que habilita Shift.</p>
+      <p>Un recurso vacío causa daño: tienes cinco segundos activos para recuperarlo.</p>
+      <label class="motion-setting"><input type="checkbox" id="motion-toggle" checked> Sacudida al chocar</label>
     </aside>
     <section id="activity" hidden role="dialog" aria-modal="true" aria-labelledby="activity-heading">
       <div class="activity-shell">
-        <header><h1 id="activity-heading"></h1><button id="activity-close" type="button">Volver · Esc</button></header>
+        <header><h1 id="activity-heading"></h1><button id="activity-close" type="button">Salir · Esc</button></header>
         <div id="activity-intro" hidden></div>
         <iframe id="activity-frame" title="Actividad lunar" hidden></iframe>
       </div>
@@ -39,9 +41,28 @@
       <span id="recarga-status"></span>
       <button id="recarga-o2">Conectar O₂</button>
       <button id="recarga-co2">Conectar CO₂</button>
-      <button id="recarga-exit">Volver a la estación</button>
+      <button id="recarga-exit">Salir a la estación</button>
     </div>
-    <div id="notice" role="status" hidden></div>
+    <div id="notice" class="pixel-panel" role="status" hidden>
+      <span class="notice-icon" aria-hidden="true">i</span>
+      <div><strong id="notice-title">COMUNICACIONES</strong><p id="notice-text"></p></div>
+    </div>
+    <div id="interaction-hint" class="pixel-panel" role="status" hidden></div>
+    <aside id="vega-message" hidden aria-label="Consejo de VEGA">
+      <img alt=""><button type="button" aria-label="Cerrar consejo de VEGA">×</button>
+    </aside>
+    <div id="survival" class="pixel-panel" role="status" hidden><span id="survival-text"></span></div>
+    <section id="story" hidden role="dialog" aria-modal="true" aria-label="Aviso de limpieza">
+      <img src="pruebas/limpieza-panel/ImagenesLimpiezaPaneles/aviso.png" alt="Alerta: revisar la limpieza de los paneles solares">
+      <button id="story-start">Ver transmisión</button>
+      <video id="story-video" playsinline controls hidden></video>
+      <button id="story-exit" hidden>Salir de la cinemática · activar visor</button>
+    </section>
+    <section id="death" hidden role="alertdialog" aria-modal="true" aria-label="Misión fallida">
+      <h1>MISIÓN FALLIDA</h1><p>Permaneciste cinco segundos sin un recurso vital.</p>
+      <button id="restart-mission">Reiniciar misión</button>
+    </section>
+    <div id="mission-transition" aria-hidden="true"></div>
   </main>
   <script>
     if (location.protocol === 'file:') {

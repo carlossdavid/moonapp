@@ -8,7 +8,7 @@ const channels = [
 export function mountVisor(ui) {
   const launcher = document.createElement('button');
   launcher.className = 'visor-launcher';
-  launcher.textContent = 'Visor · SHIFT';
+  launcher.textContent = 'Visor bloqueado';
   launcher.setAttribute('aria-expanded', 'false');
   launcher.setAttribute('aria-controls', 'visor-overlay');
   const overlay = document.createElement('section');
@@ -57,7 +57,12 @@ export function mountVisor(ui) {
     }
   }
   function toggle(open = overlay.hidden) {
+    if (open && !ui.game?.mission.visorUnlocked) {
+      ui.notify('Visor bloqueado hasta salir de la segunda cinemática.');
+      return;
+    }
     if (open && (ui.blocked || ui.game?.scene?.isRecarga || ui.game?.state !== 'playing')) return;
+    ui.transition();
     overlay.hidden = !open;
     launcher.setAttribute('aria-expanded', String(open));
     if (open) { previousFocus = document.activeElement; close.focus(); draw(); }

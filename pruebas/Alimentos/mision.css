@@ -1,0 +1,55 @@
+/* Resolución lógica de misión: se ajusta entera a la pantalla, sin página larga. */
+html, body { width: 100%; height: 100%; overflow: hidden; background: #030813; }
+.simulator { position: absolute; width: 1440px; height: 900px; max-width: none; margin: 0; padding: 18px; transform-origin: top left; display: grid; grid-template-rows: 110px 60px minmax(0,1fr) 60px; gap: 14px; }
+.simulator, .simulator *, dialog * { font-family: Pixel, monospace !important; }
+.simulator p, .simulator li { line-height: 1.9; }
+.topbar { margin: 0; grid-template-columns: 1.5fr 1fr .7fr 66px; }
+.topbar select { font-size: 14px; }
+.identity p { font-size: 9px; }
+.mission-tabs { display: flex; gap: 12px; }
+.mission-tabs button { background: #14253c; color: #c9edff; border: 3px solid #6f95aa; padding: 12px; font-size: 11px; box-shadow: 4px 4px #02050d; }
+.mission-tabs button[aria-pressed=true] { color: #d7ff8b; border-color: #b6e982; }
+#mission-exit { margin-left: auto; color: #ffcb8b; }
+.mission-card, .work-area, .environment, .mission-journal { display: none; grid-row: 3; min-height: 0; margin: 0; }
+.simulator[data-screen=mission] .mission-card { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 30px; }
+.simulator[data-screen=crop] .work-area { display: grid; grid-template-columns: 220px 1fr 410px; gap: 15px; }
+.simulator[data-screen=data] .environment { display: flex; flex-direction: column; justify-content: center; padding: 30px; }
+.simulator[data-screen=log] .mission-journal { display: block; padding: 30px; }
+.crop-status { grid-row: 4; margin: 0; font-size: 11px; }
+.crop-list h2 { font-size: 11px; }
+.crop-button { min-height: 70px; font-size: 11px; gap: 9px; }
+.crop-button small { font-size: 8px; line-height: 1.6; }
+.light-heading { margin-bottom: 10px; }
+.light-heading h2 { font-size: 13px; }
+.light-heading p { font-size: 10px; }
+.light-panel { padding: 15px; }
+.light-row { grid-template-columns: 35px 1fr 75px; gap: 10px; margin: 16px 0; }
+.light-row input[type=range] { grid-column: 2 / 4; }
+.light-row img { width: 30px; height: 30px; }
+.light-number input { font-size: 13px; }
+.reference-line, .reference-line strong { font-size: 10px; line-height: 1.8; }
+.distribution { flex-wrap: nowrap; }
+.distribution-values, #feedback, .small, figcaption { font-size: 9px; }
+.scene-column { gap: 5px; }
+#chamber { width: auto; max-width: 100%; height: 320px; margin: auto; }
+.expected { padding: 10px; }
+.expected h2 { font-size: 12px; }
+.expected ul { font-size: 9px; }
+.environment-grid { grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 45px; }
+.metric { border: 0; }
+.metric strong { font-size: 16px; }
+.metric p { font-size: 10px; }
+.mission-heading p { font-size: 12px; }
+#mission-description, #mission-vega { line-height: 2; }
+.mission-steps { font-size: 10px; }
+#mission-question { font-size: 12px; }
+#mission-question input { width: 20px; height: 20px; }
+.mission-actions button { font-size: 12px; }
+.light-column { height: 100%; }
+.light-panel { flex: 0 1 auto; min-height: 0; }
+.light-heading { gap: 10px; margin-bottom: 4px; }
+.light-heading img { width: 32px; height: 32px; }
+.light-row { margin: 9px 0; }
+.reference-line { padding-top: 5px; }
+.distribution { margin-top: 5px; padding: 7px; }
+#feedback { padding: 4px; min-height: 26px; }

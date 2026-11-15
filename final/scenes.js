@@ -3,6 +3,7 @@ import { InteriorBaseScene } from '../src/scenes/InteriorBaseScene.js';
 import { RecargaOxigenoPruebaScene } from '../pruebas/RECARGA OXIGENO/RecargaOxigenoPruebaScene.js';
 import { BeamCleaning } from '../pruebas/limpieza-panel/beamCleaning.js';
 import { FASE } from '../src/minigames/RecargaOxigeno.js';
+import { drawAccess, drawWorkstation, drawSceneUI, adaptRechargeSummary } from './presentation.js';
 
 export const STATIONS = Object.freeze([
   { id: 'principal', name: 'ESTACIÓN LUNAR', image: 'final_station', x: 280, y: 158, width: 230, doorX: -16 },
@@ -16,8 +17,12 @@ export class FinalExterior extends DemoScene {
     this.solarState = game.solar;
     this.panelModels = this.solarState.panelModels;
     this.task = game.ui.cleaning;
-    this.magnetZone = null;
+    this.magnetZones = new Map();
     this.stationDoors = [];
+  }
+  async init() {
+    await super.init();
+    this.game.impacts.attach(this);
   }
 
   _spawnStructures(assets) {
@@ -33,7 +38,7 @@ export class FinalExterior extends DemoScene {
       });
       this.stationDoors.push({ station, zone });
     }
-    this.exteriorAccessRect = { x: 248, y: 158, w: 32, h: 14 };
+    this.exteriorAccessRect = null; // Se sustituye el marcador heredado por la baldosa naranja.
     const panels = [[95, 230], [175, 230], [95, 325], [175, 325]];
     panels.forEach(([x, y], i) => {
       const image = assets.get('struct_solar');
@@ -53,11 +58,12 @@ export class FinalExterior extends DemoScene {
       const image = assets.get(key);
       if (image) this._addSolidStructure(image, x, y, { scale: width / image.width, footW: .65, footH: .22 });
     }
-    if (this.solarState.magnetQuest && !this.solarState.hasMagnet) this.placeMagnet();
+    this.placeMagnet();
     this.updateDoorPrompts();
   }
 
   async enterStation(station) {
+    if (this.game.transitioning || this.game.ui.transitionActive) return;
     if (this.solarState.progress.cleanCount < 2) {
       this.game.ui.notify(`Limpia dos paneles distintos para habilitar las puertas (${this.solarState.progress.cleanCount}/2).`);
       return;
@@ -92,11 +98,12 @@ export class FinalExterior extends DemoScene {
       onDiscoveryComplete: () => { this.solarState.progress.discovered = true; },
       onNeedMagnet: () => this.revealMagnet(),
       onCompleted: completed => this.consumeMagnet(completed),
-      onFinish: () => this.game.ui.notify(`${zone.name} limpio: ${this.solarState.progress.cleanCount}/2 para habilitar puertas.`),
+      onFinish: () => queueMicrotask(() => this.game.ui.open('result')),
       onReset: () => !this.solarState.progress.isClean(zone.name),
       onPrepare: () => this.preparePanel(model),
     });
     this.task.open();
+    this.game.ui.transition();
   }
 
   preparePanel(model) {
@@ -110,30 +117,31 @@ export class FinalExterior extends DemoScene {
     }
   }
 
-  magnetPosition() {
-    return this.solarState.cleaningsCompleted ? { x: 347, y: 388 } : { x: 320, y: 205 };
-  }
   revealMagnet() {
     if (this.solarState.hasMagnet) return;
     this.solarState.magnetQuest = true;
-    this.placeMagnet();
+    this.game.ui.notify('Busca los imanes de la superficie. Aparece un repuesto cada 60 s de exploración.');
   }
   placeMagnet() {
-    if (this.magnetZone || this.solarState.hasMagnet) return;
-    const p = this.magnetPosition();
-    this.magnetZone = this._addInteractZone(p.x, p.y, 26, 20, {
+    for (const p of this.game.mission.magnets) {
+      if (this.magnetZones.has(p.id)) continue;
+      const zone = this._addInteractZone(p.x, p.y, 26, 20, {
       name: 'Repuesto de electroimán', prompt: 'E: recoger electroimán',
       onConfirm: () => {
+        if (this.solarState.hasMagnet) { this.game.ui.notify('Ya llevas un imán. Úsalo antes de recoger otro.'); return; }
         this.solarState.hasMagnet = true;
         this.task.hasMagnet = true;
         for (const model of this.panelModels.values()) model.beginCleaning(true);
-        this.magnetZone.active = false;
-        this.interactables = this.interactables.filter(zone => zone !== this.magnetZone);
-        this.removeEntity(this.magnetZone);
-        this.magnetZone = null;
+        zone.active = false;
+        this.interactables = this.interactables.filter(item => item !== zone);
+        this.removeEntity(zone);
+        this.magnetZones.delete(p.id);
+        this.game.mission.magnets = this.game.mission.magnets.filter(item => item.id !== p.id);
         this.game.ui.notify('Electroimán recogido. Vuelve al panel solar.');
       },
     });
+      this.magnetZones.set(p.id, zone);
+    }
   }
   consumeMagnet(model) {
     if (!model.complete || model.magnetSpent) return;
@@ -145,23 +153,28 @@ export class FinalExterior extends DemoScene {
     this.solarState.progress.markClean(this.activeSolarZone.name);
     this.updateDoorPrompts();
   }
-  update(dt) { this.updateDoorPrompts(); super.update(dt); }
+  update(dt) { this.placeMagnet(); this.updateDoorPrompts(); super.update(dt); }
+  drawUI(renderer) { drawSceneUI(this, renderer, this.activePrompt); }
   renderGroundEffects(renderer, alpha) {
     super.renderGroundEffects(renderer, alpha);
-    for (const { station } of this.stationDoors) {
+    for (const { station, zone } of this.stationDoors) {
       const ctx = renderer.context;
       ctx.save(); ctx.font = '4px "Press Start 2P",monospace'; ctx.textAlign = 'center';
       ctx.fillStyle = this.solarState.progress.cleanCount >= 2 ? '#83e9d1' : '#ffcf70';
-      ctx.fillText(station.name, station.x, station.y + 25); ctx.restore();
+      ctx.fillText(station.name, station.x + station.doorX, zone.y - 12); ctx.restore();
     }
-    if (this.solarState.magnetQuest && !this.solarState.hasMagnet) {
-      const p = this.magnetPosition(), image = this.task.sprites.magnetOff;
+    for (const { station, zone } of this.stationDoors) {
+      drawAccess(renderer, station.x + station.doorX, zone.y, zone.playerInside);
+    }
+    for (const p of this.game.mission.magnets) {
+      const image = this.task.sprites.magnetOff;
       renderer.drawImage(image, 0, 0, image.width, image.height, p.x - 10, p.y - 24, 20, 24);
     }
+    this.game.impacts.draw(renderer);
   }
 }
 
-/** Tres interiores con instancias y modo propios; no se añaden cultivos. */
+/** Cada edificio tiene una única especialidad; el principal reúne tres módulos. */
 export class FinalInterior extends InteriorBaseScene {
   constructor(game, station) {
     super(game, { spawnX: 372, spawnY: 294 });
@@ -177,9 +190,12 @@ export class FinalInterior extends InteriorBaseScene {
       this.ready = true;
     }
     this.game.player = this.player;
+    this.game.impacts.attach(this);
+    this.exitMarker = { x: 372, y: 326 };
     this.applyEnergyMode(this.game.stationModes.get(this.station.id));
   }
   _getInteriorBackgroundForMode(mode) {
+    if (this.station.id !== 'principal') return this.game.assets.get('final_room_small');
     const keys = { tortuga: 'final_room_saving', explorador: 'final_room_clear', turbo: 'final_room_dark' };
     const defaultKey = this.station.id === 'principal' ? 'final_room_main' : 'final_room_clear';
     return this.game.assets.get(keys[mode] || defaultKey);
@@ -205,25 +221,48 @@ export class FinalInterior extends InteriorBaseScene {
   }
   _spawnInteriorModules() {
     this.interiorModules = [];
-    const module = (id, name, x, y, key, action) => {
+    const module = (id, name, label, x, y, key, action) => {
       const w = 38, h = 38;
-      this._addSolidBox(x, y, w, h);
-      for (const [zx, zy, zw, zh] of [
-        [x + w / 2, y + h + 12, w + 10, 14],
-        [x - 6, y + h, 14, h], [x + w + 6, y + h, 14, h],
-      ]) {
-        this._addInteractZone(zx, zy, zw, zh, {
+      this._addSolidBox(x - 5, y, w + 10, h + 6);
+      const access = { x: x + w / 2, y: y + h + 17 };
+      const zone = this._addInteractZone(access.x, access.y, 38, 15, {
           name, prompt: `E: ${name.toLowerCase()}`, onConfirm: action,
-        });
-      }
-      this.interiorModules.push({ id, name, x, y, w, h, imageKey: key });
+      });
+      this.interiorModules.push({ id, name, label, x, y, w, h, imageKey: key, access, zone });
     };
-    module('oxygen', 'SISTEMA DE OXÍGENO', 228, 130, 'mod_oxigeno', () => this.openOxygen());
-    module('energy', 'CONTROL DE ENERGÍA', 480, 185, 'mod_energia', () => this.game.ui.openEnergy(this.station.id));
-    module('console', 'CONSOLA DE CONTROL', 340, 156, 'compass_ui', () => this.game.ui.openConsole());
-    module('storage', 'ALMACENAMIENTO DE RECURSOS', 260, 236, 'mod_almacenamiento', () => {
-      this.game.ui.notify('Recursos del traje: C conecta batería; O conecta oxígeno; V rellena agua. Alimentos pendiente.');
-    });
+    if (this.station.id === 'principal') {
+      module('recharge', 'RECARGA INTEGRAL', '01 RECARGA', 232, 202, 'mod_oxigeno', () => this.openOxygen());
+      module('console', 'CONSOLA DE CONTROL', '02 DONKI', 352, 202, null, () => this.game.ui.openConsole());
+      module('modes', 'CAMBIO DE MODO', '03 MODOS', 472, 202, 'mod_energia', () => this.game.ui.open('modes', this.station.id));
+    } else if (this.station.id === 'verde') {
+      module('food', 'ALIMENTACIÓN', 'INVERNADERO', 353, 202, 'mod_alimentos', () => this.game.ui.open('food'));
+    } else {
+      module('electrolysis', 'ELECTRÓLISIS', 'ELECTRÓLISIS', 353, 202, 'mod_energia', () => this.game.ui.open('electrolysis', this.station.id));
+    }
+  }
+  renderGroundEffects(renderer) {
+    const ctx = renderer.context;
+    for (const module of this.interiorModules) {
+      drawWorkstation(renderer, module);
+      if (module.imageKey) {
+        const image = this.game.assets.get(module.imageKey);
+        renderer.drawImage(image, 0, 0, image.width, image.height, module.x, module.y, module.w, module.h);
+      } else {
+        ctx.save();
+        const { x, y, w } = module;
+        ctx.fillStyle = '#627c9d'; ctx.fillRect(x + 1, y + 1, w - 2, 27);
+        ctx.fillStyle = '#0a1b2f'; ctx.fillRect(x + 4, y + 4, w - 8, 19);
+        ctx.fillStyle = '#55e6eb';
+        for (let i = 0; i < 5; i++) ctx.fillRect(x + 7 + i * 5, y + 17 - i % 3 * 3, 3, 2);
+        ctx.fillStyle = '#a1b9d0'; ctx.fillRect(x + 15, y + 28, 8, 4);
+        ctx.fillRect(x + 4, y + 33, w - 8, 3);
+        ctx.restore();
+      }
+      drawAccess(renderer, module.access.x, module.access.y, module.zone.playerInside);
+    }
+    const exit = this.interactables.find(zone => zone.name === 'Salida');
+    drawAccess(renderer, 372, 326, exit?.playerInside, 'SALIR');
+    this.game.impacts.draw(renderer);
   }
   handlePointer(x, y) {
     // Conserva interacción por E; evita el handler heredado de alimentos.
@@ -233,34 +272,37 @@ export class FinalInterior extends InteriorBaseScene {
     if (!module || Math.hypot(this.player.x - module.x - module.w / 2, this.player.y - module.y - module.h) > 65) return;
     this.interactables.find(zone => zone.name === module.name)?.onConfirm?.();
   }
+  drawUI(renderer) { drawSceneUI(this, renderer, this.promptText); }
   openOxygen() {
-    if (this.game.transitioning) return;
+    if (this.game.transitioning || this.game.ui.blocked || this.game.ui.transitionActive) return;
     const back = () => this.game.changeScene(this);
     const scene = new RecargaOxigenoPruebaScene(this.game, {
       onCancel: back,
       onComplete: () => {
-        this.game.oxygenCharging = true;
-        this.game.ui.notify('Conexión completada. Al volver, O₂ se recarga con el caudal y reserva del sistema.');
+        this.game.completeRecharge();
       },
-      onStatus: mg => updateOxygenControls(mg),
+      onStatus: mg => updateOxygenControls(mg, this.game),
     });
     scene.isRecarga = true;
     const update = scene.update.bind(scene);
     scene.update = dt => {
       if (this.game.input.isPressed('Escape')) { back(); return; }
+      if (scene.minigame?.fase === FASE.COMPLETADO && this.game.input.isPressed('Enter')) { back(); return; }
       update(dt);
     };
     this.game.changeScene(scene).then(() => {
+      adaptRechargeSummary(scene.minigame, this.game, back);
       document.getElementById('recarga-tools').hidden = false;
-      updateOxygenControls(scene.minigame);
+      updateOxygenControls(scene.minigame, this.game);
     });
   }
 }
 
-function updateOxygenControls(mg) {
+function updateOxygenControls(mg, game) {
   if (!mg) return;
   document.getElementById('recarga-status').textContent = mg.fase === FASE.COMPLETADO
-    ? 'Conexión lista. Vuelve para recargar el traje.' : 'Conecta ambos colores y gira las válvulas.';
+    ? `O₂ ${game.oxygen.porcentajeTraje.toFixed(0)} % · Agua ${game.water.snapshot().ml.toFixed(0)} mL · Batería ${game.energy.getSnapshot().traje.porcentaje.toFixed(0)} %`
+      : 'O₂ / retorno CO₂ · Conecta y gira. Recupera agua y batería.';
   for (const id of ['o2', 'co2']) {
     const button = document.getElementById(`recarga-${id}`);
     button.textContent = mg.fase === FASE.VALVULAS ? `Girar ${id.toUpperCase()}` : `Conectar ${id.toUpperCase()}`;

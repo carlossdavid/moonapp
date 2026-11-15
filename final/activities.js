@@ -26,6 +26,11 @@ export async function mountActivities() {
   ui.cleaning = new PanelCleaningTask({
     root: $('cleaning-task'), canvas: $('task-canvas'), sprites, onFinish: () => {},
   });
+  const closeCleaning = ui.cleaning.close.bind(ui.cleaning);
+  ui.cleaning.close = () => { if (ui.cleaning.isOpen) ui.transition(); closeCleaning(); };
+  ui.cleaning.finishButton.textContent = 'Salir · tarea completada';
+  $('cancel-task').textContent = 'Salir';
+  $('close-monitor').textContent = 'Salir · Esc';
   // Los receptores (incluido el visor) se montan antes del primer muestreo.
   return ui;
 }
@@ -38,8 +43,10 @@ class Activities {
     this.currentFrame = null;
     this.modeFrames = new Map();
     this.lastFocus = null;
+    this.foodFrame = null;
+    $('activity-frame').addEventListener('load', () => this.styleFrame($('activity-frame')));
     $('activity-close').addEventListener('click', () => this.close());
-    $('close-monitor').addEventListener('click', () => this.restoreFocus());
+    $('close-monitor').addEventListener('click', () => { this.transition(); this.restoreFocus(); });
     $('help-toggle').addEventListener('click', () => {
       $('help-panel').hidden = !$('help-panel').hidden;
       $('help-toggle').setAttribute('aria-expanded', String(!$('help-panel').hidden));
@@ -51,7 +58,7 @@ class Activities {
         else if (!$('monitor-content').hidden) { event.preventDefault(); $('close-monitor').click(); }
       }
       if (event.code === 'Tab' && this.kind) {
-        const controls = [...$('activity').querySelectorAll('button, iframe')]
+        const controls = [...$(this.kind === 'story' ? 'story' : 'activity').querySelectorAll('button, iframe, video')]
           .filter(element => element.getClientRects().length && !element.disabled);
         const index = controls.indexOf(document.activeElement);
         event.preventDefault();
@@ -61,14 +68,17 @@ class Activities {
   }
 
   get blocked() {
-    return !!this.kind || this.cleaning?.isOpen || !$('monitor-content').hidden
+    return this.game?.mission.dead || !!this.kind || this.cleaning?.isOpen || !$('monitor-content').hidden
       || document.getElementById('visor-overlay')?.hidden === false;
   }
 
-  notify(text) {
+  notify(text, title = 'COMUNICACIONES') {
     clearTimeout(this.noticeTimer);
-    $('notice').textContent = text;
+    $('notice-title').textContent = title;
+    $('notice-text').textContent = text;
     $('notice').hidden = false;
+    $('notice').animate([{ opacity: 0, translate: '0 -6px' }, { opacity: 1, translate: '0 0' }],
+      { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240, easing: 'ease-out' });
     this.noticeTimer = setTimeout(() => $('notice').hidden = true, 6500);
   }
 
@@ -77,6 +87,7 @@ class Activities {
 
   openConsole() {
     if (this.blocked) return;
+    this.transition();
     this.rememberFocus();
     $('open-monitor').click();
     $('close-monitor').focus();
@@ -104,13 +115,35 @@ class Activities {
 
   open(kind, stationId) {
     if (this.blocked) return;
+    if (kind === 'recharge' || kind === 'battery') {
+      this.game.scene.openOxygen?.();
+      return;
+    }
+    this.transition();
     this.rememberFocus();
     this.kind = kind;
     $('activity').hidden = false;
-    $('activity-heading').textContent = kind === 'modes' ? 'MODOS DE ESTACIÓN' : 'OPERACIÓN ELECTRÓLISIS';
+    $('activity-heading').textContent = { modes: 'MODOS DE ESTACIÓN', food: 'RESCATE DEL INVERNADERO',
+      result: 'MISIÓN COMPLETADA' }[kind] || 'OPERACIÓN ELECTRÓLISIS';
     const frame = $('activity-frame');
     frame.hidden = true;
-    if (kind === 'modes') {
+    $('activity-intro').hidden = true;
+    if (kind === 'food') {
+      if (!this.foodFrame) {
+        this.foodFrame = document.createElement('iframe');
+        this.foodFrame.className = 'mode-frame';
+        this.foodFrame.title = 'Misión de alimentación';
+        this.foodFrame.src = 'pruebas/Alimentos/?embed=1';
+        frame.parentElement.append(this.foodFrame);
+      }
+      this.foodFrame.hidden = false;
+      this.currentFrame = this.foodFrame;
+    } else if (kind === 'result') {
+      $('activity-intro').hidden = false;
+      const text = document.createElement('p');
+      text.textContent = 'Tarea completada. Puedes salir cuando quieras.';
+      $('activity-intro').replaceChildren(text);
+    } else if (kind === 'modes') {
       let modes = this.modeFrames.get(stationId);
       if (!modes) {
         modes = document.createElement('iframe');
@@ -118,6 +151,7 @@ class Activities {
         modes.title = `Modos de estación ${stationId}`;
         modes.src = 'pruebas/CambioDeModo/ModosDeEstacion/minijuego cambiar modo.html';
         modes.addEventListener('load', () => {
+          this.styleFrame(modes);
           modes.contentDocument?.addEventListener('keydown', event => {
             if (event.code === 'Escape') { event.preventDefault(); this.close(); }
           });
@@ -148,7 +182,19 @@ class Activities {
 
   close() {
     if (!this.kind) return;
-    if (this.kind === 'modes') {
+    if (this.kind === 'story' && !$('story-video').getAttribute('src')) return;
+    this.transition();
+    if (this.kind === 'story') {
+      clearTimeout(this.storyTimer);
+      const video = $('story-video');
+      video.pause(); video.removeAttribute('src'); video.load();
+      $('story').hidden = true;
+      this.game.mission.visorUnlocked = true;
+      document.querySelector('.visor-launcher').textContent = 'Visor · SHIFT';
+      this.notify('Visor habilitado. Pulsa Shift.');
+    } else if (this.kind === 'food') {
+      this.foodFrame.hidden = true;
+    } else if (this.kind === 'modes') {
       // Detener una calibración incompleta, conservando las ya terminadas.
       this.currentFrame.contentDocument?.getElementById('modalClose')?.click();
       this.currentFrame.hidden = true;
@@ -167,6 +213,12 @@ class Activities {
   message(event) {
     if (event.origin !== location.origin) return;
     const data = event.data;
+    if (event.source === this.foodFrame?.contentWindow && this.kind === 'food') {
+      if (data?.type === 'alimentos:close') this.close();
+      if (data?.type === 'alimentos:harvest'
+        && ['mizuna', 'lechuga', 'chile', 'tomate', 'papa', 'trigo'].includes(data.crop)) this.game.harvest(data.crop);
+      return;
+    }
     const modeStation = [...this.modeFrames].find(([, frame]) => frame.contentWindow === event.source)?.[0];
     if (modeStation && data?.type === 'energyModeChanged'
       && ['tortuga', 'explorador', 'turbo'].includes(data.mode)) {
@@ -181,5 +233,90 @@ class Activities {
       this.close();
       this.notify('Operación terminada. Informe educativo guardado; recursos físicos sin conversiones ficticias.');
     }
+  }
+
+  async transition(change) {
+    const curtain = $('mission-transition');
+    const token = {};
+    this.transitionActive = token;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 80 : 300;
+    const easing = 'cubic-bezier(.22,.61,.36,1)';
+    $('vega-message').hidden = true;
+    $('interaction-hint').hidden = true;
+    try {
+      if (change) {
+        const fade = curtain.animate([{ opacity: 0 }, { opacity: 1 }],
+          { duration, easing, fill: 'forwards' });
+        await fade.finished;
+        try { await change(); }
+        finally {
+          fade.cancel();
+          await curtain.animate([{ opacity: 1 }, { opacity: 0 }],
+            { duration, easing }).finished;
+        }
+      } else {
+        await curtain.animate([{ opacity: 0 }, { opacity: .75, offset: .4 }, { opacity: 0 }],
+          { duration: duration * 2, easing }).finished;
+      }
+    } finally {
+      if (this.transitionActive === token) this.transitionActive = null;
+    }
+  }
+
+  styleFrame(frame) {
+    const doc = frame.contentDocument;
+    if (!doc?.head || doc.getElementById('final-pixel-theme')) return;
+    const style = doc.createElement('style');
+    style.id = 'final-pixel-theme';
+    const font = new URL('assets/fonts/PressStart2P-Regular.ttf', document.baseURI).href;
+    style.textContent = `@font-face{font-family:FinalPixel;src:url("${font}")}body,button,input,select,p,h1,h2,h3,span,div{font-family:FinalPixel,monospace!important}button{border-radius:0!important}`;
+    doc.head.append(style);
+  }
+
+  updateSurvival() {
+    const m = this.game.mission, status = $('survival');
+    const text = m.dead ? 'MISIÓN FALLIDA · SIN RECURSOS' : m.starved > 0
+      ? `¡DAÑO! VIDA ${Math.ceil(m.health)} % · ${Math.max(0, 5 - m.starved).toFixed(1)} s para recuperarte`
+      : 'VIDA 100 %';
+    if ($('survival-text').textContent !== text) $('survival-text').textContent = text;
+    status.classList.toggle('danger', m.starved > 0);
+    status.hidden = m.starved <= 0;
+    if (m.dead) {
+      $('death').hidden = false;
+      $('restart-mission').focus();
+    }
+  }
+
+  setHint(text) {
+    const hint = $('interaction-hint');
+    hint.hidden = !text || this.blocked || this.transitionActive || this.game?.transitioning;
+    if (hint.textContent !== text) hint.textContent = text || '';
+  }
+
+  openStory() {
+    if (this.blocked || this.game.transitioning || this.game.scene?.isRecarga) return;
+    this.game.mission.alertPending = false;
+    this.game.mission.alertShown = true;
+    this.kind = 'story';
+    this.transition();
+    $('story').hidden = false;
+    const video = $('story-video');
+    const start = $('story-start');
+    video.hidden = true;
+    start.hidden = false;
+    $('story-exit').hidden = true;
+    start.onclick = () => {
+      clearTimeout(this.storyTimer);
+      start.hidden = true;
+      video.hidden = false;
+      video.src = 'assets/video/segunda_escena.mp4';
+      $('story-exit').hidden = false;
+      video.play().catch(() => { video.controls = true; start.hidden = false; });
+    };
+    video.onended = () => { $('story-exit').textContent = 'Salir · activar visor'; };
+    $('story-exit').onclick = () => this.close();
+    this.storyTimer = setTimeout(() => { if (this.kind === 'story') start.click(); }, 2500);
+    start.focus();
   }
 }

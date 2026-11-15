@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Prueba · Cultivos lunares</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="estilo.css">
+  <link rel="stylesheet" href="mision.css">
+</head>
+<body>
+  <main class="simulator">
+    <header class="topbar">
+      <div class="panel identity">
+        <img src="../../assets/Sprites/Astronauta/stay_down_1.png" alt="" class="astronaut">
+        <div><h1>Simulador de producción<br>de alimentos en la Luna</h1><p>Prueba independiente · condiciones reportadas</p></div>
+      </div>
+      <label class="panel selection">
+        <img id="selected-icon" alt="">
+        <span>Cultivo seleccionado<select id="crop-select" aria-label="Cultivo seleccionado"></select></span>
+      </label>
+      <div class="panel day-panel">
+        <img src="Sprites/cosecha/nativo/luna_dia.png" alt="">
+        <div><span id="day-label">Día de vista previa</span><strong id="crop-day">12</strong></div>
+      </div>
+      <button id="settings-open" class="panel settings" aria-label="Ajustes de vista previa" title="Ajustes de vista previa">⚙</button>
+    </header>
+    <nav class="mission-tabs" aria-label="Pantallas de la misión">
+      <button data-screen="mission">Misión</button><button data-screen="crop">Cultivo / luz</button>
+      <button data-screen="data">Ficha científica</button><button data-screen="log">Bitácora</button>
+      <button id="mission-exit">Salir</button>
+    </nav>
+
+    <section class="panel mission-card" id="mission-card" aria-labelledby="mission-title">
+      <div class="mission-heading">
+        <div><h2 id="mission-title">Rescate del invernadero</h2><p id="mission-description"></p></div>
+        <strong id="collection-status">0/6 insignias · 0 puntos</strong>
+      </div>
+      <ol id="mission-steps" class="mission-steps"></ol>
+      <progress id="mission-progress" max="3" value="0" aria-label="0 de 3 revisiones registradas"></progress>
+      <p id="mission-fault" hidden></p>
+      <p id="mission-vega" role="status" aria-live="polite"></p>
+      <fieldset id="mission-question" hidden></fieldset>
+      <div id="mission-badge" hidden><img src="Sprites/cosecha/nativo/estrella_exito.png" alt=""><strong id="mission-badge-name"></strong><span>Cosecha de entrenamiento, no producción física.</span></div>
+      <div class="mission-actions">
+        <button id="mission-start" type="button">Iniciar misión</button>
+        <button id="mission-hint" type="button" hidden>Pedir diagnóstico a VEGA</button>
+        <button id="mission-next" type="button" hidden>Registrar revisión</button>
+        <span id="mission-score"></span>
+      </div>
+      <p class="small">Reglas del reto: ±0,5 puntos por canal. Crecimiento y días simulados; no predicen una cosecha real.</p>
+    </section>
+
+    <div class="work-area">
+      <nav class="panel crop-list" aria-label="Plantas disponibles">
+        <h2>Plantas disponibles</h2>
+        <div id="crop-buttons"></div>
+      </nav>
+
+      <section class="light-column">
+        <div class="panel light-panel">
+          <header class="light-heading">
+            <img src="Sprites/cosecha/nativo/sol.png" alt="">
+            <div><h2>Configuración de luz</h2><p>Ajusta cada canal para el cultivo seleccionado.</p></div>
+          </header>
+          <div id="light-sliders"></div>
+          <div class="reference-line"><span>Mezcla de referencia</span><strong id="light-reference"></strong></div>
+          <p id="light-note" class="small"></p>
+        </div>
+        <div class="panel distribution">
+          <div class="distribution-values">
+            <span>Distribución actual</span>
+            <div id="distribution"></div>
+            <small id="total"></small>
+          </div>
+          <button id="apply" type="button"><img src="Sprites/ui/nativo/icono_check.png" alt="">Aplicar</button>
+        </div>
+        <p id="feedback" role="status" aria-live="polite">Selecciona una planta y revisa su escenario.</p>
+      </section>
+
+      <section class="scene-column" aria-label="Vista del cultivo">
+        <figure class="panel chamber">
+          <canvas id="chamber" width="256" height="224" aria-label="Cámara del cultivo seleccionado"></canvas>
+          <figcaption id="scene-caption"></figcaption>
+        </figure>
+        <div class="panel expected">
+          <img id="effect-plant" alt="">
+          <div><h2>Efecto esperado</h2><ul id="effect-lines"></ul><p class="small">Comparación visual de luz; no predice rendimiento.</p></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel environment" aria-labelledby="environment-title">
+      <header><h2 id="environment-title">Condiciones reportadas en experimentos</h2><span>No son sensores en tiempo real ni objetivos universales</span></header>
+      <div class="environment-grid">
+        <article class="metric">
+          <img src="Sprites/ambiente/nativo/termometro_ideal.png" alt="">
+          <div><h3>Temperatura</h3><strong id="env-temperature"></strong><p id="context-temperature"></p></div>
+        </article>
+        <article class="metric">
+          <img src="Sprites/ambiente/nativo/gota_llena.png" alt="">
+          <div><h3>Humedad relativa</h3><strong id="env-humidity"></strong><p id="context-humidity"></p></div>
+        </article>
+        <article class="metric">
+          <img src="Sprites/ambiente/nativo/co2_ideal.png" alt="">
+          <div><h3>CO₂</h3><strong id="env-co2"></strong><p id="context-co2"></p></div>
+        </article>
+        <article class="metric">
+          <img src="Sprites/ambiente/nativo/oxigeno.png" alt="">
+          <div><h3>Oxígeno</h3><strong class="unconfirmed">Sin dato confirmado</strong><p>No se proporcionó un valor por cultivo.</p></div>
+        </article>
+      </div>
+    </section>
+    <footer class="panel crop-status"><img id="status-face" alt=""><span>Estado de la configuración</span><strong id="crop-status"></strong></footer>
+    <details class="panel mission-journal">
+      <summary>Bitácora del cultivo seleccionado</summary>
+      <p id="mission-log-empty" class="small">Aquí aparecerán los cuidados que registres durante la misión.</p>
+      <ol id="mission-log"></ol>
+    </details>
+  </main>
+
+  <dialog id="settings-dialog" class="panel">
+    <form method="dialog"><button aria-label="Cerrar ajustes">×</button></form>
+    <h2>Ajustes de vista previa</h2>
+    <p>Estos controles solo cambian la presentación. No simulan la duración real del crecimiento.</p>
+    <label>Etapa visual<select id="stage-select">
+      <option value="0">Semilla</option><option value="1">Brote</option><option value="2">Joven</option>
+      <option value="3">Creciendo</option><option value="4">Madura</option><option value="5">Lista para cosecha</option>
+    </select></label>
+    <label>Día mostrado<input id="day-input" type="number" min="1" max="999" value="12"></label>
+    <button type="button" id="reset-light">Restaurar la luz de referencia de esta planta</button>
+    <p class="small">Los datos ambientales no se editan: reproducen la tabla proporcionada. Tomate, trigo y papa mantienen las cifras no confirmadas sin inventarlas.</p>
+  </dialog>
+  <div id="loading" role="status">Cargando los sprites de las seis plantas…</div>
+  <script>
+    if (location.protocol === 'file:') document.getElementById('loading').textContent =
+      'Abre ABRIR.cmd en esta carpeta o sirve moonapp con python -m http.server 8765 y visita http://localhost:8765/pruebas/Alimentos/';
+  </script>
+  <script type="module" src="app.js"></script>
+  <script type="module" src="modulo.js"></script>
+</body>
+</html>

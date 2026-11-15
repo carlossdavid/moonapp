@@ -5,6 +5,7 @@ import { mountVisor } from './visor.js';
 import { SolarProgress } from '../pruebas/limpieza-panel/solarProgress.js';
 import { FASE } from '../src/minigames/RecargaOxigeno.js';
 import { startWeather } from './weather.js';
+import { MissionMessages } from './messages.js';
 
 const extraImages = {
   final_station: 'assets/Sprites/Estructuras exteriores/EstaciónLunar.png',
@@ -15,6 +16,7 @@ const extraImages = {
   final_room_clear: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarGrandeClaro.png',
   final_room_saving: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarGrandeAhorro.png',
   final_room_dark: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarGrandeOscuro.png',
+  final_room_small: 'pruebas/CambioDeModo/ModosDeEstacion/EstaciónLunarPequeñaOscura.png',
 };
 
 async function start() {
@@ -26,6 +28,7 @@ async function start() {
   const game = new IntegratedGame(document.getElementById('game'), ui, solar);
   game.interiors = new Map();
   ui.game = game;
+  document.getElementById('restart-mission').onclick = () => location.reload();
   mountVisor(ui);
   // Contrato público de inspección de esta entrada; no se instala en originales.
   window.finalSystem = { game, ui, solar };
@@ -42,12 +45,22 @@ async function start() {
         images.push({ key, src: `assets/Sprites/Pantalla/niveles/${resource}/${key}.png` });
       }
     }
+    for (let i = 0; i <= 10; i++) {
+      images.push({ key: `final_life_${i}`, src: `assets/Sprites/Pantalla/niveles/vida/vida_${String(i).padStart(2, '0')}.png` });
+    }
+    for (const id of ['Bienvenida', 'movimiento', 'paneles', 'energia', 'recarga_oxigeno', 'agua_comida']) {
+      images.push({ key: `final_message_${id}`, src: encodeURI(`assets/Sprites/diseño_ia/Mensajes/${id}.png`) });
+    }
     game.assets._manifestImages = images;
   };
   // Un adaptador local reutiliza el modelo original con intervalos rAF seguros.
   window.finalSystem.weather = await startWeather(game);
   game.setScene(new FinalExterior(game, { spawnX: 285, spawnY: 198 }));
   await game.init();
+  game.messages = new MissionMessages(document.getElementById('vega-message'), game.assets);
+  document.getElementById('motion-toggle').checked = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  game.impacts.motion = document.getElementById('motion-toggle').checked;
+  document.getElementById('motion-toggle').onchange = event => { game.impacts.motion = event.target.checked; };
   for (const key of ['menu_bg', 'mapa_bg', ...Object.keys(extraImages)]) {
     if (!game.assets.has(key)) throw new Error(`No se cargó ${key}`);
   }
@@ -69,7 +82,7 @@ async function start() {
   };
   function updateLocation() {
     document.getElementById('location-label').textContent = game.scene?.station?.name
-      ?? (game.scene?.isRecarga ? 'RECARGA DE OXÍGENO' : 'SUPERFICIE LUNAR · SISTEMA INTEGRADO');
+      ?? (game.scene?.isRecarga ? 'RECARGA INTEGRAL DEL TRAJE' : 'SUPERFICIE LUNAR · SISTEMA INTEGRADO');
   }
   updateLocation();
   game.start();
